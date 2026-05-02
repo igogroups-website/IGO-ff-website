@@ -1,10 +1,63 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Mail, Lock, User, Phone, ArrowRight, Sparkles, Leaf } from 'lucide-react';
+import { X, Mail, Lock, User, Phone, ArrowRight, Sparkles, Leaf, CheckCircle2, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'react-hot-toast';
+
+// --- Components ---
+
+const SegmentedOTP = ({ value, onChange, length = 6, disabled = false }: { value: string, onChange: (val: string) => void, length?: number, disabled?: boolean }) => {
+  const inputs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const handleInput = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const val = e.target.value;
+    if (!/^\d*$/.test(val)) return;
+
+    const newValue = value.split('');
+    newValue[index] = val.slice(-1);
+    const combined = newValue.join('');
+    onChange(combined);
+
+    if (val && index < length - 1) {
+      inputs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (e.key === 'Backspace' && !value[index] && index > 0) {
+      inputs.current[index - 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').slice(0, length);
+    if (!/^\d+$/.test(pastedData)) return;
+    onChange(pastedData);
+    inputs.current[pastedData.length - 1]?.focus();
+  };
+
+  return (
+    <div className="flex gap-2 justify-center" onPaste={handlePaste}>
+      {Array.from({ length }).map((_, i) => (
+        <input
+          key={i}
+          ref={el => { inputs.current[i] = el; }}
+          type="text"
+          inputMode="numeric"
+          maxLength={1}
+          value={value[i] || ''}
+          onChange={e => handleInput(e, i)}
+          onKeyDown={e => handleKeyDown(e, i)}
+          disabled={disabled}
+          className="w-10 h-12 bg-white/10 border border-white/20 rounded-xl text-center text-xl font-bold text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+        />
+      ))}
+    </div>
+  );
+};
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -12,235 +65,320 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
-  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('signup');
+  const [mode, setMode] = useState<'login' | 'signup'>('signup');
+  const [step, setStep] = useState<'initial' | 'otp' | 'details'>('initial');
+  
+  // Form State
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password || (mode === 'signup' && (!fullName || !phone))) {
-      toast.error('Please fill in all required fields');
+  // --- Handlers ---
+
+  const handleSendOTP = async () => {
+    if (!email) {
+      toast.error('Please enter your email address');
       return;
     }
-    
     setLoading(true);
-    const cleanEmail = email.trim();
-    const cleanPassword = password.trim();
-
     try {
-      if (mode === 'login') {
-        const { error } = await supabase.auth.signInWithPassword({ 
-          email: cleanEmail, 
-          password: cleanPassword 
-        });
-        
-        if (error) {
-          if (error.message.includes('Invalid login credentials')) {
-            throw new Error('Invalid email or password. Please check your credentials and try again.');
-          }
-          throw error;
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: {
+          emailRedirectTo: window.location.origin,
         }
-        
-        toast.success('Welcome back!');
-        onClose();
-      } else if (mode === 'signup') {
-        const { error } = await supabase.auth.signUp({
-          email: cleanEmail,
-          password: cleanPassword,
-          options: {
-            data: {
-              full_name: fullName.trim(),
-              phone: phone.trim(),
-            }
-          }
-        });
-        if (error) throw error;
-        toast.success('Account created successfully!');
-        onClose();
-      } else {
-        // Forgot password mode
-        const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail);
-        if (error) throw error;
-        toast.success('Reset link sent to your email!');
-        setMode('login');
-      }
+      });
+      if (error) throw error;
+      setStep('otp');
+      toast.success('Verification code sent to your email!');
     } catch (error: any) {
-      toast.error(error.message || 'Authentication failed');
+      toast.error(error.message || 'Failed to send code');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleVerifyOTP = async () => {
+    if (otp.length < 6) {
+      toast.error('Please enter the full 6-digit code');
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email: email.trim(),
+        token: otp,
+        type: 'email'
+      });
+      if (error) throw error;
+      setStep('details');
+      toast.success('Email verified!');
+    } catch (error: any) {
+      toast.error(error.message || 'Invalid verification code');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCompleteSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fullName || !phone || !password) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: password,
+        data: {
+          full_name: fullName.trim(),
+          phone: phone.trim(),
+        }
+      });
+      if (updateError) throw updateError;
+
+      toast.success('Welcome to the Farm!');
+      onClose();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to complete signup');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      toast.error('Please enter both email and password');
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password,
+      });
+      if (error) throw error;
+
+      toast.success('Logged in successfully!');
+      onClose();
+    } catch (error: any) {
+      toast.error(error.message || 'Invalid email or password');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- UI Parts ---
+
+  const renderInitial = () => (
+    <motion.div 
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      className="space-y-6"
+    >
+      <div className="space-y-2">
+        <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Email Address</label>
+        <div className="relative group">
+          <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors" size={18} />
+          <input 
+            type="email" 
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="name@example.com"
+            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm font-bold placeholder:text-white/20 text-white"
+          />
+        </div>
+      </div>
+
+      {mode === 'login' && (
+        <div className="space-y-2">
+          <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Password</label>
+          <div className="relative group">
+            <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors" size={18} />
+            <input 
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-14 pr-14 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm font-bold placeholder:text-white/20 text-white"
+            />
+            <button 
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-5 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/60 transition-colors"
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <button 
+        onClick={mode === 'login' ? handleLogin : handleSendOTP}
+        disabled={loading}
+        className="w-full bg-primary text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-primary/90 transition-all transform active:scale-[0.98] disabled:opacity-50"
+      >
+        {loading ? 'Processing...' : (mode === 'login' ? 'Sign In' : 'Send Code')}
+        {!loading && <ArrowRight size={18} />}
+      </button>
+    </motion.div>
+  );
+
+  const renderOTP = () => (
+    <motion.div 
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      className="space-y-8"
+    >
+      <div className="text-center space-y-2">
+        <h3 className="text-xl font-bold">Verify email</h3>
+        <p className="text-white/40 text-sm">Code sent to <span className="text-white">{email}</span></p>
+      </div>
+
+      <SegmentedOTP value={otp} onChange={setOtp} disabled={loading} />
+
+      <button 
+        onClick={() => handleVerifyOTP()}
+        disabled={loading || otp.length < 6}
+        className="w-full bg-primary text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-primary/90 transition-all active:scale-[0.98]"
+      >
+        {loading ? 'Verifying...' : 'Verify Code'}
+      </button>
+    </motion.div>
+  );
+
+  const renderDetails = () => (
+    <motion.div 
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      className="space-y-6"
+    >
+      <div className="text-center space-y-1 mb-6">
+        <CheckCircle2 size={32} className="text-green-500 mx-auto mb-2" />
+        <h3 className="text-xl font-bold">Verified!</h3>
+        <p className="text-white/40 text-sm">Let's finish your profile.</p>
+      </div>
+
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <input 
+            type="text" 
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder="Name"
+            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm font-bold text-white"
+          />
+          <input 
+            type="tel" 
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="Phone"
+            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm font-bold text-white"
+          />
+        </div>
+        <div className="relative group">
+          <input 
+            type={showPassword ? 'text' : 'password'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Create Password"
+            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-6 pr-14 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm font-bold text-white"
+          />
+          <button 
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-5 top-1/2 -translate-y-1/2 text-white/20"
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
+        </div>
+      </div>
+
+      <button 
+        onClick={handleCompleteSignup}
+        disabled={loading}
+        className="w-full bg-[#E75129] text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.3em] hover:bg-[#ff613b] transition-all"
+      >
+        {loading ? 'Creating...' : 'Register'}
+      </button>
+    </motion.div>
+  );
+
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto">
-          {/* Animated Blurred Background */}
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-0"
-          >
-            <div 
-              className="absolute inset-0 bg-cover bg-center grayscale-[0.1]"
-              style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=2000&auto=format&fit=crop")' }}
-            />
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-xl transition-all duration-700" />
-          </motion.div>
+            className="absolute inset-0 bg-black/60 backdrop-blur-xl"
+            onClick={onClose}
+          />
           
           <motion.div 
-            initial={{ opacity: 0, scale: 0.95, y: 30 }}
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 30 }}
-            className="relative z-10 w-full max-w-xl p-6 md:p-12 my-8"
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="relative z-10 w-full max-w-lg bg-[#0A0A0A] border border-white/10 rounded-[2.5rem] p-8 md:p-12 text-white shadow-2xl overflow-hidden"
           >
-            {/* Close Button */}
-            <button 
-              onClick={onClose}
-              className="absolute top-0 right-0 m-4 md:m-0 md:-top-12 md:-right-12 p-3 text-white/60 hover:text-white transition-colors"
-            >
-              <X size={32} />
+            <button onClick={onClose} className="absolute top-8 right-8 text-white/20 hover:text-white transition-colors">
+              <X size={24} />
             </button>
 
-            <div className="bg-transparent text-white">
-              {/* Brand Logo */}
-              <div className="flex justify-center md:justify-start mb-10">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all overflow-hidden shadow-2xl">
-                    <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" />
-                  </div>
-                  <span className="text-2xl font-black tracking-tighter text-white">
-                    FARMERS FACTORY
-                  </span>
-                </div>
+            <div className="flex items-center gap-3 mb-10">
+              <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white">
+                <Leaf size={24} />
               </div>
+              <span className="text-xl font-black tracking-tighter">FARMERS FACTORY</span>
+            </div>
 
-              <div className="mb-10 text-center md:text-left">
-                <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-4 border border-white/10">
-                  <Sparkles size={12} className="text-orange-500" />
-                  Premium Organic Access
-                </div>
-                <h2 className="text-4xl md:text-5xl font-black mb-4 uppercase tracking-tighter">
-                  {mode === 'login' ? 'Welcome Back' : mode === 'signup' ? 'Join the Farm' : 'Reset Access'}
-                </h2>
-                <p className="text-white/60 font-medium text-sm">
-                  {mode === 'login' 
-                    ? 'Enter your credentials to access your secure profile.' 
-                    : mode === 'signup' 
-                      ? 'Create your account to start your fresh harvest journey.'
-                      : 'Provide your email to receive a recovery link.'}
-                </p>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {mode === 'signup' && (
-                    <>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Full Name</label>
-                        <div className="relative group">
-                          <User className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-orange-500 transition-colors" size={18} />
-                          <input 
-                            type="text" 
-                            value={fullName}
-                            onChange={(e) => setFullName(e.target.value)}
-                            placeholder="Enter your name"
-                            className="w-full bg-white/10 border border-white/10 rounded-2xl py-4 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all text-sm font-bold placeholder:text-white/20"
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Phone</label>
-                        <div className="relative group">
-                          <Phone className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-orange-500 transition-colors" size={18} />
-                          <input 
-                            type="tel" 
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            placeholder="Enter phone"
-                            className="w-full bg-white/10 border border-white/10 rounded-2xl py-4 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all text-sm font-bold placeholder:text-white/20"
-                          />
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Email Address</label>
-                  <div className="relative group">
-                    <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-orange-500 transition-colors" size={18} />
-                    <input 
-                      type="email" 
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Enter your email"
-                      className="w-full bg-white/10 border border-white/10 rounded-2xl py-4 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all text-sm font-bold placeholder:text-white/20"
-                    />
-                  </div>
-                </div>
-
-                {mode !== 'signup' && (
-                  <div className={`space-y-2 ${mode === 'forgot' ? 'hidden' : ''}`}>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Password</label>
-                    <div className="relative group">
-                      <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-orange-500 transition-colors" size={18} />
-                      <input 
-                        type="password" 
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Enter password"
-                        className="w-full bg-white/10 border border-white/10 rounded-2xl py-4 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all text-sm font-bold placeholder:text-white/20"
-                      />
-                    </div>
-                    {mode === 'login' && (
-                      <div className="flex justify-end pt-1">
-                        <button 
-                          type="button" 
-                          onClick={() => setMode('forgot')}
-                          className="text-[10px] font-black text-white/40 hover:text-white uppercase tracking-widest transition-colors"
-                        >
-                          Forgot Password?
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
- 
-                <button 
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-[#E75129] text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-[#ff613b] transition-all transform active:scale-[0.98] disabled:opacity-50 shadow-2xl shadow-orange-500/20 mt-8 group"
-                >
-                  {loading ? 'Processing...' : (mode === 'login' ? 'Enter Dashboard' : mode === 'signup' ? 'Join Now' : 'Send Recovery Link')}
-                  {!loading && <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />}
-                </button>
-              </form>
- 
-              <div className="mt-10 text-center">
-                <button 
-                  onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-                  className="text-sm font-bold text-white/40 hover:text-white transition-colors"
-                >
-                  {mode === 'login' ? "Don't have an account? " : mode === 'signup' ? 'Already a member? ' : 'Remember your password? '}
-                  <span className="text-white hover:underline">
-                    {mode === 'login' ? 'Create one here' : mode === 'signup' ? 'Login instead' : 'Back to Login'}
-                  </span>
-                </button>
-              </div>
-
-              <p className="mt-12 text-center text-[10px] font-bold text-white/20 uppercase tracking-widest">
-                Protected by Biometric Security & Farmers Privacy Protocol
+            <div className="mb-8">
+              <h2 className="text-3xl font-black mb-2 uppercase tracking-tighter">
+                {mode === 'login' ? 'Welcome Back' : 'Join the Farm'}
+              </h2>
+              <p className="text-white/40 text-sm font-medium">
+                {step === 'initial' ? 'Secure access to your organic account.' : 'Complete your registration.'}
               </p>
             </div>
+
+            {step === 'initial' && (
+              <div className="flex p-1 bg-white/5 rounded-2xl mb-8 border border-white/5">
+                <button 
+                  onClick={() => setMode('login')}
+                  className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'login' ? 'bg-white/10 text-white' : 'text-white/30'}`}
+                >
+                  Login
+                </button>
+                <button 
+                  onClick={() => setMode('signup')}
+                  className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'signup' ? 'bg-white/10 text-white' : 'text-white/30'}`}
+                >
+                  Join
+                </button>
+              </div>
+            )}
+
+            <AnimatePresence mode="wait">
+              {step === 'initial' && renderInitial()}
+              {step === 'otp' && renderOTP()}
+              {step === 'details' && renderDetails()}
+            </AnimatePresence>
+
+            <p className="mt-10 text-center text-[9px] font-bold text-white/10 uppercase tracking-[0.4em]">
+              Secure Farm Access Protocol
+            </p>
           </motion.div>
         </div>
       )}
     </AnimatePresence>
   );
 }
-

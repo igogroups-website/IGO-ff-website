@@ -8,7 +8,7 @@ import CategoryCard from '@/components/CategoryCard';
 import ProductCard from '@/components/ProductCard';
 import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
-import { ArrowRight, Sparkles, Leaf, Truck, ShieldCheck, ShoppingBag } from 'lucide-react';
+import { ArrowRight, Sparkles, Leaf, Truck, ShieldCheck, ShoppingBag, Star } from 'lucide-react';
 
 export default function Home() {
   const [products, setProducts] = useState<any[]>([]);

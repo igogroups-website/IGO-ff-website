@@ -353,6 +353,12 @@ export const supabase = isMock ? new Proxy(realClient, {
           };
         },
         signInWithOtp: () => Promise.resolve({ error: null }),
+        verifyOtp: ({ email }: any) => {
+          mockSession = { user: { id: 'mock-user-id', email }, expires_at: 9999999999 };
+          savePersistentData('session', mockSession);
+          notifyAuthChange('SIGNED_IN');
+          return Promise.resolve({ data: { session: mockSession, user: mockSession.user }, error: null });
+        },
         signInWithPassword: ({ email }: any) => {
           mockSession = { user: { id: 'mock-user-id', email }, expires_at: 9999999999 };
           savePersistentData('session', mockSession);

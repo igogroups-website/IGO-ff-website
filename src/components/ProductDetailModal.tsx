@@ -77,7 +77,7 @@ export default function ProductDetailModal({ isOpen, onClose, product }: Product
 
     setLoading(true);
     try {
-      const success = await addToCart(product.id, quantity, product);
+      const success = await addToCart(currentProduct.id, quantity, currentProduct);
       if (!success) throw new Error('Failed to add to cart');
 
       if (isBuyNow) {

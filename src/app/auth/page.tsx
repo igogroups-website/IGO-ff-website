@@ -1,12 +1,67 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
-import { motion } from 'framer-motion';
-import { Mail, Lock, User, Phone, ArrowRight, Sparkles, Leaf, ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect, Suspense, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Mail, Lock, User, Phone, ArrowRight, Sparkles, Leaf, ArrowLeft, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast, Toaster } from 'react-hot-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+
+// --- Components ---
+
+const SegmentedOTP = ({ value, onChange, length = 6, disabled = false }: { value: string, onChange: (val: string) => void, length?: number, disabled?: boolean }) => {
+  const inputs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const handleInput = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const val = e.target.value;
+    if (!/^\d*$/.test(val)) return;
+
+    const newValue = value.split('');
+    newValue[index] = val.slice(-1);
+    const combined = newValue.join('');
+    onChange(combined);
+
+    if (val && index < length - 1) {
+      inputs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (e.key === 'Backspace' && !value[index] && index > 0) {
+      inputs.current[index - 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').slice(0, length);
+    if (!/^\d+$/.test(pastedData)) return;
+    onChange(pastedData);
+    inputs.current[pastedData.length - 1]?.focus();
+  };
+
+  return (
+    <div className="flex gap-2 justify-center" onPaste={handlePaste}>
+      {Array.from({ length }).map((_, i) => (
+        <input
+          key={i}
+          ref={el => { inputs.current[i] = el; }}
+          type="text"
+          inputMode="numeric"
+          maxLength={1}
+          value={value[i] || ''}
+          onChange={e => handleInput(e, i)}
+          onKeyDown={e => handleKeyDown(e, i)}
+          disabled={disabled}
+          className="w-10 h-12 md:w-12 md:h-14 bg-white/10 border border-white/20 rounded-xl text-center text-xl font-bold text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+        />
+      ))}
+    </div>
+  );
+};
+
+// --- Main Content ---
 
 function AuthContent() {
   const router = useRouter();
@@ -15,18 +70,27 @@ function AuthContent() {
   const redirectPath = searchParams.get('redirect') || '/';
 
   const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
-  const [authMethod, setAuthMethod] = useState<'password' | 'otp'>('password');
+  const [step, setStep] = useState<'initial' | 'otp' | 'details'>('initial');
+  
+  // Form State
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [otp, setOtp] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Clear session on mount to prevent multi-user login issues
+    supabase.auth.signOut();
+  }, []);
+
+  // --- Handlers ---
 
   const handleSendOTP = async () => {
     if (!email) {
-      toast.error('Please enter your email address first');
+      toast.error('Please enter your email address');
       return;
     }
     setLoading(true);
@@ -34,317 +98,365 @@ function AuthContent() {
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
         options: {
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: window.location.origin + '/auth',
         }
       });
-      if (error) {
-        if (error.message.includes('rate limit exceeded')) {
-          throw new Error('Security code limit reached. Please wait a moment before requesting a new one.');
-        }
-        throw error;
-      }
-      setOtpSent(true);
-      toast.success('Security code sent to your email!');
+      if (error) throw error;
+      setStep('otp');
+      toast.success('Verification code sent to your email!');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to send OTP');
+      toast.error(error.message || 'Failed to send code');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (authMethod === 'otp') {
-      if (!otp) {
-        toast.error('Please enter the security code');
-        return;
-      }
-      setLoading(true);
-      try {
-        const { error } = await supabase.auth.verifyOtp({
-          email: email.trim(),
-          token: otp.trim(),
-          type: 'email'
-        });
-        if (error) throw error;
-        toast.success('Identity verified! Welcome back.');
-        setTimeout(() => {
-          router.push(redirectPath);
-          router.refresh();
-        }, 1000);
-      } catch (error: any) {
-        toast.error(error.message || 'Invalid security code');
-      } finally {
-        setLoading(false);
-      }
+  const handleVerifyOTP = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (otp.length < 6) {
+      toast.error('Please enter the full 6-digit code');
       return;
     }
-
-    if (!email || !password || (mode === 'signup' && (!fullName || !phone))) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-    
     setLoading(true);
-    const cleanEmail = email.trim();
-    const cleanPassword = password.trim();
-
     try {
-      if (mode === 'login') {
-        const { error } = await supabase.auth.signInWithPassword({ 
-          email: cleanEmail, 
-          password: cleanPassword 
-        });
-        
-        if (error) {
-          if (error.message.includes('Invalid login credentials')) {
-            throw new Error('Invalid email or password. Please check your credentials and try again.');
-          }
-          if (error.message.includes('Email not confirmed')) {
-            throw new Error('Your email is not verified yet. Please check your inbox for the confirmation link.');
-          }
-          if (error.message.includes('rate limit exceeded')) {
-            throw new Error('For security reasons, too many requests have been made. Please wait a few minutes and try again.');
-          }
-          throw error;
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: email.trim(),
+        token: otp,
+        type: 'email'
+      });
+      if (error) throw error;
+      
+      // Verification success, now move to details
+      setStep('details');
+      toast.success('Email verified! Let\'s complete your profile.');
+    } catch (error: any) {
+      toast.error(error.message || 'Invalid verification code');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCompleteSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fullName || !phone || !password) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+    if (password.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Update user with details and password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: password,
+        data: {
+          full_name: fullName.trim(),
+          phone: phone.trim(),
         }
-        
-        toast.success('Welcome back to Farmers Factory!');
-      } else {
-        // SIGNUP FLOW
-        const { data, error } = await supabase.auth.signUp({
-          email: cleanEmail,
-          password: cleanPassword,
-          options: {
-            data: {
-              full_name: fullName.trim(),
-              phone: phone.trim(),
-            }
-          }
-        });
+      });
+      if (updateError) throw updateError;
 
-        if (error) throw error;
+      toast.success('Welcome to the Farm! Redirecting...');
+      setTimeout(() => {
+        router.push(redirectPath);
+        router.refresh();
+      }, 1500);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to complete signup');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        if (data?.user && data?.session) {
-          toast.success('Account created and logged in!');
-        } else {
-          toast.success('Account created! Please check your email for verification.');
-          setMode('login');
-          return;
-        }
-      }
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      toast.error('Please enter both email and password');
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password,
+      });
+      if (error) throw error;
 
-      // Shared success redirection
+      toast.success('Logged in successfully!');
       setTimeout(() => {
         router.push(redirectPath);
         router.refresh();
       }, 1000);
-
     } catch (error: any) {
-      toast.error(error.message || 'Authentication failed');
+      toast.error(error.message || 'Invalid email or password');
     } finally {
       setLoading(false);
     }
   };
 
+  // --- UI Parts ---
+
+  const renderInitial = () => (
+    <motion.div 
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      className="space-y-6"
+    >
+      <div className="space-y-2">
+        <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Email Address</label>
+        <div className="relative group">
+          <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors" size={18} />
+          <input 
+            type="email" 
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="name@example.com"
+            className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm font-bold placeholder:text-white/20 text-white"
+          />
+        </div>
+      </div>
+
+      {mode === 'login' && (
+        <div className="space-y-2">
+          <div className="flex justify-between items-center px-1">
+            <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Password</label>
+            <Link href="/auth/reset-password" title="reset password link" className="text-[10px] font-black uppercase tracking-widest text-primary hover:text-primary/80 transition-colors">Forgot?</Link>
+          </div>
+          <div className="relative group">
+            <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors" size={18} />
+            <input 
+              type={showPassword ? 'text' : 'password'}
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-14 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm font-bold placeholder:text-white/20 text-white"
+            />
+            <button 
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-5 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/60 transition-colors"
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <button 
+        onClick={mode === 'login' ? handleLogin : handleSendOTP}
+        disabled={loading}
+        className="w-full bg-primary text-white py-6 rounded-2xl font-black text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-primary/90 transition-all transform active:scale-[0.98] disabled:opacity-50 shadow-2xl shadow-primary/20 group"
+      >
+        {loading ? 'Processing...' : (mode === 'login' ? 'Sign In' : 'Send Security Code')}
+        {!loading && <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />}
+      </button>
+    </motion.div>
+  );
+
+  const renderOTP = () => (
+    <motion.div 
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      className="space-y-8"
+    >
+      <div className="text-center space-y-2">
+        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 text-primary animate-pulse">
+          <Mail size={32} />
+        </div>
+        <h3 className="text-xl font-bold">Verify your email</h3>
+        <p className="text-white/40 text-sm">We've sent a 6-digit code to <span className="text-white font-bold">{email}</span></p>
+      </div>
+
+      <SegmentedOTP value={otp} onChange={setOtp} disabled={loading} />
+
+      <button 
+        onClick={() => handleVerifyOTP()}
+        disabled={loading || otp.length < 6}
+        className="w-full bg-primary text-white py-6 rounded-2xl font-black text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-primary/90 transition-all transform active:scale-[0.98] disabled:opacity-50 shadow-2xl shadow-primary/20"
+      >
+        {loading ? 'Verifying...' : 'Verify Code'}
+      </button>
+
+      <button 
+        onClick={() => { setStep('initial'); setOtp(''); }}
+        className="w-full text-[10px] font-black text-white/20 hover:text-white/60 uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
+      >
+        <ArrowLeft size={12} /> Use different email
+      </button>
+    </motion.div>
+  );
+
+  const renderDetails = () => (
+    <motion.div 
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      className="space-y-6"
+    >
+      <div className="text-center space-y-2 mb-8">
+        <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-green-500">
+          <CheckCircle2 size={32} />
+        </div>
+        <h3 className="text-xl font-bold">Verification Successful</h3>
+        <p className="text-white/40 text-sm">Now, let's set up your profile.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Full Name</label>
+          <div className="relative group">
+            <User className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors" size={18} />
+            <input 
+              type="text" 
+              required
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="John Doe"
+              className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm font-bold placeholder:text-white/20 text-white"
+            />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Phone</label>
+          <div className="relative group">
+            <Phone className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors" size={18} />
+            <input 
+              type="tel" 
+              required
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="9876543210"
+              className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm font-bold placeholder:text-white/20 text-white"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Create Password</label>
+        <div className="relative group">
+          <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors" size={18} />
+          <input 
+            type={showPassword ? 'text' : 'password'}
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="At least 6 characters"
+            className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-14 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm font-bold placeholder:text-white/20 text-white"
+          />
+          <button 
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-5 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/60 transition-colors"
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
+        </div>
+      </div>
+
+      <button 
+        onClick={handleCompleteSignup}
+        disabled={loading}
+        className="w-full bg-[#E75129] text-white py-6 rounded-2xl font-black text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-[#ff613b] transition-all transform active:scale-[0.98] disabled:opacity-50 shadow-2xl shadow-orange-500/20 mt-4 group"
+      >
+        {loading ? 'Creating Account...' : 'Complete Registration'}
+        {!loading && <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />}
+      </button>
+    </motion.div>
+  );
+
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center p-4 md:p-6 relative overflow-hidden bg-black font-geist">
       {/* Background with Premium Image and Blur */}
       <div className="absolute inset-0 z-0">
         <div 
-          className="absolute inset-0 bg-cover bg-center grayscale-[0.1] scale-105"
+          className="absolute inset-0 bg-cover bg-center grayscale-[0.2] scale-105 transition-transform duration-[20s] animate-pulse"
           style={{ backgroundImage: 'url("/auth-bg.png")' }}
         />
-        <div className="absolute inset-0 bg-black/40 backdrop-blur-[4px]" />
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-[8px]" />
+        
+        {/* Animated Gradient Orbs */}
+        <div className="absolute top-0 -left-20 w-96 h-96 bg-primary/20 rounded-full blur-[120px] animate-blob" />
+        <div className="absolute bottom-0 -right-20 w-96 h-96 bg-orange-500/20 rounded-full blur-[120px] animate-blob animation-delay-2000" />
       </div>
 
       <motion.div 
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="relative z-10 w-full max-w-xl"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative z-10 w-full max-w-2xl"
       >
         <Link 
           href="/"
-          className="inline-flex items-center gap-2 text-white/60 hover:text-white transition-colors mb-8 font-black uppercase tracking-widest text-xs"
+          className="inline-flex items-center gap-2 text-white/40 hover:text-white transition-all mb-8 font-black uppercase tracking-widest text-[10px] group"
         >
-          <ArrowLeft size={16} />
-          Back to Farm
+          <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+          Back to Store
         </Link>
 
-        <div className="bg-transparent text-white">
-          <div className="flex items-center gap-3 mb-10">
-            <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center text-white shadow-xl shadow-primary/30">
-              <Leaf size={28} />
+        <div className="bg-white/5 border border-white/10 backdrop-blur-2xl rounded-[2.5rem] p-8 md:p-12 text-white shadow-2xl overflow-hidden relative group">
+          {/* Brand Logo */}
+          <div className="flex items-center gap-4 mb-12">
+            <div className="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-primary/40 rotate-3 group-hover:rotate-0 transition-transform duration-500">
+              <Leaf size={32} />
             </div>
-            <span className="text-2xl font-black tracking-tighter text-white">
-              FARMERS FACTORY
-            </span>
+            <div>
+              <span className="text-2xl font-black tracking-tighter text-white block leading-none">
+                FARMERS FACTORY
+              </span>
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30">
+                Premium Organics
+              </span>
+            </div>
           </div>
 
           <div className="mb-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-4 border border-white/10">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-4 border border-white/10">
               <Sparkles size={12} className="text-orange-500" />
-              Premium Organic Access
+              {step === 'initial' ? 'Identity Verification' : step === 'otp' ? 'Security Check' : 'Profile Completion'}
             </div>
-            <h1 className="text-5xl md:text-7xl font-black mb-4 uppercase tracking-tighter leading-none text-white drop-shadow-2xl">
-              {mode === 'login' ? 'Welcome Back' : 'Join the Farm'}
+            <h1 className="text-4xl md:text-5xl font-black mb-4 uppercase tracking-tighter leading-none text-white">
+              {mode === 'login' ? 'Welcome Back' : 'Create Account'}
             </h1>
-            <p className="text-white font-bold text-xl drop-shadow-md">
-              {authMethod === 'otp' 
-                ? (otpSent ? 'Enter the security code sent to your email.' : 'Sign in securely using a one-time code.')
-                : (mode === 'login' 
-                    ? 'Enter your credentials to access your secure profile.' 
-                    : 'Create your account to start your fresh harvest journey.')}
+            <p className="text-white/40 font-bold text-sm">
+              {mode === 'login' 
+                ? 'Sign in to access your farm-fresh favorites.' 
+                : 'Join our community for the best organic produce.'}
             </p>
           </div>
 
-          <div className="mb-10 flex gap-4 p-1 bg-white/5 rounded-2xl w-fit">
-            <button 
-              onClick={() => { setAuthMethod('password'); setOtpSent(false); }}
-              className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${authMethod === 'password' ? 'bg-primary text-white shadow-lg' : 'text-white/40 hover:text-white/60'}`}
-            >
-              Password
-            </button>
-            <button 
-              onClick={() => setAuthMethod('otp')}
-              className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${authMethod === 'otp' ? 'bg-primary text-white shadow-lg' : 'text-white/40 hover:text-white/60'}`}
-            >
-              Secure OTP
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {mode === 'signup' && (
-                <>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Full Name</label>
-                    <div className="relative group">
-                      <User className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-orange-500 transition-colors" size={18} />
-                      <input 
-                        type="text" 
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        placeholder="John Doe"
-                        className="w-full bg-white/10 border border-white/10 rounded-2xl py-5 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all text-sm font-bold placeholder:text-white/20"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Phone</label>
-                    <div className="relative group">
-                      <Phone className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors" size={18} />
-                      <input 
-                        type="tel" 
-                        required
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="9876543210"
-                        className="w-full bg-white/10 border border-white/10 rounded-2xl py-5 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm font-bold placeholder:text-white/20 text-white"
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Email Address</label>
-              <div className="relative group">
-                <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors" size={18} />
-                <input 
-                  type="email" 
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@example.com"
-                  className="w-full bg-white/10 border border-white/10 rounded-2xl py-5 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm font-bold placeholder:text-white/20 text-white"
-                />
-              </div>
-            </div>
-
-            {authMethod === 'password' ? (
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Password</label>
-                <div className="relative group">
-                  <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors" size={18} />
-                  <input 
-                    type="password" 
-                    required={authMethod === 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full bg-white/10 border border-white/10 rounded-2xl py-5 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm font-bold placeholder:text-white/20 text-white"
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {otpSent && (
-                  <div className="space-y-2 animate-in fade-in slide-in-from-top-4 duration-500">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Security Code (OTP)</label>
-                    <div className="relative group">
-                      <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors" size={18} />
-                      <input 
-                        type="text" 
-                        required={authMethod === 'otp' && otpSent}
-                        value={otp}
-                        onChange={(e) => setOtp(e.target.value)}
-                        placeholder="Enter 6-digit code"
-                        className="w-full bg-white/10 border border-white/10 rounded-2xl py-5 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm font-bold tracking-[0.5em] text-center text-white"
-                      />
-                    </div>
-                  </div>
-                )}
-                
-                {!otpSent ? (
-                  <button 
-                    type="button"
-                    onClick={handleSendOTP}
-                    disabled={loading}
-                    className="w-full bg-white/10 border border-white/10 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-white/20 transition-all active:scale-95"
-                  >
-                    {loading ? 'Sending...' : 'Send Security Code'}
-                  </button>
-                ) : (
-                  <button 
-                    type="button"
-                    onClick={handleSendOTP}
-                    className="text-[10px] font-black text-white/40 hover:text-white uppercase tracking-widest transition-colors w-full text-center"
-                  >
-                    Didn't receive code? Resend
-                  </button>
-                )}
-              </div>
-            )}
-
-            {(authMethod === 'password' || otpSent) && (
+          {/* Mode Switcher (only in initial step) */}
+          {step === 'initial' && (
+            <div className="flex p-1 bg-white/5 rounded-2xl mb-10 border border-white/5">
               <button 
-                type="submit"
-                disabled={loading}
-                className="w-full bg-[#E75129] text-white py-6 rounded-2xl font-black text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-[#ff613b] transition-all transform active:scale-[0.98] disabled:opacity-50 shadow-2xl shadow-orange-500/20 mt-10 group"
+                onClick={() => setMode('login')}
+                className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'login' ? 'bg-white/10 text-white shadow-xl' : 'text-white/30 hover:text-white/60'}`}
               >
-                {loading ? 'Processing...' : (authMethod === 'otp' ? 'Verify & Enter' : mode === 'login' ? 'Enter Storefront' : 'Create Account')}
-                {!loading && <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />}
+                Login
               </button>
-            )}
-          </form>
+              <button 
+                onClick={() => setMode('signup')}
+                className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'signup' ? 'bg-white/10 text-white shadow-xl' : 'text-white/30 hover:text-white/60'}`}
+              >
+                Join
+              </button>
+            </div>
+          )}
 
-          <div className="mt-12 text-center">
-            <button 
-              onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-              className="text-lg font-bold text-white/40 hover:text-white transition-colors"
-            >
-              {mode === 'login' ? "New customer? " : 'Already have an account? '}
-              <span className="text-white hover:underline decoration-primary decoration-2 underline-offset-8">
-                {mode === 'login' ? 'Sign up here' : 'Log in here'}
-              </span>
-            </button>
-          </div>
+          <AnimatePresence mode="wait">
+            {step === 'initial' && renderInitial()}
+            {step === 'otp' && renderOTP()}
+            {step === 'details' && renderDetails()}
+          </AnimatePresence>
 
-          <p className="mt-16 text-center text-[10px] font-bold text-white/20 uppercase tracking-[0.4em]">
-            Authorized Secure Authentication Protocol
+          <p className="mt-12 text-center text-[9px] font-bold text-white/10 uppercase tracking-[0.5em]">
+            Authorized Secure Access Protocol • Farmers Factory v2.0
           </p>
         </div>
       </motion.div>
@@ -356,6 +468,7 @@ export default function AuthPage() {
   return (
     <Suspense fallback={<div className="h-screen bg-black" />}>
       <AuthContent />
+      <Toaster />
     </Suspense>
   );
 }
