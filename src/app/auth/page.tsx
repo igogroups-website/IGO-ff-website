@@ -82,8 +82,9 @@ function AuthContent() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Clear session on mount to prevent multi-user login issues
-    supabase.auth.signOut();
+    // Only sign out if there is no active OTP/verification in progress
+    // Do NOT sign out on mount - it breaks the OTP verification flow
+    // supabase.auth.signOut(); // REMOVED - was breaking new signups
   }, []);
 
   // --- Handlers ---
@@ -93,19 +94,31 @@ function AuthContent() {
       toast.error('Please enter your email address');
       return;
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
     setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
         options: {
           emailRedirectTo: window.location.origin + '/auth',
+          shouldCreateUser: true,
         }
       });
       if (error) throw error;
       setStep('otp');
-      toast.success('Verification code sent to your email!');
+      toast.success(`Verification code sent to ${email.trim()}! Check your inbox and spam folder.`, { duration: 5000 });
     } catch (error: any) {
-      toast.error(error.message || 'Failed to send code');
+      if (error.message?.includes('fetch') || error.message?.includes('network') || error.name === 'TypeError') {
+        toast.error('Connection error. The service is temporarily unavailable. Please try again in a moment.', { duration: 6000 });
+      } else if (error.message?.includes('rate')) {
+        toast.error('Too many attempts. Please wait a few minutes before trying again.');
+      } else {
+        toast.error(error.message || 'Failed to send code. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -185,13 +198,19 @@ function AuthContent() {
       });
       if (error) throw error;
 
-      toast.success('Logged in successfully!');
+      toast.success('Welcome back! Redirecting...');
       setTimeout(() => {
         router.push(redirectPath);
         router.refresh();
       }, 1000);
     } catch (error: any) {
-      toast.error(error.message || 'Invalid email or password');
+      if (error.message?.includes('fetch') || error.message?.includes('network') || error.name === 'TypeError') {
+        toast.error('Connection error. Please check your internet connection and try again.', { duration: 6000 });
+      } else if (error.message?.includes('Invalid login')) {
+        toast.error('Incorrect email or password. Please check and try again.');
+      } else {
+        toast.error(error.message || 'Sign in failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }

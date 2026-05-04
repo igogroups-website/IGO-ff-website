@@ -30,12 +30,19 @@ export default function AdminDashboard() {
     async function loadData() {
       try {
         setLoading(true);
-        const [statsData, ordersData, visitorsData, productsData] = await Promise.all([
-          getAdminStats(),
-          getAllOrders(),
-          getRecentVisitors(),
-          getAllProducts()
-        ]);
+        // 10-second timeout - if Supabase is unreachable, we fail fast
+        const timeout = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Request timed out. Check Supabase connection.')), 10000)
+        );
+        const [statsData, ordersData, visitorsData, productsData] = await Promise.race([
+          Promise.all([
+            getAdminStats(),
+            getAllOrders(),
+            getRecentVisitors(),
+            getAllProducts()
+          ]),
+          timeout
+        ]) as [any, any[], any[], any];
         
         setStats(statsData);
         setRecentOrders(ordersData.slice(0, 5));
@@ -43,6 +50,11 @@ export default function AdminDashboard() {
         setProducts(productsData.data?.slice(0, 3) || []);
       } catch (error) {
         console.error('Failed to load dashboard data:', error);
+        // Set empty defaults so the page renders something useful
+        setStats({ totalRevenue: '₹0', totalOrders: '0', activeProducts: '0', totalCustomers: '0', outOfStockCount: '0' });
+        setRecentOrders([]);
+        setRecentVisitors([]);
+        setProducts([]);
       } finally {
         setLoading(false);
       }
