@@ -23,8 +23,8 @@ interface ProductDetailModalProps {
     price: number;
     image_url: string;
     unit: string;
-    category: string;
-    description: string;
+    category?: string;
+    description?: string;
     stock?: number;
     original_price?: number;
     is_seasonal?: boolean;
@@ -61,6 +61,8 @@ export default function ProductDetailModal({ isOpen, onClose, product }: Product
   }, [isOpen, currentProduct]);
 
   async function fetchRelatedProducts() {
+    if (!currentProduct) return;
+
     try {
       // Professional Recommendation Logic:
       // 1. Try to get smart pairings from our verified catalog first - Increased limit to 24
@@ -184,7 +186,7 @@ export default function ProductDetailModal({ isOpen, onClose, product }: Product
                   alt={currentProduct.name} 
                   onError={() => setImageError(true)}
                   className={`w-full h-full object-cover transition-transform duration-1000 hover:scale-110 ${
-                    currentProduct.stock === 0 ? 'grayscale opacity-60' : ''
+                    (currentProduct.stock ?? 0) === 0 ? 'grayscale opacity-60' : ''
                   }`}
                 />
               ) : (
@@ -235,7 +237,7 @@ export default function ProductDetailModal({ isOpen, onClose, product }: Product
 
                 {/* Scarcity & Social Proof */}
                 <div className="mt-8 flex flex-col gap-3">
-                  {currentProduct.stock > 0 && currentProduct.stock <= 10 && (
+                  {(currentProduct.stock ?? 0) > 0 && (currentProduct.stock ?? 0) <= 10 && (
                     <motion.div 
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -263,7 +265,7 @@ export default function ProductDetailModal({ isOpen, onClose, product }: Product
                   </div>
                 </div>
 
-                {currentProduct.stock === 0 && (
+                {(currentProduct.stock ?? 0) === 0 && (
                   <div className="mt-6 flex items-center gap-3 bg-red-50 border border-red-200 p-4 rounded-2xl text-red-600">
                     <AlertCircle size={24} />
                     <p className="font-black uppercase tracking-tight">This product is currently out of stock</p>
@@ -274,7 +276,7 @@ export default function ProductDetailModal({ isOpen, onClose, product }: Product
                 <SmartMealBundling currentProduct={currentProduct} onAddSuccess={triggerAddedOverlay} />
 
                 {/* Sustainability & Impact Meter */}
-                <SustainabilityMeter productName={currentProduct.name} category={currentProduct.category} />
+                <SustainabilityMeter productName={currentProduct.name} category={currentProduct.category || 'General'} />
 
                 {/* Subscribe & Save Option */}
                 <div className="mt-8 space-y-4">
@@ -371,21 +373,21 @@ export default function ProductDetailModal({ isOpen, onClose, product }: Product
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <button 
                     onClick={() => handleAction(false)}
-                    disabled={loading || currentProduct.stock === 0}
+                    disabled={loading || (currentProduct.stock ?? 0) === 0}
                     className={`flex-1 border-2 py-5 rounded-[1.25rem] font-black text-xl flex items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-sm ${
-                      currentProduct.stock === 0 
+                      (currentProduct.stock ?? 0) === 0 
                         ? 'bg-muted border-muted text-muted-foreground cursor-not-allowed' 
                         : 'bg-white border-primary text-primary hover:bg-primary/5'
                     }`}
                   >
                     <ShoppingBag size={24} />
-                    {currentProduct.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
+                    {(currentProduct.stock ?? 0) === 0 ? 'Out of Stock' : 'Add to Cart'}
                   </button>
                   <button 
                     onClick={() => handleAction(true)}
-                    disabled={loading || currentProduct.stock === 0}
+                    disabled={loading || (currentProduct.stock ?? 0) === 0}
                     className={`flex-1 py-5 rounded-[1.25rem] font-black text-xl flex items-center justify-center gap-2 transition-all shadow-xl active:scale-[0.98] ${
-                      currentProduct.stock === 0 
+                      (currentProduct.stock ?? 0) === 0 
                         ? 'bg-muted text-muted-foreground cursor-not-allowed shadow-none' 
                         : 'bg-primary text-white hover:bg-primary/90 shadow-primary/20'
                     }`}

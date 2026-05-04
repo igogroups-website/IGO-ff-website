@@ -13,6 +13,10 @@ interface Product {
   image_url: string;
   unit: string;
   category?: string;
+  description?: string;
+  stock?: number;
+  original_price?: number;
+  is_seasonal?: boolean;
 }
 
 interface QuickAddCarouselProps {
