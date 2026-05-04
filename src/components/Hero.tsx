@@ -5,7 +5,11 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight, Leaf, ShieldCheck, Truck, Sparkles } from 'lucide-react';
 
-export default function Hero() {
+interface HeroProps {
+  greeting?: string;
+}
+
+export default function Hero({ greeting = 'Welcome' }: HeroProps) {
   return (
     <section className="relative min-h-[95vh] flex items-center pt-36 overflow-hidden">
       {/* Background Image with Parallax Effect */}
@@ -30,6 +34,10 @@ export default function Hero() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
+            <div className="inline-flex items-center gap-3 px-5 py-2.5 bg-primary/10 backdrop-blur-md rounded-2xl text-xs font-black text-primary uppercase tracking-[0.4em] mb-10 border border-primary/20 shadow-xl shadow-primary/5">
+              <Sparkles size={16} className="animate-pulse" />
+              <span>{greeting} • FRESH FROM FARM</span>
+            </div>
 
             
             <h1 className="text-5xl md:text-7xl font-black text-foreground mb-8 leading-[1.1] tracking-tight">

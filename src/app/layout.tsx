@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
+import { WishlistProvider } from "@/context/WishlistContext";
+import { LoyaltyProvider } from "@/context/LoyaltyContext";
 import { Toaster } from "react-hot-toast";
 import GlobalUI from "@/components/GlobalUI";
 import Footer from "@/components/Footer";
@@ -41,20 +43,24 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <AuthProvider>
-          <CartProvider>
-            <Toaster
-              position="top-right"
-              toastOptions={{
-                style: {
-                  fontWeight: 'bold',
-                  boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
-                },
-              }}
-            />
-            <GlobalUI />
-            {children}
-            <Footer />
-          </CartProvider>
+          <WishlistProvider>
+            <LoyaltyProvider>
+              <CartProvider>
+                <Toaster
+                  position="top-right"
+                  toastOptions={{
+                    style: {
+                      fontWeight: 'bold',
+                      boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                    },
+                  }}
+                />
+                <GlobalUI />
+                {children}
+                <Footer />
+              </CartProvider>
+            </LoyaltyProvider>
+          </WishlistProvider>
         </AuthProvider>
       </body>
     </html>

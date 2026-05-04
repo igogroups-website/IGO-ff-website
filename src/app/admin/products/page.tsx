@@ -8,7 +8,9 @@ import {
   deleteProduct,
   updateProduct,
   softDeleteProduct,
-  restoreProduct
+  restoreProduct,
+  deleteAllProducts,
+  syncVerifiedCatalog
 } from '@/lib/admin';
 import { 
   Plus, 
@@ -34,6 +36,7 @@ import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'react-hot-toast';
+import { VERIFIED_INVENTORY } from '@/lib/constants';
 
 function ProductsContent() {
   const [products, setProducts] = useState<any[]>([]);
@@ -94,66 +97,16 @@ function ProductsContent() {
 
   async function handleAddSamples() {
     setIsBulkLoading(true);
-    const samples = [
-      // VEGETABLES (20 items)
-      { name: 'Beetroot', category: 'Vegetables', price: 45.00, image_url: '/Vegetables/Beetroot.png', description: 'Fresh and earthy beetroots, rich in nutrients.', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Bitter Gourd', category: 'Vegetables', price: 35.00, image_url: '/Vegetables/Bitter Gourd.png', description: 'Fresh bitter gourd, great for healthy cooking.', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Bottle Gourd', category: 'Vegetables', price: 30.00, image_url: '/Vegetables/Bottle Gourd.png', description: 'Hydrating and fresh bottle gourd.', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Brinjal', category: 'Vegetables', price: 40.00, image_url: '/Vegetables/Brinjal.png', description: 'Fresh purple brinjals, perfect for curries.', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Cabbage', category: 'Vegetables', price: 25.00, image_url: '/Vegetables/Cabbage.png', description: 'Crunchy and fresh green cabbage.', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Capsicum', category: 'Vegetables', price: 80.00, image_url: '/Vegetables/Capsicum.png', description: 'Fresh green capsicum, perfect for salads and stir-fry.', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Carrot', category: 'Vegetables', price: 60.00, image_url: '/Vegetables/Carrot.png', description: 'Sweet and crunchy farm carrots.', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Cauliflower', category: 'Vegetables', price: 45.00, image_url: '/Vegetables/Cauliflower.png', description: 'Fresh white cauliflower heads.', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Coriander Leaves', category: 'Vegetables', price: 10.00, image_url: '/Vegetables/Coriander Leaves.png', description: 'Fresh and aromatic coriander leaves.', stock: 100, unit: 'bundle', is_active: true },
-      { name: 'Drumstick', category: 'Vegetables', price: 15.00, image_url: '/Vegetables/Drumstick.png', description: 'Fresh drumsticks for sambar and curries.', stock: 100, unit: 'piece', is_active: true },
-      { name: 'Green Chilli', category: 'Vegetables', price: 40.00, image_url: '/Vegetables/Green Chilli.png', description: 'Spicy fresh green chillies.', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Ladies Finger', category: 'Vegetables', price: 35.00, image_url: '/Vegetables/Ladies Finger (Okra).png', description: 'Fresh okra, perfect for fry or curry.', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Mint Leaves', category: 'Vegetables', price: 10.00, image_url: '/Vegetables/Mint Leaves.png', description: 'Fresh mint leaves for chutney and tea.', stock: 100, unit: 'bundle', is_active: true },
-      { name: 'Onion', category: 'Vegetables', price: 45.00, image_url: '/Vegetables/Onion.png', description: 'Farm fresh red onions.', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Potato', category: 'Vegetables', price: 35.00, image_url: '/Vegetables/Potato.png', description: 'Quality potatoes from local farms.', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Pumpkin', category: 'Vegetables', price: 30.00, image_url: '/Vegetables/Pumpkin.png', description: 'Sweet and fresh orange pumpkin.', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Radish', category: 'Vegetables', price: 25.00, image_url: '/Vegetables/Radish.png', description: 'Fresh white radish with greens.', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Snake Gourd', category: 'Vegetables', price: 30.00, image_url: '/Vegetables/Snake Gourd.png', description: 'Fresh and long snake gourds.', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Spinach', category: 'Vegetables', price: 15.00, image_url: '/Vegetables/Spinach.png', description: 'Nutritious green spinach leaves.', stock: 100, unit: 'bundle', is_active: true },
-      { name: 'Tomato', category: 'Vegetables', price: 30.00, image_url: '/Vegetables/Tomato.png', description: 'Juicy red farm tomatoes.', stock: 100, unit: 'kg', is_active: true },
-      
-      // FRUITS (14 items)
-      { name: 'Apple', category: 'Fruits', price: 180.00, image_url: '/Fruits/Apple.png', description: 'Sweet and crunchy premium apples.', stock: 100, unit: 'kg', is_active: true, is_seasonal: true },
-      { name: 'Banana', category: 'Fruits', price: 60.00, image_url: '/Fruits/Banana.png', description: 'Ripe and sweet yellow bananas.', stock: 100, unit: 'dozen', is_active: true },
-      { name: 'Custard Apple', category: 'Fruits', price: 120.00, image_url: '/Fruits/Custard Apple.png', description: 'Sweet and creamy custard apples.', stock: 100, unit: 'kg', is_active: true, is_seasonal: true },
-      { name: 'Grapes', category: 'Fruits', price: 90.00, image_url: '/Fruits/Grapes.png', description: 'Fresh green seedless grapes.', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Guava', category: 'Fruits', price: 70.00, image_url: '/Fruits/Guava.png', description: 'Fresh and sweet pink guavas.', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Mango', category: 'Fruits', price: 150.00, image_url: '/Fruits/Mango.png', description: 'Premium Alphonso mangoes.', stock: 100, unit: 'kg', is_active: true, is_seasonal: true },
-      { name: 'Muskmelon', category: 'Fruits', price: 50.00, image_url: '/Fruits/Muskmelon.png', description: 'Sweet and hydrating muskmelons.', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Orange', category: 'Fruits', price: 110.00, image_url: '/Fruits/Orange.png', description: 'Juicy and vitamin C rich oranges.', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Papaya', category: 'Fruits', price: 40.00, image_url: '/Fruits/Papaya.png', description: 'Ripe and sweet farm papayas.', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Pineapple', category: 'Fruits', price: 60.00, image_url: '/Fruits/Pineapple.png', description: 'Sweet and tangy fresh pineapples.', stock: 100, unit: 'piece', is_active: true },
-      { name: 'Pomegranate', category: 'Fruits', price: 160.00, image_url: '/Fruits/Pomegranate.png', description: 'Premium red pomegranates.', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Sapota', category: 'Fruits', price: 60.00, image_url: '/Fruits/Sapota (Chikoo).png', description: 'Sweet and grainy sapota (chikoo).', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Sweet Lime', category: 'Fruits', price: 80.00, image_url: '/Fruits/Sweet Lime (Mosambi).png', description: 'Fresh and juicy mosambi.', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Watermelon', category: 'Fruits', price: 40.00, image_url: '/Fruits/Watermelon.png', description: 'Refreshing sweet watermelons.', stock: 100, unit: 'piece', is_active: true, is_seasonal: true },
-      
-      // Valluvam Products (Authentic Catalog)
-      { name: 'Cold Pressed Coconut Oil', category: 'Valluvam Products', price: 280, unit: '1L', stock: 50, description: 'Pure, unrefined cold pressed coconut oil.', image_url: '/Valluvam/images/coconut-1L.jpg', is_active: true },
-      { name: 'Cold Pressed Groundnut Oil', category: 'Valluvam Products', price: 320, unit: '1L', stock: 50, description: 'Traditional cold pressed groundnut oil.', image_url: '/Valluvam/images/ground-1L.jpg', is_active: true },
-      { name: 'Cold Pressed Sesame Oil', category: 'Valluvam Products', price: 450, unit: '1L', stock: 50, description: 'Rich and aromatic cold pressed sesame oil.', image_url: '/Valluvam/images/sesame-1L.jpg', is_active: true },
-      { name: 'Natural Palm Jaggery', category: 'Valluvam Products', price: 180, unit: '500g', stock: 40, description: 'Authentic palm jaggery with no additives.', image_url: '/Valluvam/images/palm-jaggery(500).jpg', is_active: true },
-      { name: 'Wild Forest Honey', category: 'Valluvam Products', price: 350, unit: '500g', stock: 30, description: 'Raw, unprocessed honey from deep forests.', image_url: '/Valluvam/images/products-naatu.jpg', is_active: true },
-      { name: 'Traditional Millets Mix', category: 'Valluvam Products', price: 120, unit: '500g', stock: 100, description: 'High-fiber traditional millets breakfast mix.', image_url: '/Valluvam/images/millets.jpg', is_active: true },
-      { name: 'Premium Cashew Nuts', category: 'Valluvam Products', price: 450, unit: '250g', stock: 60, description: 'Large, crunchy premium quality cashew nuts.', image_url: '/Valluvam/images/nuts.jpg', is_active: true },
-      { name: 'Hand-ground Turmeric Powder', category: 'Valluvam Products', price: 85, unit: '200g', stock: 80, description: 'Pure turmeric powder with high curcumin content.', image_url: '/Valluvam/images/spieces.jpg', is_active: true },
-      { name: 'Natural Palm Sugar', category: 'Valluvam Products', price: 220, unit: '500g', stock: 45, description: 'Healthy alternative to white sugar.', image_url: '/Valluvam/images/products-plam.jpg', is_active: true },
-      { name: 'A2 Desi Cow Ghee', category: 'Valluvam Products', price: 650, unit: '500ml', stock: 25, description: 'Pure A2 ghee made using traditional bilona method.', image_url: '/Valluvam/images/products-2.jpg', is_active: true }
-    ];
+    const samples = VERIFIED_INVENTORY;
 
     try {
-      let count = 0;
-      for (const sample of samples) {
-        const { error } = await addProduct(sample);
-        if (!error) count++;
+      const result = await syncVerifiedCatalog(samples);
+      if (result.success) {
+        toast.success(`Catalog synced! Added ${result.added}, Updated ${result.updated}, Removed ${result.removed}`);
+        fetchProducts();
+      } else {
+        toast.error('Sync failed');
       }
-      toast.success(`Imported ${count} products successfully!`);
-      fetchProducts();
     } catch (err) {
       toast.error('Failed to add samples');
     } finally {
@@ -166,7 +119,11 @@ function ProductsContent() {
       .channel('admin_products_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, (payload) => {
         if (payload.eventType === 'INSERT') {
-          setProducts(prev => [payload.new, ...prev]);
+          setProducts(prev => {
+            // Prevent duplicates from race conditions with fetchProducts
+            if (prev.some(p => p.id === payload.new.id)) return prev;
+            return [payload.new, ...prev];
+          });
         } else if (payload.eventType === 'UPDATE') {
           setProducts(prev => prev.map(p => p.id === payload.new.id ? payload.new : p));
         } else if (payload.eventType === 'DELETE') {
@@ -211,25 +168,57 @@ function ProductsContent() {
   }
 
   async function handleHardReset() {
-    if (confirm('DANGER: This will delete ALL current products and reset to the default catalog. Proceed?')) {
-      setIsBulkLoading(true);
-      try {
-        // Clear all products first
-        for (const p of products) {
-          await deleteProduct(p.id);
-        }
-        
-        // Re-fetch (should be empty now)
-        setProducts([]);
-        
-        // Add all samples from the initial catalog
-        await handleAddSamples();
-        toast.success('Database has been hard reset to defaults');
-      } catch (err) {
-        toast.error('Hard reset failed');
-      } finally {
-        setIsBulkLoading(false);
+    if (!confirm('CRITICAL: This will PERMANENTLY WIPE your current database and re-sync with the 44 verified items from your public folder. This cannot be undone. Proceed?')) return;
+    
+    setIsBulkLoading(true);
+    const loadingToast = toast.loading('Initializing deep reset...');
+    
+    try {
+      // 1. Clear ALL relevant local storage cache (very aggressive)
+      if (typeof window !== 'undefined') {
+        toast.loading('Clearing local browser cache...', { id: loadingToast });
+        const keysToRemove = [
+          'farmers_factory_products',
+          'farmers_factory_cart',
+          'farmers_factory_guest_cart',
+          'farmers_factory_session',
+          'farmers_factory_order_items',
+          'farmers_factory_wishlist',
+          'farmers_factory_profiles'
+        ];
+        keysToRemove.forEach(key => localStorage.removeItem(key));
+        window.dispatchEvent(new Event('storage'));
       }
+
+      // 2. Perform robust bulk sync (Wipe + Re-insert)
+      toast.loading('Wiping database and re-seeding verified catalog...', { id: loadingToast });
+      const result = await syncVerifiedCatalog(VERIFIED_INVENTORY);
+      
+      if (result.success) {
+        toast.success(`Success! ${result.added} verified products are now live.`, { id: loadingToast, duration: 4000 });
+        // Refresh after a delay so they see the success
+        setTimeout(() => {
+          window.location.href = '/admin/products'; // Force hard reload to this page
+        }, 2000);
+      } else {
+        const errorMsg = (result.error as any)?.message || 'Sync failed';
+        console.error('Reset error details:', result.error);
+        toast.error(`Reset failed: ${errorMsg}. Try clearing cache manually.`, { id: loadingToast });
+      }
+    } catch (error: any) {
+      console.error('Reset failed:', error);
+      toast.error(`Reset failed: ${error.message || 'Unknown error'}`, { id: loadingToast });
+    } finally {
+      setIsBulkLoading(false);
+    }
+  }
+
+  function handleClearCache() {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('farmers_factory_products');
+      localStorage.removeItem('farmers_factory_session');
+      localStorage.removeItem('farmers_factory_profiles');
+      window.location.reload();
     }
   }
 
@@ -324,6 +313,12 @@ function ProductsContent() {
         toast.error('Failed to update product');
       }
     } else {
+      // Duplicate name check
+      if (products.some(p => p.name.toLowerCase() === newProduct.name.toLowerCase())) {
+        toast.error('A product with this name already exists. Use a different name or edit the existing one.');
+        return;
+      }
+
       const { data, error } = await addProduct({
         ...newProduct,
         price: parseFloat(newProduct.price)
@@ -714,20 +709,31 @@ function ProductsContent() {
           <p className="text-muted-foreground font-medium mb-8 max-w-sm text-center">
             Your inventory is currently empty. Start by adding a new product or use the sample products below.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <button 
-              onClick={() => setIsAddModalOpen(true)}
-              className="bg-primary text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 transition-transform"
+              onClick={handleHardReset}
+              disabled={isBulkLoading}
+              className="flex items-center gap-2 px-6 py-3 bg-red-50 text-red-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-100 transition-all border border-red-100 disabled:opacity-50"
             >
-              Add Your First Product
+              {isBulkLoading ? <Loader2 size={16} className="animate-spin" /> : <RotateCcw size={16} />}
+              Reset Catalog
             </button>
+
+            <button 
+              onClick={handleClearCache}
+              className="flex items-center gap-2 px-6 py-3 bg-slate-50 text-slate-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-100 transition-all border border-slate-100"
+            >
+              <Trash2 size={16} />
+              Clear Browser Cache
+            </button>
+
             <button 
               onClick={handleAddSamples}
               disabled={isBulkLoading}
-              className="bg-white border-2 border-slate-100 text-slate-500 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center gap-2"
+              className="flex items-center gap-2 px-6 py-3 bg-primary/10 text-primary rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-primary/20 transition-all border border-primary/10 disabled:opacity-50"
             >
-              {isBulkLoading ? <Loader2 className="animate-spin" size={16} /> : <Plus size={16} />}
-              Load Sample Products
+              {isBulkLoading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+              Add Samples
             </button>
           </div>
         </div>

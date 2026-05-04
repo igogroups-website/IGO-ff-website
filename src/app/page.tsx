@@ -9,33 +9,64 @@ import ProductCard from '@/components/ProductCard';
 import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import { ArrowRight, Sparkles, Leaf, Truck, ShieldCheck, ShoppingBag, Star } from 'lucide-react';
+import QuickAddCarousel from '@/components/QuickAddCarousel';
+import { FALLBACK_PRODUCTS } from '@/lib/constants';
 
 export default function Home() {
   const [products, setProducts] = useState<any[]>([]);
   const [seasonalProducts, setSeasonalProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [greeting, setGreeting] = useState('');
+
   useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) setGreeting('Good Morning');
+    else if (hour < 17) setGreeting('Good Afternoon');
+    else setGreeting('Good Evening');
+
     async function fetchProducts() {
-      // Fetch featured products
+      // Fetch featured products from DB but filter strictly
       const { data: featuredData } = await supabase
         .from('products')
         .select('*')
         .or('is_active.eq.true,is_active.is.null')
-        .order('created_at', { ascending: false })
-        .limit(8);
+        .order('created_at', { ascending: false });
       
-      if (featuredData) setProducts(featuredData);
+      // Strict Catalog Policy: Only show items that have valid images and clear names
+      const verifiedFeatured = (featuredData || []).filter(p => 
+        p.image_url && 
+        !p.image_url.includes('unsplash') && 
+        p.name.length > 2
+      );
 
-      // Fetch seasonal products
+      // Supplement with Fallbacks to ensure a full grid
+      let finalFeatured = [...verifiedFeatured];
+      FALLBACK_PRODUCTS.slice(0, 8).forEach(p => {
+        if (!finalFeatured.some(f => f.name === p.name)) {
+          finalFeatured.push(p);
+        }
+      });
+      setProducts(finalFeatured.slice(0, 8));
+
+      // Fetch seasonal products strictly
       const { data: seasonalData } = await supabase
         .from('products')
         .select('*')
         .eq('is_seasonal', true)
-        .or('is_active.eq.true,is_active.is.null')
-        .limit(4);
+        .or('is_active.eq.true,is_active.is.null');
       
-      if (seasonalData) setSeasonalProducts(seasonalData);
+      const verifiedSeasonal = (seasonalData || []).filter(p => 
+        p.image_url && !p.image_url.includes('unsplash')
+      );
+
+      let finalSeasonal = [...verifiedSeasonal];
+      FALLBACK_PRODUCTS.filter(p => p.is_seasonal).forEach(p => {
+        if (!finalSeasonal.some(f => f.name === p.name)) {
+          finalSeasonal.push(p);
+        }
+      });
+      setSeasonalProducts(finalSeasonal.slice(0, 4));
       
       setLoading(false);
     }
@@ -68,7 +99,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-background">
       <Navbar />
-      <Hero />
+      <Hero greeting={greeting} />
 
       {/* Categories Section */}
       <section className="py-32 container mx-auto px-4 overflow-hidden">
@@ -242,11 +273,7 @@ export default function Home() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {loading ? (
               Array(4).fill(0).map((_, i) => (
-                <div key={i} className="bg-white rounded-3xl border border-border p-4 animate-pulse">
-                  <div className="aspect-square bg-muted rounded-2xl mb-4" />
-                  <div className="h-4 bg-muted rounded w-1/2 mb-2" />
-                  <div className="h-6 bg-muted rounded w-3/4 mb-4" />
-                </div>
+                <div key={i} className="bg-white rounded-3xl border border-border p-4 animate-pulse h-64" />
               ))
             ) : products.length > 0 ? (
               products.map((product, idx) => (
@@ -278,6 +305,19 @@ export default function Home() {
               </div>
             )}
           </div>
+
+          {!loading && (
+            <div className="mt-32">
+              <div className="bg-white p-8 md:p-12 rounded-[3rem] shadow-xl shadow-black/5 border border-border/40">
+                <QuickAddCarousel 
+                  products={products.length > 0 ? products : FALLBACK_PRODUCTS.slice(0, 8)} 
+                  title="Recommendations for you" 
+                  subtitle="Based on today's fresh harvest"
+                />
+              </div>
+            </div>
+          )}
+
           
           <motion.div 
             initial={{ opacity: 0, y: 20 }}

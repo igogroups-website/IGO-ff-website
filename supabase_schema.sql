@@ -119,6 +119,20 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
+-- 6. Wishlist Table
+CREATE TABLE wishlist (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
+  product_id UUID REFERENCES products ON DELETE CASCADE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(user_id, product_id)
+);
+
+ALTER TABLE wishlist ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own wishlist" ON wishlist FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage own wishlist" ON wishlist FOR ALL USING (auth.uid() = user_id);
+
 -- Sample Data
 INSERT INTO products (name, category, price, description, stock, unit, image_url) VALUES
 ('Fresh Mangoes', 'Fruits', 120.00, 'Sweet and juicy Alphonso mangoes.', 50, 'kg', 'https://images.unsplash.com/photo-1553279768-865429fa0078'),

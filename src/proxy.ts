@@ -6,8 +6,8 @@ export function proxy(request: NextRequest) {
 
   // 1. Check if the request is for an admin route
   if (pathname.startsWith('/admin')) {
-    // 2. Allow access to the login page itself
-    if (pathname === '/admin/login') {
+    // 2. Allow access to the login page itself and assets
+    if (pathname.startsWith('/admin/login') || pathname.includes('.')) {
       return NextResponse.next();
     }
 
@@ -24,7 +24,7 @@ export function proxy(request: NextRequest) {
   return NextResponse.next();
 }
 
-// Specify which routes this middleware should run on
+// Specify which routes this proxy should run on
 export const config = {
   matcher: ['/admin/:path*'],
 };

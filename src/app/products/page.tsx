@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Filter, Search, X, ChevronDown, Leaf, Loader2, Plus, Star } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { addProduct } from '@/lib/admin';
+import { addProduct, deleteAllProducts } from '@/lib/admin';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense } from 'react';
@@ -21,43 +21,122 @@ function ProductsContent() {
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState(initialCategory);
   const [searchQuery, setSearchQuery] = useState('');
-  const [priceRange, setPriceRange] = useState(500);
+  const [priceRange, setPriceRange] = useState(2000);
   const [isSeeding, setIsSeeding] = useState(false);
 
   const categories = ['All', 'Seasonal', 'Fruits', 'Vegetables', 'Valluvam Products'];
+
+  const normalizeProduct = (p: any) => {
+    // Better image normalization
+    let img = p.image_url || (Array.isArray(p.image_urls) ? p.image_urls[0] : null);
+    
+    // If it's a relative path and doesn't start with /, add it
+    if (img && typeof img === 'string' && !img.startsWith('http') && !img.startsWith('/')) {
+      img = '/' + img;
+    }
+
+    return {
+      ...p,
+      category: p.category || 
+               (p.category_id === 'cat-veg' ? 'Vegetables' : 
+                p.category_id === 'cat-fruit' ? 'Fruits' : 
+                p.category_id === 'cat-val' ? 'Valluvam Products' : 
+                p.category_id) || '',
+      image_url: img || '/placeholder_product.png',
+      stock: p.stock !== undefined ? p.stock : (p.in_stock ? 100 : 0)
+    };
+  };
+
+  const SAMPLES = [
+    // VEGETABLES (20)
+    { name: 'Beetroot', category: 'Vegetables', price: 45.00, image_url: '/Vegetables/Beetroot.png', description: 'Fresh and earthy beetroots, rich in nutrients.', unit: 'kg' },
+    { name: 'Bitter Gourd', category: 'Vegetables', price: 35.00, image_url: '/Vegetables/Bitter Gourd.png', description: 'Fresh bitter gourd, great for healthy cooking.', unit: 'kg' },
+    { name: 'Bottle Gourd', category: 'Vegetables', price: 30.00, image_url: '/Vegetables/Bottle Gourd.png', description: 'Hydrating and fresh bottle gourd.', unit: 'kg' },
+    { name: 'Brinjal', category: 'Vegetables', price: 40.00, image_url: '/Vegetables/Brinjal.png', description: 'Fresh purple brinjals, perfect for curries.', unit: 'kg' },
+    { name: 'Cabbage', category: 'Vegetables', price: 25.00, image_url: '/Vegetables/Cabbage.png', description: 'Crunchy and fresh green cabbage.', unit: 'kg' },
+    { name: 'Capsicum', category: 'Vegetables', price: 80.00, image_url: '/Vegetables/Capsicum.png', description: 'Fresh green capsicum, perfect for salads.', unit: 'kg' },
+    { name: 'Carrot', category: 'Vegetables', price: 60.00, image_url: '/Vegetables/Carrot.png', description: 'Sweet and crunchy farm carrots.', unit: 'kg' },
+    { name: 'Cauliflower', category: 'Vegetables', price: 45.00, image_url: '/Vegetables/Cauliflower.png', description: 'Fresh white cauliflower heads.', unit: 'kg' },
+    { name: 'Coriander Leaves', category: 'Vegetables', price: 10.00, image_url: '/Vegetables/Coriander Leaves.png', description: 'Fresh and aromatic coriander leaves.', unit: 'bundle' },
+    { name: 'Drumstick', category: 'Vegetables', price: 15.00, image_url: '/Vegetables/Drumstick.png', description: 'Fresh drumsticks for sambar and curries.', unit: 'piece' },
+    { name: 'Green Chilli', category: 'Vegetables', price: 40.00, image_url: '/Vegetables/Green Chilli.png', description: 'Spicy fresh green chillies.', unit: 'kg' },
+    { name: 'Ladies Finger', category: 'Vegetables', price: 35.00, image_url: '/Vegetables/Ladies Finger (Okra).png', description: 'Fresh okra, perfect for fry or curry.', unit: 'kg' },
+    { name: 'Mint Leaves', category: 'Vegetables', price: 10.00, image_url: '/Vegetables/Mint Leaves.png', description: 'Fresh mint leaves for chutney and tea.', unit: 'bundle' },
+    { name: 'Onion', category: 'Vegetables', price: 45.00, image_url: '/Vegetables/Onion.png', description: 'Farm fresh red onions.', unit: 'kg' },
+    { name: 'Potato', category: 'Vegetables', price: 35.00, image_url: '/Vegetables/Potato.png', description: 'Quality potatoes from local farms.', unit: 'kg' },
+    { name: 'Pumpkin', category: 'Vegetables', price: 30.00, image_url: '/Vegetables/Pumpkin.png', description: 'Sweet and fresh orange pumpkin.', unit: 'kg' },
+    { name: 'Radish', category: 'Vegetables', price: 25.00, image_url: '/Vegetables/Radish.png', description: 'Fresh white radish with greens.', unit: 'kg' },
+    { name: 'Snake Gourd', category: 'Vegetables', price: 30.00, image_url: '/Vegetables/Snake Gourd.png', description: 'Fresh and long snake gourds.', unit: 'kg' },
+    { name: 'Spinach', category: 'Vegetables', price: 15.00, image_url: '/Vegetables/Spinach.png', description: 'Nutritious green spinach leaves.', unit: 'bundle' },
+    { name: 'Tomato', category: 'Vegetables', price: 30.00, image_url: '/Vegetables/Tomato.png', description: 'Juicy red farm tomatoes.', unit: 'kg' },
+    
+    // FRUITS (14)
+    { name: 'Apple', category: 'Fruits', price: 180.00, image_url: '/Fruits/Apple.png', description: 'Sweet and crunchy premium apples.', unit: 'kg', is_seasonal: true },
+    { name: 'Banana', category: 'Fruits', price: 60.00, image_url: '/Fruits/Banana.png', description: 'Ripe and sweet yellow bananas.', unit: 'dozen' },
+    { name: 'Custard Apple', category: 'Fruits', price: 120.00, image_url: '/Fruits/Custard Apple.png', description: 'Sweet and creamy custard apples.', unit: 'kg', is_seasonal: true },
+    { name: 'Grapes', category: 'Fruits', price: 90.00, image_url: '/Fruits/Grapes.png', description: 'Fresh green seedless grapes.', unit: 'kg' },
+    { name: 'Guava', category: 'Fruits', price: 70.00, image_url: '/Fruits/Guava.png', description: 'Fresh and sweet pink guavas.', unit: 'kg' },
+    { name: 'Mango', category: 'Fruits', price: 150.00, image_url: '/Fruits/Mango.png', description: 'Premium Alphonso mangoes.', unit: 'kg', is_seasonal: true },
+    { name: 'Muskmelon', category: 'Fruits', price: 50.00, image_url: '/Fruits/Muskmelon.png', description: 'Sweet and hydrating muskmelons.', unit: 'kg', is_seasonal: true },
+    { name: 'Orange', category: 'Fruits', price: 110.00, image_url: '/Fruits/Orange.png', description: 'Juicy and vitamin C rich oranges.', unit: 'kg' },
+    { name: 'Papaya', category: 'Fruits', price: 40.00, image_url: '/Fruits/Papaya.png', description: 'Ripe and sweet farm papayas.', unit: 'kg' },
+    { name: 'Pineapple', category: 'Fruits', price: 60.00, image_url: '/Fruits/Pineapple.png', description: 'Sweet and tangy fresh pineapples.', unit: 'piece' },
+    { name: 'Pomegranate', category: 'Fruits', price: 160.00, image_url: '/Fruits/Pomegranate.png', description: 'Premium red pomegranates.', unit: 'kg' },
+    { name: 'Sapota', category: 'Fruits', price: 60.00, image_url: '/Fruits/Sapota (Chikoo).png', description: 'Sweet and grainy sapota (chikoo).', unit: 'kg' },
+    { name: 'Sweet Lime', category: 'Fruits', price: 80.00, image_url: '/Fruits/Sweet Lime (Mosambi).png', description: 'Fresh and juicy mosambi.', unit: 'kg' },
+    { name: 'Watermelon', category: 'Fruits', price: 40.00, image_url: '/Fruits/Watermelon.png', description: 'Refreshing sweet watermelons.', unit: 'piece', is_seasonal: true },
+    
+    // VALLUVAM PRODUCTS (10)
+    { name: 'Coconut Oil', category: 'Valluvam Products', price: 280, image_url: '/Valluvam/coconut-1L.jpg', description: 'Pure, unrefined cold pressed coconut oil.', unit: '1L' },
+    { name: 'Groundnut Oil', category: 'Valluvam Products', price: 320, image_url: '/Valluvam/ground-1L.jpg', description: 'Traditional cold pressed groundnut oil.', unit: '1L' },
+    { name: 'Sesame Oil', category: 'Valluvam Products', price: 450, image_url: '/Valluvam/sesame-1L.jpg', description: 'Rich and aromatic cold pressed sesame oil.', unit: '1L' },
+    { name: 'Palm Jaggery', category: 'Valluvam Products', price: 180, image_url: '/Valluvam/products-plam.jpg', description: 'Authentic palm jaggery with no additives.', unit: '500g' },
+    { name: 'Forest Honey', category: 'Valluvam Products', price: 350, image_url: '/Valluvam/products-naatu.jpg', description: 'Raw, unprocessed honey from deep forests.', unit: '500g' },
+    { name: 'Traditional Millets', category: 'Valluvam Products', price: 120, image_url: '/Valluvam/millets.jpg', description: 'High-fiber traditional millets breakfast mix.', unit: '500g' },
+    { name: 'Cashew Nuts', category: 'Valluvam Products', price: 450, image_url: '/Valluvam/nuts.jpg', description: 'Large, crunchy premium quality cashew nuts.', unit: '250g' },
+    { name: 'Turmeric Powder', category: 'Valluvam Products', price: 85, image_url: '/Valluvam/spieces.jpg', description: 'Pure turmeric powder with high curcumin content.', unit: '200g' },
+    { name: 'Natural Palm Sugar', category: 'Valluvam Products', price: 220, image_url: '/Valluvam/products-pine.jpg', description: 'Healthy alternative to white sugar.', unit: '500g' },
+    { name: 'Pure Desi Ghee', category: 'Valluvam Products', price: 650, image_url: '/Valluvam/products-18.jpg', description: 'Pure A2 ghee made using traditional bilona method.', unit: '500ml' }
+  ].map((p, idx) => ({ ...p, id: `local-${idx}`, stock: 100, is_active: true }));
 
   async function fetchProducts() {
     try {
       setLoading(true);
       
-      // Try fetching with the advanced 'is_active' filter
-      const { data: activeData, error: activeError } = await supabase
+      const { data, error } = await supabase
         .from('products')
         .select('*')
-        .or('is_active.eq.true,is_active.is.null')
-        .order('created_at', { ascending: false });
+        .or('is_active.eq.true,is_active.is.null');
       
-      if (!activeError) {
-        setProducts(activeData || []);
-        return;
-      }
-
-      // FALLBACK: If the first fetch fails (e.g., column is missing), try a basic fetch
-      console.warn('Advanced fetch failed, using fallback:', activeError.message);
-      const { data: allData, error: allError } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (allError) {
-        console.error('Final Supabase Error:', allError);
-        throw allError;
-      }
+      let dbProducts = (data || []).map(normalizeProduct);
       
-      setProducts(allData || []);
+      // Strict Catalog Policy: Only show items that have valid images and clear names
+      const verifiedDbProducts = dbProducts.filter(p => 
+        p.image_url && 
+        !p.image_url.includes('unsplash') && 
+        p.name.length > 2
+      );
+
+      // Combine DB products with local SAMPLES
+      const allProductsMap = new Map();
+      
+      // Add local samples first (Source of Truth)
+      SAMPLES.forEach(p => allProductsMap.set(p.name, p));
+      
+      // Overwrite/Add with verified DB products
+      verifiedDbProducts.forEach(p => allProductsMap.set(p.name, p));
+      
+      const finalProducts = Array.from(allProductsMap.values());
+      setProducts(finalProducts);
+      setFilteredProducts(finalProducts);
+
+      if (error && verifiedDbProducts.length === 0) {
+        console.warn('Database fetch restricted, using local catalog only.');
+      }
     } catch (err) {
-      console.error('Final Fetch Failure:', err);
-      toast.error('Connection issue. Please refresh or check your database.');
+      console.error('Fetch Failure, using local only:', err);
+      setProducts(SAMPLES);
+      setFilteredProducts(SAMPLES);
     } finally {
       setLoading(false);
     }
@@ -81,25 +160,84 @@ function ProductsContent() {
   async function handleEmergencySeed() {
     setIsSeeding(true);
     const samples = [
-      { name: 'Beetroot', category: 'Vegetables', price: 45.00, image_url: '/Vegetables/Beetroot.png', description: 'Fresh and earthy beetroots, rich in nutrients.', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Bitter Gourd', category: 'Vegetables', price: 35.00, image_url: '/Vegetables/Bitter Gourd.png', description: 'Fresh bitter gourd, great for healthy cooking.', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Bottle Gourd', category: 'Vegetables', price: 30.00, image_url: '/Vegetables/Bottle Gourd.png', description: 'Hydrating and fresh bottle gourd.', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Brinjal', category: 'Vegetables', price: 40.00, image_url: '/Vegetables/Brinjal.png', description: 'Fresh purple brinjals, perfect for curries.', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Cabbage', category: 'Vegetables', price: 25.00, image_url: '/Vegetables/Cabbage.png', description: 'Crunchy and fresh green cabbage.', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Apple', category: 'Fruits', price: 180.00, image_url: '/Fruits/Apple.png', description: 'Sweet and crunchy premium apples.', stock: 100, unit: 'kg', is_active: true, is_seasonal: true },
-      { name: 'Banana', category: 'Fruits', price: 60.00, image_url: '/Fruits/Banana.png', description: 'Ripe and sweet yellow bananas.', stock: 100, unit: 'dozen', is_active: true },
-      { name: 'Mango', category: 'Fruits', price: 150.00, image_url: '/Fruits/Mango.png', description: 'Premium Alphonso mangoes.', stock: 100, unit: 'kg', is_active: true, is_seasonal: true },
-      { name: 'Onion', category: 'Vegetables', price: 45.00, image_url: '/Vegetables/Onion.png', description: 'Farm fresh red onions.', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Potato', category: 'Vegetables', price: 35.00, image_url: '/Vegetables/Potato.png', description: 'Quality potatoes from local farms.', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Tomato', category: 'Vegetables', price: 30.00, image_url: '/Vegetables/Tomato.png', description: 'Juicy red farm tomatoes.', stock: 100, unit: 'kg', is_active: true },
-      { name: 'Watermelon', category: 'Fruits', price: 40.00, image_url: '/Fruits/Watermelon.png', description: 'Refreshing sweet watermelons.', stock: 100, unit: 'piece', is_active: true, is_seasonal: true }
+      // VEGETABLES (20)
+      { name: 'Beetroot', category: 'Vegetables', price: 45.00, image_url: '/Vegetables/Beetroot.png', description: 'Fresh and earthy beetroots, rich in nutrients.', unit: 'kg' },
+      { name: 'Bitter Gourd', category: 'Vegetables', price: 35.00, image_url: '/Vegetables/Bitter Gourd.png', description: 'Fresh bitter gourd, great for healthy cooking.', unit: 'kg' },
+      { name: 'Bottle Gourd', category: 'Vegetables', price: 30.00, image_url: '/Vegetables/Bottle Gourd.png', description: 'Hydrating and fresh bottle gourd.', unit: 'kg' },
+      { name: 'Brinjal', category: 'Vegetables', price: 40.00, image_url: '/Vegetables/Brinjal.png', description: 'Fresh purple brinjals, perfect for curries.', unit: 'kg' },
+      { name: 'Cabbage', category: 'Vegetables', price: 25.00, image_url: '/Vegetables/Cabbage.png', description: 'Crunchy and fresh green cabbage.', unit: 'kg' },
+      { name: 'Capsicum', category: 'Vegetables', price: 80.00, image_url: '/Vegetables/Capsicum.png', description: 'Fresh green capsicum, perfect for salads.', unit: 'kg' },
+      { name: 'Carrot', category: 'Vegetables', price: 60.00, image_url: '/Vegetables/Carrot.png', description: 'Sweet and crunchy farm carrots.', unit: 'kg' },
+      { name: 'Cauliflower', category: 'Vegetables', price: 45.00, image_url: '/Vegetables/Cauliflower.png', description: 'Fresh white cauliflower heads.', unit: 'kg' },
+      { name: 'Coriander Leaves', category: 'Vegetables', price: 10.00, image_url: '/Vegetables/Coriander Leaves.png', description: 'Fresh and aromatic coriander leaves.', unit: 'bundle' },
+      { name: 'Drumstick', category: 'Vegetables', price: 15.00, image_url: '/Vegetables/Drumstick.png', description: 'Fresh drumsticks for sambar and curries.', unit: 'piece' },
+      { name: 'Green Chilli', category: 'Vegetables', price: 40.00, image_url: '/Vegetables/Green Chilli.png', description: 'Spicy fresh green chillies.', unit: 'kg' },
+      { name: 'Ladies Finger', category: 'Vegetables', price: 35.00, image_url: '/Vegetables/Ladies Finger (Okra).png', description: 'Fresh okra, perfect for fry or curry.', unit: 'kg' },
+      { name: 'Mint Leaves', category: 'Vegetables', price: 10.00, image_url: '/Vegetables/Mint Leaves.png', description: 'Fresh mint leaves for chutney and tea.', unit: 'bundle' },
+      { name: 'Onion', category: 'Vegetables', price: 45.00, image_url: '/Vegetables/Onion.png', description: 'Farm fresh red onions.', unit: 'kg' },
+      { name: 'Potato', category: 'Vegetables', price: 35.00, image_url: '/Vegetables/Potato.png', description: 'Quality potatoes from local farms.', unit: 'kg' },
+      { name: 'Pumpkin', category: 'Vegetables', price: 30.00, image_url: '/Vegetables/Pumpkin.png', description: 'Sweet and fresh orange pumpkin.', unit: 'kg' },
+      { name: 'Radish', category: 'Vegetables', price: 25.00, image_url: '/Vegetables/Radish.png', description: 'Fresh white radish with greens.', unit: 'kg' },
+      { name: 'Snake Gourd', category: 'Vegetables', price: 30.00, image_url: '/Vegetables/Snake Gourd.png', description: 'Fresh and long snake gourds.', unit: 'kg' },
+      { name: 'Spinach', category: 'Vegetables', price: 15.00, image_url: '/Vegetables/Spinach.png', description: 'Nutritious green spinach leaves.', unit: 'bundle' },
+      { name: 'Tomato', category: 'Vegetables', price: 30.00, image_url: '/Vegetables/Tomato.png', description: 'Juicy red farm tomatoes.', unit: 'kg' },
+      
+      // FRUITS (14)
+      { name: 'Apple', category: 'Fruits', price: 180.00, image_url: '/Fruits/Apple.png', description: 'Sweet and crunchy premium apples.', unit: 'kg', is_seasonal: true },
+      { name: 'Banana', category: 'Fruits', price: 60.00, image_url: '/Fruits/Banana.png', description: 'Ripe and sweet yellow bananas.', unit: 'dozen' },
+      { name: 'Custard Apple', category: 'Fruits', price: 120.00, image_url: '/Fruits/Custard Apple.png', description: 'Sweet and creamy custard apples.', unit: 'kg', is_seasonal: true },
+      { name: 'Grapes', category: 'Fruits', price: 90.00, image_url: '/Fruits/Grapes.png', description: 'Fresh green seedless grapes.', unit: 'kg' },
+      { name: 'Guava', category: 'Fruits', price: 70.00, image_url: '/Fruits/Guava.png', description: 'Fresh and sweet pink guavas.', unit: 'kg' },
+      { name: 'Mango', category: 'Fruits', price: 150.00, image_url: '/Fruits/Mango.png', description: 'Premium Alphonso mangoes.', unit: 'kg', is_seasonal: true },
+      { name: 'Muskmelon', category: 'Fruits', price: 50.00, image_url: '/Fruits/Muskmelon.png', description: 'Sweet and hydrating muskmelons.', unit: 'kg', is_seasonal: true },
+      { name: 'Orange', category: 'Fruits', price: 110.00, image_url: '/Fruits/Orange.png', description: 'Juicy and vitamin C rich oranges.', unit: 'kg' },
+      { name: 'Papaya', category: 'Fruits', price: 40.00, image_url: '/Fruits/Papaya.png', description: 'Ripe and sweet farm papayas.', unit: 'kg' },
+      { name: 'Pineapple', category: 'Fruits', price: 60.00, image_url: '/Fruits/Pineapple.png', description: 'Sweet and tangy fresh pineapples.', unit: 'piece' },
+      { name: 'Pomegranate', category: 'Fruits', price: 160.00, image_url: '/Fruits/Pomegranate.png', description: 'Premium red pomegranates.', unit: 'kg' },
+      { name: 'Sapota', category: 'Fruits', price: 60.00, image_url: '/Fruits/Sapota (Chikoo).png', description: 'Sweet and grainy sapota (chikoo).', unit: 'kg' },
+      { name: 'Sweet Lime', category: 'Fruits', price: 80.00, image_url: '/Fruits/Sweet Lime (Mosambi).png', description: 'Fresh and juicy mosambi.', unit: 'kg' },
+      { name: 'Watermelon', category: 'Fruits', price: 40.00, image_url: '/Fruits/Watermelon.png', description: 'Refreshing sweet watermelons.', unit: 'piece', is_seasonal: true },
+      
+      // VALLUVAM PRODUCTS (10)
+      { name: 'Cold Pressed Coconut Oil', category: 'Valluvam Products', price: 280, image_url: '/Valluvam/coconut-1L.jpg', description: 'Pure, unrefined cold pressed coconut oil.', unit: '1L' },
+      { name: 'Cold Pressed Groundnut Oil', category: 'Valluvam Products', price: 320, image_url: '/Valluvam/ground-1L.jpg', description: 'Traditional cold pressed groundnut oil.', unit: '1L' },
+      { name: 'Cold Pressed Sesame Oil', category: 'Valluvam Products', price: 450, image_url: '/Valluvam/sesame-1L.jpg', description: 'Rich and aromatic cold pressed sesame oil.', unit: '1L' },
+      { name: 'Natural Palm Jaggery', category: 'Valluvam Products', price: 180, image_url: '/Valluvam/products-plam.jpg', description: 'Authentic palm jaggery with no additives.', unit: '500g' },
+      { name: 'Wild Forest Honey', category: 'Valluvam Products', price: 350, image_url: '/Valluvam/products-naatu.jpg', description: 'Raw, unprocessed honey from deep forests.', unit: '500g' },
+      { name: 'Traditional Millets Mix', category: 'Valluvam Products', price: 120, image_url: '/Valluvam/millets.jpg', description: 'High-fiber traditional millets breakfast mix.', unit: '500g' },
+      { name: 'Premium Cashew Nuts', category: 'Valluvam Products', price: 450, image_url: '/Valluvam/nuts.jpg', description: 'Large, crunchy premium quality cashew nuts.', unit: '250g' },
+      { name: 'Hand-ground Turmeric Powder', category: 'Valluvam Products', price: 85, image_url: '/Valluvam/spieces.jpg', description: 'Pure turmeric powder with high curcumin content.', unit: '200g' },
+      { name: 'Natural Palm Sugar', category: 'Valluvam Products', price: 220, image_url: '/Valluvam/products-pine.jpg', description: 'Healthy alternative to white sugar.', unit: '500g' },
+      { name: 'A2 Desi Cow Ghee', category: 'Valluvam Products', price: 650, image_url: '/Valluvam/products-2.jpg', description: 'Pure A2 ghee made using traditional bilona method.', unit: '500ml' }
     ];
 
     try {
+      // CLEAR DATABASE FIRST to ensure ONLY these products exist
+      const { error: clearError } = await deleteAllProducts();
+      if (clearError) {
+        console.warn('Could not clear database, adding to existing:', clearError);
+      }
+
       let count = 0;
       for (const sample of samples) {
-        const { error } = await addProduct(sample);
+        // Map to ACTUAL SCHEMA ONLY (remove 'category' and 'image_url' string fields)
+        const productData: any = {
+          name: sample.name,
+          description: sample.description,
+          price: sample.price,
+          mrp: Math.round(sample.price * 1.2),
+          unit: sample.unit,
+          category_id: sample.category === 'Fruits' ? 'cat-fruit' : sample.category === 'Vegetables' ? 'cat-veg' : 'cat-val',
+          category_slug: sample.category.toLowerCase().replace(/\s+/g, '-'),
+          image_urls: [sample.image_url],
+          in_stock: true,
+          is_active: true,
+          is_seasonal: (sample as any).is_seasonal || false
+        };
+        
+        const { error } = await addProduct(productData);
         if (!error) count++;
+        else console.error('Seed error for', sample.name, ':', error);
       }
       if (count > 0) {
         toast.success(`Successfully added ${count} products!`);
@@ -108,6 +246,7 @@ function ProductsContent() {
         toast.error('Failed to add products.');
       }
     } catch (err) {
+      console.error('Seeding error:', err);
       toast.error('Seeding failed');
     } finally {
       setIsSeeding(false);
@@ -120,25 +259,31 @@ function ProductsContent() {
     if (category === 'Seasonal') {
       filtered = filtered.filter(p => p.is_seasonal);
     } else if (category !== 'All') {
-      filtered = filtered.filter(p => p.category === category);
+      filtered = filtered.filter(p => {
+        const productCategory = (p.category || '').toString().trim().toLowerCase();
+        const activeCategory = category.trim().toLowerCase();
+        return productCategory === activeCategory;
+      });
     }
 
     if (searchQuery) {
       filtered = filtered.filter(p => 
-        p.name.toLowerCase().includes(searchQuery.toLowerCase())
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.category || '').toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
-    filtered = filtered.filter(p => p.price <= priceRange);
+    filtered = filtered.filter(p => Number(p.price) <= priceRange);
 
     setFilteredProducts(filtered);
   }, [category, searchQuery, priceRange, products]);
+
 
   return (
     <main className="min-h-screen bg-white">
       <Navbar />
 
-      <div className="bg-[#f9f9f7] pt-40 pb-16">
+      <div className="bg-[#f9f9f7] pt-40 pb-12">
         <div className="container mx-auto px-6 md:px-10">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
@@ -153,6 +298,23 @@ function ProductsContent() {
             <p className="text-muted-foreground font-medium max-w-xs md:text-right">
               Discover {products.length} organic products harvested directly from our farms.
             </p>
+          </div>
+
+          {/* Quick Category Chips - Blinkit Style */}
+          <div className="mt-12 flex gap-3 overflow-x-auto pb-4 scrollbar-hide -mx-1 px-1">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setCategory(cat)}
+                className={`flex-shrink-0 px-6 py-3 rounded-full font-black text-[10px] uppercase tracking-widest transition-all ${
+                  category === cat 
+                    ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-105' 
+                    : 'bg-white text-muted-foreground hover:bg-muted border border-border/50'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -194,7 +356,8 @@ function ProductsContent() {
               <input 
                 type="range" 
                 min="0" 
-                max="500" 
+                max="2000" 
+                step="10"
                 value={priceRange}
                 onChange={(e) => setPriceRange(parseInt(e.target.value))}
                 className="w-full accent-primary h-1.5 bg-muted rounded-full appearance-none cursor-pointer mb-4"
@@ -278,35 +441,23 @@ function ProductsContent() {
                 </div>
                 <h3 className="text-2xl font-black mb-2">No matching products</h3>
                 <p className="text-muted-foreground text-center max-w-xs font-medium mb-8">
-                  {products.length === 0 
-                    ? "Your store's database is currently empty. Please go to the Admin panel to add products." 
-                    : "Try adjusting your filters or search query to find what you're looking for."}
+                  Try adjusting your filters or search query to find what you're looking for.
                 </p>
-                {products.length === 0 ? (
-                  <div className="flex flex-col gap-4">
-                    <button 
-                      onClick={handleEmergencySeed}
-                      disabled={isSeeding}
-                      className="bg-primary text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:shadow-xl hover:shadow-primary/20 transition-all flex items-center justify-center gap-2"
-                    >
-                      {isSeeding ? <Loader2 className="animate-spin" size={16} /> : <Plus size={16} />}
-                      Add All Products from Folder
-                    </button>
-                    <Link 
-                      href="/admin/products"
-                      className="text-primary font-bold text-xs uppercase tracking-widest hover:underline text-center"
-                    >
-                      Go to Admin Panel
-                    </Link>
-                  </div>
-                ) : (
+                <div className="flex flex-col items-center gap-4">
                   <button 
-                    onClick={() => { setCategory('All'); setSearchQuery(''); setPriceRange(500); }}
-                    className="mt-10 px-8 py-4 bg-primary text-white rounded-2xl font-black shadow-xl shadow-primary/20 hover:scale-105 transition-transform"
+                    onClick={() => { setCategory('All'); setSearchQuery(''); setPriceRange(2000); }}
+                    className="bg-primary text-white px-10 py-5 rounded-[2rem] font-black uppercase tracking-[0.2em] text-xs hover:shadow-2xl hover:shadow-primary/30 transition-all flex items-center justify-center gap-3 hover:scale-105 active:scale-95"
                   >
-                    Clear all filters
+                    Show All Products
                   </button>
-                )}
+                  
+                  <Link 
+                    href="/admin/products"
+                    className="text-primary font-bold text-xs uppercase tracking-widest hover:underline text-center"
+                  >
+                    Go to Admin Panel
+                  </Link>
+                </div>
               </div>
             )}
           </div>

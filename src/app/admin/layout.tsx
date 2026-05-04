@@ -35,21 +35,17 @@ export default function AdminLayout({
     setMounted(true);
     const checkAuth = () => {
       const auth = localStorage.getItem('admin_auth');
-      if (auth === 'true') {
-        setIsAuthenticated(true);
-        if (pathname === '/admin/login') {
-          router.push('/admin');
-        }
-      } else {
-        setIsAuthenticated(false);
-        if (pathname !== '/admin/login') {
-          router.push('/admin/login');
-        }
+      const isAuth = auth === 'true';
+      setIsAuthenticated(isAuth);
+      
+      if (!isAuth && pathname !== '/admin/login') {
+        router.push('/admin/login');
+      } else if (isAuth && pathname === '/admin/login') {
+        router.push('/admin');
       }
     };
 
     checkAuth();
-    // Listen for storage events to sync auth state across tabs
     window.addEventListener('storage', checkAuth);
     return () => window.removeEventListener('storage', checkAuth);
   }, [pathname, router]);

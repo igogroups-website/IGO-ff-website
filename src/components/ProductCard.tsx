@@ -2,11 +2,12 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Star, Loader2, Eye, Check, ShoppingCart, Minus } from 'lucide-react';
+import { Plus, Star, Loader2, Eye, Check, ShoppingCart, Minus, Heart } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
+import { useWishlist } from '@/context/WishlistContext';
 import { AnimatePresence } from 'framer-motion';
 import ProductDetailModal from './ProductDetailModal';
 
@@ -30,9 +31,11 @@ export default function ProductCard({ product }: ProductCardProps) {
   const router = useRouter();
   const { user } = useAuth();
   const { addToCart, cartItems, updateQuantity, removeItem } = useCart();
+  const { toggleWishlist, isInWishlist } = useWishlist();
   const [showAddedOverlay, setShowAddedOverlay] = useState(false);
 
   const cartItem = cartItems.find(item => item.product_id === product.id);
+  const isLiked = isInWishlist(product.id);
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -74,10 +77,13 @@ export default function ProductCard({ product }: ProductCardProps) {
       >
         <div className="relative aspect-[4/5] rounded-[1.5rem] overflow-hidden mb-6 bg-muted/20">
           <img
-            src={product.image_url || 'https://images.unsplash.com/photo-1610348725531-843dff563e2c'}
+            src={product.image_url || '/placeholder_product.png'}
             alt={product.name}
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = '/placeholder_product.png';
+            }}
             className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 ${
-              product.stock === 0 ? 'grayscale opacity-60' : ''
+              (product.stock === 0) ? 'grayscale opacity-60' : ''
             }`}
           />
 
@@ -86,6 +92,37 @@ export default function ProductCard({ product }: ProductCardProps) {
               Seasonal
             </div>
           )}
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleWishlist(product.id);
+            }}
+            className={`absolute top-4 right-4 w-10 h-10 rounded-xl flex items-center justify-center transition-all z-20 shadow-lg backdrop-blur-md overflow-hidden ${
+              isLiked 
+                ? 'bg-red-500 text-white border-transparent' 
+                : 'bg-white/60 text-foreground/40 hover:text-red-500 border border-white/20'
+            }`}
+          >
+            <motion.div
+              animate={isLiked ? { scale: [1, 1.5, 1], rotate: [0, 15, -15, 0] } : { scale: 1 }}
+              transition={{ duration: 0.4, type: "spring" }}
+            >
+              <Heart size={20} className={isLiked ? 'fill-white' : ''} />
+            </motion.div>
+            
+            {/* Heart Burst Effect */}
+            <AnimatePresence>
+              {isLiked && (
+                <motion.div
+                  initial={{ scale: 0, opacity: 1 }}
+                  animate={{ scale: 2, opacity: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 bg-red-500/20 rounded-full"
+                />
+              )}
+            </AnimatePresence>
+          </button>
 
           {/* Big Added Overlay */}
           <AnimatePresence>
@@ -122,7 +159,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         <div className="flex flex-col flex-1 px-1">
           <div className="mb-4">
             <p className="text-[10px] uppercase tracking-[0.2em] text-primary font-black mb-2 opacity-70">
-              {product.category}
+              {product.category || 'Fresh Harvest'}
             </p>
             <h3 className="text-xl font-black text-foreground line-clamp-1 group-hover:text-primary transition-colors leading-tight">
               {product.name}
@@ -132,8 +169,13 @@ export default function ProductCard({ product }: ProductCardProps) {
 
           <div className="flex items-center justify-between mt-auto pt-4 border-t border-muted/50">
             <div className="flex flex-col">
-              <span className="text-xs text-muted-foreground font-bold line-through opacity-50">₹{Math.round(product.price * 1.2)}</span>
-              <span className="text-2xl font-black text-primary">₹{product.price}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xl font-black text-primary">₹{product.price}</span>
+                <span className="text-[10px] font-bold text-muted-foreground/60 line-through">₹{Math.round(product.price * 1.3)}</span>
+              </div>
+              <div className="bg-green-100 text-green-700 text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-tighter w-fit">
+                Save ₹{Math.round(product.price * 0.3)}
+              </div>
             </div>
 
             {cartItem ? (

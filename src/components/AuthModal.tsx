@@ -33,10 +33,21 @@ const SegmentedOTP = ({ value, onChange, length = 6, disabled = false }: { value
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').slice(0, length);
+    const pastedData = e.clipboardData.getData('text').trim().slice(0, length);
     if (!/^\d+$/.test(pastedData)) return;
-    onChange(pastedData);
-    inputs.current[pastedData.length - 1]?.focus();
+    
+    // Distribute pasted characters to the input fields
+    const newChars = pastedData.split('');
+    const currentChars = value.split('');
+    newChars.forEach((char, i) => {
+      currentChars[i] = char;
+    });
+    
+    onChange(currentChars.join('').slice(0, length));
+    
+    // Focus the next empty input or the last input
+    const nextIndex = Math.min(pastedData.length, length - 1);
+    inputs.current[nextIndex]?.focus();
   };
 
   return (
@@ -109,14 +120,20 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.verifyOtp({
+      const { data, error } = await supabase.auth.verifyOtp({
         email: email.trim(),
         token: otp,
         type: 'email'
       });
       if (error) throw error;
-      setStep('details');
-      toast.success('Email verified!');
+
+      if (mode === 'login') {
+        toast.success('Welcome back!');
+        onClose();
+      } else {
+        setStep('details');
+        toast.success('Email verified!');
+      }
     } catch (error: any) {
       toast.error(error.message || 'Invalid verification code');
     } finally {
@@ -220,13 +237,34 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       )}
 
       <button 
-        onClick={mode === 'login' ? handleLogin : handleSendOTP}
+        onClick={handleSendOTP}
         disabled={loading}
         className="w-full bg-primary text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-primary/90 transition-all transform active:scale-[0.98] disabled:opacity-50"
       >
-        {loading ? 'Processing...' : (mode === 'login' ? 'Sign In' : 'Send Code')}
+        {loading ? 'Processing...' : (mode === 'login' ? 'Continue with OTP' : 'Send Code')}
         {!loading && <ArrowRight size={18} />}
       </button>
+
+      {mode === 'login' && (
+        <div className="relative py-4">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-white/5"></div>
+          </div>
+          <div className="relative flex justify-center text-[10px] uppercase font-black tracking-widest">
+            <span className="bg-[#0A0A0A] px-4 text-white/20">or securely</span>
+          </div>
+        </div>
+      )}
+
+      {mode === 'login' && (
+        <button 
+          onClick={handleLogin}
+          disabled={loading}
+          className="w-full bg-white/5 border border-white/10 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-white/10 transition-all"
+        >
+          Login with Password
+        </button>
+      )}
     </motion.div>
   );
 

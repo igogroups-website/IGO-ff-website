@@ -7,6 +7,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Truck, ShieldCheck, Tag, Leaf } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'react-hot-toast';
 
 export default function CartPage() {
   const { cartItems, cartTotal, updateQuantity, removeItem, loading } = useCart();
@@ -275,7 +277,92 @@ export default function CartPage() {
             </div>
           </motion.div>
         )}
+
+        {/* Recommended Products Section */}
+        <RecommendedProducts cartItems={cartItems} />
       </div>
     </main>
+  );
+}
+
+// Separate component for Recommendations
+function RecommendedProducts({ cartItems }: { cartItems: any[] }) {
+  const [recommendations, setRecommendations] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const { addToCart } = useCart();
+
+  React.useEffect(() => {
+    async function fetchRecommendations() {
+      try {
+        const cartProductIds = cartItems.map(item => item.product_id);
+        
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .not('id', 'in', `(${cartProductIds.join(',')})`)
+          .limit(4);
+
+        if (error) {
+          // Fallback: just fetch any products if not filter fails (e.g. empty cart)
+          const { data: fallbackData } = await supabase
+            .from('products')
+            .select('*')
+            .limit(4);
+          setRecommendations(fallbackData || []);
+        } else {
+          setRecommendations(data || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch recommendations:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchRecommendations();
+  }, [cartItems]);
+
+  if (loading || recommendations.length === 0) return null;
+
+  return (
+    <div className="mt-32">
+      <div className="flex items-center justify-between mb-12">
+        <div>
+          <h3 className="text-3xl font-black text-foreground tracking-tight mb-2 uppercase italic">Freshly Harvested <span className="text-primary font-serif lowercase">for you</span></h3>
+          <p className="text-muted-foreground font-medium">Add these farm-fresh items to your basket</p>
+        </div>
+        <Link href="/products" className="px-6 py-3 rounded-xl border border-border font-black text-xs uppercase tracking-widest hover:bg-muted transition-all">
+          View All
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+        {recommendations.map((product) => (
+          <motion.div
+            key={product.id}
+            whileHover={{ y: -10 }}
+            className="bg-white rounded-[2rem] p-5 border border-border/60 shadow-sm hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 group cursor-pointer"
+          >
+            <div className="aspect-square rounded-[1.5rem] overflow-hidden mb-5 bg-muted/20 relative">
+              <img src={product.image_url} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  addToCart(product.id, 1, product);
+                  toast.success(`Added ${product.name}!`, { icon: '🥬' });
+                }}
+                className="absolute bottom-4 right-4 w-12 h-12 bg-primary text-white rounded-xl flex items-center justify-center shadow-xl opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all"
+              >
+                <Plus size={24} />
+              </button>
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60 mb-1">{product.category}</p>
+              <h4 className="text-lg font-black text-foreground group-hover:text-primary transition-colors line-clamp-1">{product.name}</h4>
+              <p className="text-xl font-black text-primary mt-2">₹{product.price}</p>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </div>
   );
 }

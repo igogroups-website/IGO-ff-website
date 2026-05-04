@@ -2,12 +2,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ShoppingBag, Heart, Star, Plus, Minus, Check, AlertCircle } from 'lucide-react';
+import { X, ShoppingBag, Heart, Star, Plus, Minus, Check, AlertCircle, User } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { supabase } from '@/lib/supabase';
+import QuickAddCarousel from './QuickAddCarousel';
+import { FALLBACK_PRODUCTS, getSmartRecommendations, getTrendingProducts } from '@/lib/constants';
+import ProductReviews from './ProductReviews';
+import SmartMealBundling from './SmartMealBundling';
+import SustainabilityMeter from './SustainabilityMeter';
 
 interface ProductDetailModalProps {
   isOpen: boolean;
@@ -33,6 +38,9 @@ export default function ProductDetailModal({ isOpen, onClose, product }: Product
   const [isFavorite, setIsFavorite] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
+  const [trendingProducts, setTrendingProducts] = useState<any[]>([]);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [frequency, setFrequency] = useState('weekly');
   const [showAddedOverlay, setShowAddedOverlay] = useState(false);
   const router = useRouter();
   const { user } = useAuth();
@@ -53,17 +61,62 @@ export default function ProductDetailModal({ isOpen, onClose, product }: Product
   }, [isOpen, currentProduct]);
 
   async function fetchRelatedProducts() {
-    if (!currentProduct) return;
-    const { data } = await supabase
-      .from('products')
-      .select('*')
-      .eq('category', currentProduct.category)
-      .neq('id', currentProduct.id)
-      .limit(4);
-    setRelatedProducts(data || []);
+    try {
+      // Professional Recommendation Logic:
+      // 1. Try to get smart pairings from our verified catalog first - Increased limit to 24
+      const smartRecs = getSmartRecommendations(currentProduct, 24);
+      
+      // 2. Supplement with DB products
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('category', currentProduct.category)
+        .neq('id', currentProduct.id)
+        .limit(24);
+      
+      let dbRelated = data || [];
+      
+      // Strict Catalog Policy
+      const verifiedDbRelated = dbRelated.filter(p => 
+        p.image_url && 
+        !p.image_url.includes('unsplash') && 
+        p.name.length > 2
+      );
+
+      // Merge and prioritize smart recommendations
+      let finalRelated = [...smartRecs];
+      
+      // Add unique verified items from DB
+      verifiedDbRelated.forEach(p => {
+        if (!finalRelated.some(r => r.name === p.name)) {
+          finalRelated.push(p);
+        }
+      });
+      
+      setRelatedProducts(finalRelated.slice(0, 24));
+
+      // 3. Get Trending Products for extra discovery
+      const excludeIds = [currentProduct.id, ...finalRelated.map(p => p.id)];
+      const trending = getTrendingProducts(12, excludeIds);
+      setTrendingProducts(trending);
+
+    } catch (err) {
+      console.error('Error fetching related:', err);
+      // Direct fallback - more items
+      setRelatedProducts(FALLBACK_PRODUCTS.filter(p => p.category === currentProduct?.category).slice(0, 12));
+      setTrendingProducts(FALLBACK_PRODUCTS.sort(() => 0.5 - Math.random()).slice(0, 8));
+    }
   }
 
   if (!currentProduct) return null;
+
+  const triggerAddedOverlay = () => {
+    setShowAddedOverlay(true);
+    setTimeout(() => {
+      setShowAddedOverlay(false);
+      onClose();
+    }, 2000);
+  };
 
   const handleAction = async (isBuyNow: boolean = false) => {
     if (isBuyNow && !user) {
@@ -77,18 +130,19 @@ export default function ProductDetailModal({ isOpen, onClose, product }: Product
 
     setLoading(true);
     try {
-      const success = await addToCart(currentProduct.id, quantity, currentProduct);
+      const productWithSub = {
+        ...currentProduct,
+        is_subscription: isSubscribed,
+        frequency: isSubscribed ? frequency : null
+      };
+      const success = await addToCart(currentProduct.id, quantity, productWithSub);
       if (!success) throw new Error('Failed to add to cart');
 
       if (isBuyNow) {
         toast.success('Proceeding to checkout...');
         router.push('/checkout');
       } else {
-        setShowAddedOverlay(true);
-        setTimeout(() => {
-          setShowAddedOverlay(false);
-          onClose();
-        }, 2000);
+        triggerAddedOverlay();
       }
     } catch (error: any) {
       toast.error(error.message || 'Failed to process request');
@@ -179,12 +233,108 @@ export default function ProductDetailModal({ isOpen, onClose, product }: Product
                   <p className="text-2xl font-black text-foreground">{currentProduct.unit}</p>
                 </div>
 
+                {/* Scarcity & Social Proof */}
+                <div className="mt-8 flex flex-col gap-3">
+                  {currentProduct.stock > 0 && currentProduct.stock <= 10 && (
+                    <motion.div 
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex items-center gap-3 text-amber-700"
+                    >
+                      <AlertCircle size={20} className="animate-pulse" />
+                      <p className="text-xs font-black uppercase tracking-tight">Hurry! Only {currentProduct.stock} items left in stock</p>
+                    </motion.div>
+                  )}
+                  
+                  <div className="bg-primary/5 border border-primary/10 p-4 rounded-2xl flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex -space-x-2">
+                        {[1, 2, 3].map(i => (
+                          <div key={i} className="w-6 h-6 rounded-full border-2 border-white bg-muted flex items-center justify-center overflow-hidden">
+                            <User size={12} className="text-muted-foreground" />
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-[10px] font-black text-primary uppercase tracking-widest">
+                        {Math.floor(Math.random() * 15) + 5} people are viewing this harvest
+                      </p>
+                    </div>
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-ping" />
+                  </div>
+                </div>
+
                 {currentProduct.stock === 0 && (
                   <div className="mt-6 flex items-center gap-3 bg-red-50 border border-red-200 p-4 rounded-2xl text-red-600">
                     <AlertCircle size={24} />
                     <p className="font-black uppercase tracking-tight">This product is currently out of stock</p>
                   </div>
                 )}
+
+                {/* Smart Meal Bundling Suggestions */}
+                <SmartMealBundling currentProduct={currentProduct} onAddSuccess={triggerAddedOverlay} />
+
+                {/* Sustainability & Impact Meter */}
+                <SustainabilityMeter productName={currentProduct.name} category={currentProduct.category} />
+
+                {/* Subscribe & Save Option */}
+                <div className="mt-8 space-y-4">
+                  <div 
+                    onClick={() => setIsSubscribed(false)}
+                    className={`p-6 rounded-[1.5rem] border-2 cursor-pointer transition-all ${!isSubscribed ? 'border-primary bg-primary/5 shadow-lg' : 'border-border bg-white hover:border-primary/30'}`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${!isSubscribed ? 'border-primary' : 'border-muted'}`}>
+                          {!isSubscribed && <div className="w-3 h-3 bg-primary rounded-full" />}
+                        </div>
+                        <span className="font-black text-lg">One-time Purchase</span>
+                      </div>
+                      <span className="font-black text-xl text-foreground">₹{currentProduct.price}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground font-medium pl-9 italic">Standard farm-to-door delivery</p>
+                  </div>
+
+                  <div 
+                    onClick={() => setIsSubscribed(true)}
+                    className={`p-6 rounded-[1.5rem] border-2 cursor-pointer transition-all relative overflow-hidden ${isSubscribed ? 'border-primary bg-primary/5 shadow-lg' : 'border-border bg-white hover:border-primary/30'}`}
+                  >
+                    <div className="absolute top-0 right-0 bg-accent text-accent-foreground px-4 py-1 text-[10px] font-black uppercase tracking-widest rounded-bl-xl">
+                      Save 10%
+                    </div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSubscribed ? 'border-primary' : 'border-muted'}`}>
+                          {isSubscribed && <div className="w-3 h-3 bg-primary rounded-full" />}
+                        </div>
+                        <span className="font-black text-lg">Subscribe & Save</span>
+                      </div>
+                      <span className="font-black text-xl text-primary">₹{Math.round(currentProduct.price * 0.9)}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground font-medium pl-9 italic">Automated fresh harvest every {frequency}</p>
+                    
+                    <AnimatePresence>
+                      {isSubscribed && (
+                        <motion.div 
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="pl-9 mt-4 pt-4 border-t border-primary/10 flex gap-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {['daily', 'weekly', 'monthly'].map((f) => (
+                            <button
+                              key={f}
+                              onClick={() => setFrequency(f)}
+                              className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${frequency === f ? 'bg-primary text-white' : 'bg-white border border-border text-muted-foreground hover:border-primary'}`}
+                            >
+                              {f}
+                            </button>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
               </div>
 
               <div className="flex flex-col gap-6 mb-12">
@@ -246,39 +396,44 @@ export default function ProductDetailModal({ isOpen, onClose, product }: Product
               </div>
 
                 {relatedProducts.length > 0 && (
-                  <div className="border-t border-border pt-10">
-                    <h3 className="text-lg font-black uppercase tracking-widest mb-8 flex items-center gap-2">
-                      <div className="w-1.5 h-6 bg-accent rounded-full" />
-                      Related Harvest
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      {relatedProducts.map((rp) => (
-                        <div 
-                          key={rp.id}
-                          onClick={() => {
-                            setCurrentProduct(rp);
-                            setQuantity(1);
-                            setImageError(false);
-                            toast.success(`Viewing ${rp.name}`, { duration: 1000 });
-                            // Scroll to top of modal content
-                            const modalContent = document.querySelector('.custom-scrollbar');
-                            if (modalContent) modalContent.scrollTo({ top: 0, behavior: 'smooth' });
-                          }}
-                          className="group/item flex flex-col gap-3 p-3 rounded-2xl bg-muted/20 border border-border/50 cursor-pointer hover:bg-white hover:shadow-xl transition-all"
-                        >
-                          <div className="aspect-square rounded-xl overflow-hidden">
-                            <img src={rp.image_url} alt={rp.name} className="w-full h-full object-cover group-hover/item:scale-110 transition-transform duration-500" />
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-primary/60">{rp.category}</p>
-                            <h4 className="font-bold text-sm line-clamp-1">{rp.name}</h4>
-                            <p className="font-black text-primary">₹{rp.price}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                  <div className="border-t border-border/60 pt-12 mt-12">
+                    <QuickAddCarousel 
+                      products={relatedProducts} 
+                      title="Similar Harvest" 
+                      subtitle="Customers also explored these fresh picks"
+                      onAddSuccess={triggerAddedOverlay}
+                      onProductClick={(p) => {
+                        setCurrentProduct(p);
+                        setQuantity(1);
+                        setImageError(false);
+                        const modalContent = document.querySelector('.custom-scrollbar');
+                        if (modalContent) modalContent.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                    />
                   </div>
                 )}
+
+                {trendingProducts.length > 0 && (
+                  <div className="pt-8">
+                    <QuickAddCarousel 
+                      products={trendingProducts} 
+                      title="Trending Harvest" 
+                      subtitle="Top picks from other categories"
+                      onAddSuccess={triggerAddedOverlay}
+                      onProductClick={(p) => {
+                        setCurrentProduct(p);
+                        setQuantity(1);
+                        setImageError(false);
+                        const modalContent = document.querySelector('.custom-scrollbar');
+                        if (modalContent) modalContent.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                    />
+                  </div>
+                )}
+
+                <ProductReviews productId={currentProduct.id} />
+                
+                <div className="h-12" /> {/* Extra spacer for bottom scroll */}
                 
                 <div className="h-4" /> {/* Spacer for bottom scroll */}
               </div>

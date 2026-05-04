@@ -2,18 +2,23 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ShoppingCart, User, Search, Leaf, X, Bell, LayoutDashboard } from 'lucide-react';
+import { ShoppingCart, User, Search, Leaf, X, Bell, LayoutDashboard, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
+import { useWishlist } from '@/context/WishlistContext';
 import { supabase } from '@/lib/supabase';
 import CartDrawer from './CartDrawer';
+import WishlistDrawer from './WishlistDrawer';
+import SmartSearch from './SmartSearch';
+import LoyaltyWallet from './LoyaltyWallet';
 
 export default function Navbar() {
   const [scrolled, setScrolled] = React.useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = React.useState(false);
   const { user, openAuthModal, signOut } = useAuth();
   const { isCartOpen, openCart, closeCart, cartCount } = useCart();
+  const { openWishlist, wishlistItems } = useWishlist();
 
   React.useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -34,8 +39,10 @@ export default function Navbar() {
   }, [user]);
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-      scrolled ? 'glass py-1' : 'bg-transparent py-4'
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-700 ${
+      scrolled 
+        ? 'bg-white/80 backdrop-blur-xl border-b border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.05)] py-2' 
+        : 'bg-transparent py-4'
     }`}>
       {/* Premium Top Banner */}
       {!scrolled && (
@@ -58,18 +65,9 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* Search Bar */}
+        {/* Smart Search Bar */}
         <div className="hidden lg:flex flex-1 max-w-lg mx-12">
-          <div className="relative w-full group">
-            <input
-              type="text"
-              placeholder="Search for fresh harvest..."
-              className="w-full bg-white/50 backdrop-blur-md border border-border/50 rounded-2xl py-3 pl-12 pr-4 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all cursor-pointer shadow-sm placeholder:text-muted-foreground/60"
-              readOnly
-              onClick={() => window.location.href = '/products'}
-            />
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60 group-hover:text-primary transition-colors" size={20} />
-          </div>
+          <SmartSearch />
         </div>
 
         <div className="flex items-center gap-4">
@@ -93,14 +91,33 @@ export default function Navbar() {
             {cartCount > 0 && (
               <motion.span
                 key={cartCount}
-                initial={{ scale: 0.5 }}
-                animate={{ scale: 1 }}
-                className="absolute top-1 right-1 w-6 h-6 bg-accent text-accent-foreground text-[11px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-lg shadow-accent/20"
+                initial={{ scale: 0.5, y: 5 }}
+                animate={{ scale: 1, y: 0 }}
+                className="absolute top-1 right-1 min-w-[20px] h-5 bg-accent text-accent-foreground text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-lg shadow-accent/20 px-1"
               >
                 {cartCount > 99 ? '99+' : cartCount}
               </motion.span>
             )}
           </Link>
+
+          {/* Wishlist Button */}
+          <button
+            onClick={openWishlist}
+            className="relative p-3 text-foreground/80 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all group active:scale-95"
+            aria-label="Wishlist"
+          >
+            <Heart size={26} className={wishlistItems.length > 0 ? 'fill-red-500 text-red-500' : ''} />
+            {wishlistItems.length > 0 && (
+              <motion.span
+                key={wishlistItems.length}
+                initial={{ scale: 0.5, y: 5 }}
+                animate={{ scale: 1, y: 0 }}
+                className="absolute top-1 right-1 min-w-[20px] h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-lg shadow-red-200 px-1"
+              >
+                {wishlistItems.length}
+              </motion.span>
+            )}
+          </button>
 
           {user ? (
             <div className="relative group">
@@ -113,7 +130,11 @@ export default function Navbar() {
                 <span className="hidden lg:inline">{user.email?.split('@')[0]}</span>
               </button>
 
-              <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-border p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform origin-top-right scale-95 group-hover:scale-100 z-50">
+              <div className="absolute right-0 mt-2 w-72 bg-white rounded-[2rem] shadow-2xl border border-border p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform origin-top-right scale-95 group-hover:scale-100 z-50">
+                <div className="mb-3">
+                  <LoyaltyWallet />
+                </div>
+                
                 {(user.email?.includes('admin') || user.id === 'mock-user-id') && (
                   <Link href="/admin" className="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/5 text-primary hover:bg-primary/10 transition-colors text-sm font-black uppercase tracking-wider mb-1">
                     <LayoutDashboard size={18} />
@@ -147,6 +168,7 @@ export default function Navbar() {
       </div>
 
       <CartDrawer isOpen={isCartOpen} onClose={closeCart} />
+      <WishlistDrawer />
       <NotificationsDrawer isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} />
     </nav>
   );

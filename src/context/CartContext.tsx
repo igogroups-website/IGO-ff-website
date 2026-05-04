@@ -52,7 +52,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           .eq('user_id', user.id);
         
         if (error) throw error;
-        setCartItems(data as CartItem[] || []);
+        
+        const normalized = (data || []).map((item: any) => ({
+          ...item,
+          products: item.products ? {
+            ...item.products,
+            category: item.products.category || (item.products.category_id === 'cat-veg' ? 'Vegetables' : item.products.category_id === 'cat-fruit' ? 'Fruits' : item.products.category_id) || '',
+            image_url: item.products.image_url || (Array.isArray(item.products.image_urls) ? item.products.image_urls[0] : null) || ''
+          } : item.products
+        }));
+        
+        setCartItems(normalized as CartItem[]);
       } else {
         // Guest cart from localStorage
         const saved = localStorage.getItem('farmers_factory_guest_cart');
