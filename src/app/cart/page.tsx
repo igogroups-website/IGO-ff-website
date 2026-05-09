@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'react-hot-toast';
+import ProgressiveRewardBar from '@/components/ProgressiveRewardBar';
 
 export default function CartPage() {
   const { cartItems, cartTotal, updateQuantity, removeItem, loading } = useCart();
@@ -152,6 +153,10 @@ export default function CartPage() {
                   Order Summary
                   <div className="flex-1 h-px bg-border/60" />
                 </h3>
+
+                <div className="mb-10">
+                  <ProgressiveRewardBar total={cartTotal} />
+                </div>
 
                 <div className="space-y-6 mb-12">
                   <div className="flex justify-between items-center">
