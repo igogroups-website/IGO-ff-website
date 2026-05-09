@@ -229,7 +229,7 @@ function AuthContent() {
         <div className="space-y-2">
           <div className="flex justify-between items-center px-1">
             <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Password</label>
-            <Link href="/auth/reset-password" class="text-[10px] font-black uppercase tracking-widest text-primary hover:text-primary/80 transition-colors">Forgot?</Link>
+            <Link href="/auth/reset-password" className="text-[10px] font-black uppercase tracking-widest text-primary hover:text-primary/80 transition-colors">Forgot?</Link>
           </div>
           <div className="relative group">
             <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors" size={18} />

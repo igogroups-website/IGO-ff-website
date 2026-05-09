@@ -45,7 +45,7 @@ function Scene() {
       <FloatingProduce position={[2, 3, -2]} color="#ef4444" speed={1.5} distort={0.5} /> {/* Red Tomato */}
       <FloatingProduce position={[-3, -3, 1]} color="#8b5cf6" speed={1} distort={0.2} /> {/* Purple Brinjal */}
       
-      <Environment preset="soft" />
+      <Environment preset="studio" />
       <OrbitControls enableZoom={false} enablePan={false} />
     </>
   );

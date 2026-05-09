@@ -61,7 +61,7 @@ export default function AIRecipeAssistant() {
     if (cartItems.length === 0) return;
     setLoading(true);
     setTimeout(() => {
-      const items = cartItems.map(i => i.name);
+      const items = cartItems.map(i => i.products?.name);
       const mocks: Recipe[] = [
         {
           title: `Organic ${items[0] || 'Produce'} Medley`,
