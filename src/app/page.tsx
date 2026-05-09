@@ -18,7 +18,6 @@ export default function Home() {
     <main className="min-h-screen bg-white">
       <Navbar />
       <Hero greeting="Directly from the Soil" />
-      <HarvestTicker />
       
       <div className="container mx-auto px-6 md:px-10 py-20">
         <FeaturedCategories />
@@ -40,9 +39,6 @@ export default function Home() {
       <div className="bg-white py-20">
         <WhyChooseUs />
       </div>
-
-      <Footer />
-      <AIRecipeAssistant />
     </main>
   );
 }
