@@ -2,11 +2,12 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ShoppingCart, User, Search, Leaf, X, Bell, LayoutDashboard, Heart } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { ShoppingCart, User, Search, Leaf, X, Bell, LayoutDashboard, Heart, Languages, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
+import { useTranslation } from '@/context/TranslationContext';
 import { supabase } from '@/lib/supabase';
 import CartDrawer from './CartDrawer';
 import WishlistDrawer from './WishlistDrawer';
@@ -16,9 +17,11 @@ import LoyaltyWallet from './LoyaltyWallet';
 export default function Navbar() {
   const [scrolled, setScrolled] = React.useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = React.useState(false);
+  const [isLangOpen, setIsLangOpen] = React.useState(false);
   const { user, openAuthModal, signOut } = useAuth();
   const { isCartOpen, openCart, closeCart, cartCount } = useCart();
   const { openWishlist, wishlistItems } = useWishlist();
+  const { language, setLanguage, t } = useTranslation();
 
   React.useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -26,17 +29,11 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  React.useEffect(() => {
-    if (user) {
-      const trackVisit = async () => {
-        await supabase
-          .from('profiles')
-          .update({ last_visited_at: new Date().toISOString() })
-          .eq('id', user.id);
-      };
-      trackVisit();
-    }
-  }, [user]);
+  const languages = [
+    { code: 'en', name: 'English', native: 'English' },
+    { code: 'ta', name: 'Tamil', native: 'தமிழ்' },
+    { code: 'hi', name: 'Hindi', native: 'हिन्दी' }
+  ];
 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-700 ${
@@ -44,17 +41,6 @@ export default function Navbar() {
         ? 'bg-white/80 backdrop-blur-xl border-b border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.05)] py-2' 
         : 'bg-transparent py-4'
     }`}>
-      {/* Premium Top Banner */}
-      {!scrolled && (
-        <motion.div 
-          initial={{ y: -30, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="bg-primary text-white text-[10px] font-black uppercase tracking-[0.3em] py-2 text-center mb-4 overflow-hidden relative"
-        >
-          <div className="absolute inset-0 bg-white/10 animate-pulse" />
-          <span className="relative z-10">✨ Free Delivery on all orders above ₹499 ✨</span>
-        </motion.div>
-      )}
       <div className="container mx-auto px-6 md:px-10 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-4 group">
           <div className="w-14 h-14 rounded-xl flex items-center justify-center transition-all group-hover:scale-105 overflow-hidden shadow-sm">
@@ -65,27 +51,61 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* Smart Search Bar */}
         <div className="hidden lg:flex flex-1 max-w-lg mx-12">
           <SmartSearch />
         </div>
 
         <div className="flex items-center gap-4">
-          {/* Notification Bell */}
+          {/* Language Switcher */}
+          <div className="relative">
+            <button
+              onClick={() => setIsLangOpen(!isLangOpen)}
+              className="flex items-center gap-2 p-3 text-foreground/80 hover:text-primary hover:bg-primary/5 rounded-2xl transition-all font-black text-[10px] uppercase tracking-widest"
+            >
+              <Languages size={20} />
+              <span className="hidden sm:inline">{languages.find(l => l.code === language)?.native}</span>
+              <ChevronDown size={14} className={`transition-transform ${isLangOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            <AnimatePresence>
+              {isLangOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-2xl border border-border p-2 z-50"
+                >
+                  {languages.map((lang) => (
+                    <button
+                      key={lang.code}
+                      onClick={() => {
+                        setLanguage(lang.code as any);
+                        setIsLangOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all ${
+                        language === lang.code ? 'bg-primary/10 text-primary font-black' : 'hover:bg-muted font-bold text-muted-foreground'
+                      }`}
+                    >
+                      <span className="text-xs">{lang.native}</span>
+                      <span className="text-[10px] opacity-40">{lang.name}</span>
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
           <button
             onClick={() => setIsNotificationsOpen(true)}
-            className="p-3 text-foreground/80 hover:text-primary hover:bg-primary/5 rounded-2xl transition-all relative group active:scale-95"
-            aria-label="Notifications"
+            className="p-3 text-foreground/80 hover:text-primary hover:bg-primary/5 rounded-2xl transition-all relative group"
           >
             <Bell size={26} />
             <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse" />
           </button>
 
-          {/* Cart Button */}
           <Link
             href="/cart"
             className="relative p-3 text-foreground/80 hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group"
-            aria-label="Open cart"
           >
             <ShoppingCart size={26} />
             {cartCount > 0 && (
@@ -100,30 +120,9 @@ export default function Navbar() {
             )}
           </Link>
 
-          {/* Wishlist Button */}
-          <button
-            onClick={openWishlist}
-            className="relative p-3 text-foreground/80 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all group active:scale-95"
-            aria-label="Wishlist"
-          >
-            <Heart size={26} className={wishlistItems.length > 0 ? 'fill-red-500 text-red-500' : ''} />
-            {wishlistItems.length > 0 && (
-              <motion.span
-                key={wishlistItems.length}
-                initial={{ scale: 0.5, y: 5 }}
-                animate={{ scale: 1, y: 0 }}
-                className="absolute top-1 right-1 min-w-[20px] h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-lg shadow-red-200 px-1"
-              >
-                {wishlistItems.length}
-              </motion.span>
-            )}
-          </button>
-
           {user ? (
             <div className="relative group">
-              <button
-                className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-all font-bold text-sm"
-              >
+              <button className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-all font-bold text-sm">
                 <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center text-xs font-black">
                   {user.email?.[0].toUpperCase() || 'U'}
                 </div>
@@ -134,8 +133,7 @@ export default function Navbar() {
                 <div className="mb-3">
                   <LoyaltyWallet />
                 </div>
-                
-                {(user.email?.includes('admin') || user.id === 'mock-user-id') && (
+                {user.email?.includes('admin') && (
                   <Link href="/admin" className="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/5 text-primary hover:bg-primary/10 transition-colors text-sm font-black uppercase tracking-wider mb-1">
                     <LayoutDashboard size={18} />
                     Admin Panel
@@ -159,9 +157,8 @@ export default function Navbar() {
               href="/auth"
               className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-primary text-white hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 font-black text-sm active:scale-95 overflow-hidden group/btn relative"
             >
-              <div className="absolute inset-0 bg-white/10 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300" />
               <User size={20} className="relative z-10" />
-              <span className="hidden sm:inline relative z-10">Login</span>
+              <span className="hidden sm:inline relative z-10">{t('nav.login')}</span>
             </Link>
           )}
         </div>
@@ -174,12 +171,10 @@ export default function Navbar() {
   );
 }
 
-// Separate component for Notifications Drawer
 function NotificationsDrawer({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
   const notifications = [
-    { id: 1, title: 'Fresh Harvest Arrived!', message: 'Our organic beetroots have just reached the warehouse. Shop now for maximum freshness.', time: '2 min ago', type: 'info', link: '/products' },
-    { id: 2, title: 'Order Confirmed', message: 'Your order #FF-12345 has been confirmed and is being prepared for delivery.', time: '1 hour ago', type: 'success', link: '/profile' },
-    { id: 3, title: 'Flash Sale Tomorrow', message: 'Get 20% off on all leafy greens starting tomorrow 6 AM.', time: '5 hours ago', type: 'promo', link: '/products' },
+    { id: 1, title: 'Fresh Harvest Arrived!', message: 'Our organic beetroots have just reached the warehouse.', time: '2 min ago', type: 'info', link: '/products' },
+    { id: 2, title: 'Order Confirmed', message: 'Your order #FF-12345 has been confirmed.', time: '1 hour ago', type: 'success', link: '/profile' },
   ];
 
   return (
@@ -189,41 +184,18 @@ function NotificationsDrawer({ isOpen, onClose }: { isOpen: boolean, onClose: ()
         <div className="p-6 border-b border-border flex items-center justify-between bg-primary/5">
           <div>
             <h2 className="text-2xl font-black text-foreground">Notifications</h2>
-            <p className="text-sm text-muted-foreground font-medium">Stay updated with Farmers Factory</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-white rounded-full transition-colors shadow-sm">
             <X size={24} />
           </button>
         </div>
-
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {notifications.map((notif) => (
-            <Link 
-              key={notif.id} 
-              href={notif.link}
-              onClick={onClose}
-              className="block p-5 rounded-2xl border border-border hover:border-primary hover:shadow-xl hover:shadow-primary/5 transition-all group bg-white"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md ${
-                  notif.type === 'success' ? 'bg-green-100 text-green-700' : 
-                  notif.type === 'promo' ? 'bg-amber-100 text-amber-700' : 
-                  'bg-primary/10 text-primary'
-                }`}>
-                  {notif.type}
-                </span>
-                <span className="text-xs text-muted-foreground font-medium">{notif.time}</span>
-              </div>
+            <Link key={notif.id} href={notif.link} onClick={onClose} className="block p-5 rounded-2xl border border-border hover:border-primary transition-all group bg-white">
               <h3 className="text-base font-black text-foreground mb-1 group-hover:text-primary transition-colors">{notif.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed font-medium">{notif.message}</p>
+              <p className="text-sm text-muted-foreground font-medium">{notif.message}</p>
             </Link>
           ))}
-        </div>
-
-        <div className="p-6 border-t border-border bg-muted/30">
-          <button className="w-full py-4 rounded-2xl bg-white border border-border text-foreground font-black text-sm hover:bg-primary hover:text-white hover:border-primary transition-all">
-            Mark all as read
-          </button>
         </div>
       </div>
     </div>

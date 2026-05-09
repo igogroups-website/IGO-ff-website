@@ -115,6 +115,12 @@ export default function Checkout() {
       }
 
       toast.success('Order placed successfully!');
+      
+      // Send Order Confirmation Email
+      import('@/lib/email').then(({ sendOrderConfirmation }) => {
+        sendOrderConfirmation(user.email || address.name, order.id, subtotal);
+      });
+
       router.push(`/checkout/success?id=${order.id}`);
     } catch (error: any) {
       console.error('Order placement error:', error);

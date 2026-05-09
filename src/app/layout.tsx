@@ -5,9 +5,12 @@ import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
 import { LoyaltyProvider } from "@/context/LoyaltyContext";
+import { TranslationProvider } from "@/context/TranslationContext";
 import { Toaster } from "react-hot-toast";
 import GlobalUI from "@/components/GlobalUI";
 import Footer from "@/components/Footer";
+import AIRecipeAssistant from "@/components/AIRecipeAssistant";
+import HarvestTicker from "@/components/HarvestTicker";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -22,8 +25,6 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Farmers Factory | Fresh Organic Farm Produce Directly to Your Doorstep",
   description: "Experience the freshest organic fruits, vegetables, and farm-direct products. Sustainable farming, pure quality, and 24-hour delivery from our farms to your kitchen.",
-  keywords: ["organic food", "fresh vegetables", "farm to table", "sustainable farming", "Farmers Factory", "fresh fruits"],
-  authors: [{ name: "Farmers Factory Team" }],
 };
 
 export const viewport: Viewport = {
@@ -41,27 +42,31 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        <AuthProvider>
-          <WishlistProvider>
-            <LoyaltyProvider>
-              <CartProvider>
-                <Toaster
-                  position="top-right"
-                  toastOptions={{
-                    style: {
-                      fontWeight: 'bold',
-                      boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
-                    },
-                  }}
-                />
-                <GlobalUI />
-                {children}
-                <Footer />
-              </CartProvider>
-            </LoyaltyProvider>
-          </WishlistProvider>
-        </AuthProvider>
+      <body className="min-h-full flex flex-col font-sans">
+        <TranslationProvider>
+          <AuthProvider>
+            <WishlistProvider>
+              <LoyaltyProvider>
+                <CartProvider>
+                  <Toaster
+                    position="top-right"
+                    toastOptions={{
+                      style: {
+                        fontWeight: 'bold',
+                        boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                      },
+                    }}
+                  />
+                  <HarvestTicker />
+                  <GlobalUI />
+                  <AIRecipeAssistant />
+                  {children}
+                  <Footer />
+                </CartProvider>
+              </LoyaltyProvider>
+            </WishlistProvider>
+          </AuthProvider>
+        </TranslationProvider>
       </body>
     </html>
   );

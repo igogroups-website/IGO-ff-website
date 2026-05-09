@@ -82,9 +82,6 @@ function AuthContent() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Only sign out if there is no active OTP/verification in progress
-    // Do NOT sign out on mount - it breaks the OTP verification flow
-    // supabase.auth.signOut(); // REMOVED - was breaking new signups
   }, []);
 
   // --- Handlers ---
@@ -132,14 +129,12 @@ function AuthContent() {
     }
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.verifyOtp({
+      const { error } = await supabase.auth.verifyOtp({
         email: email.trim(),
         token: otp,
         type: 'email'
       });
       if (error) throw error;
-      
-      // Verification success, now move to details
       setStep('details');
       toast.success('Email verified! Let\'s complete your profile.');
     } catch (error: any) {
@@ -162,7 +157,6 @@ function AuthContent() {
 
     setLoading(true);
     try {
-      // Update user with details and password
       const { error: updateError } = await supabase.auth.updateUser({
         password: password,
         data: {
@@ -173,6 +167,12 @@ function AuthContent() {
       if (updateError) throw updateError;
 
       toast.success('Welcome to the Farm! Redirecting...');
+      
+      // Send Welcome Email
+      import('@/lib/email').then(({ sendWelcomeEmail }) => {
+        sendWelcomeEmail(email.trim(), fullName.trim());
+      });
+
       setTimeout(() => {
         router.push(redirectPath);
         router.refresh();
@@ -216,62 +216,31 @@ function AuthContent() {
     }
   };
 
-  // --- UI Parts ---
-
   const renderInitial = () => (
-    <motion.div 
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      className="space-y-6"
-    >
+    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
       <div className="space-y-2">
         <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Email Address</label>
         <div className="relative group">
           <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors" size={18} />
-          <input 
-            type="email" 
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="name@example.com"
-            className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm font-bold placeholder:text-white/20 text-white"
-          />
+          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm font-bold placeholder:text-white/20 text-white" />
         </div>
       </div>
-
       {mode === 'login' && (
         <div className="space-y-2">
           <div className="flex justify-between items-center px-1">
             <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Password</label>
-            <Link href="/auth/reset-password" title="reset password link" className="text-[10px] font-black uppercase tracking-widest text-primary hover:text-primary/80 transition-colors">Forgot?</Link>
+            <Link href="/auth/reset-password" class="text-[10px] font-black uppercase tracking-widest text-primary hover:text-primary/80 transition-colors">Forgot?</Link>
           </div>
           <div className="relative group">
             <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors" size={18} />
-            <input 
-              type={showPassword ? 'text' : 'password'}
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-14 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm font-bold placeholder:text-white/20 text-white"
-            />
-            <button 
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-5 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/60 transition-colors"
-            >
+            <input type={showPassword ? 'text' : 'password'} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-14 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm font-bold placeholder:text-white/20 text-white" />
+            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-5 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/60 transition-colors">
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
         </div>
       )}
-
-      <button 
-        onClick={mode === 'login' ? handleLogin : handleSendOTP}
-        disabled={loading}
-        className="w-full bg-primary text-white py-6 rounded-2xl font-black text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-primary/90 transition-all transform active:scale-[0.98] disabled:opacity-50 shadow-2xl shadow-primary/20 group"
-      >
+      <button onClick={mode === 'login' ? handleLogin : handleSendOTP} disabled={loading} className="w-full bg-primary text-white py-6 rounded-2xl font-black text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-primary/90 transition-all transform active:scale-[0.98] disabled:opacity-50 shadow-2xl shadow-primary/20 group">
         {loading ? 'Processing...' : (mode === 'login' ? 'Sign In' : 'Send Security Code')}
         {!loading && <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />}
       </button>
@@ -279,112 +248,56 @@ function AuthContent() {
   );
 
   const renderOTP = () => (
-    <motion.div 
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      className="space-y-8"
-    >
+    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
       <div className="text-center space-y-2">
-        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 text-primary animate-pulse">
-          <Mail size={32} />
-        </div>
+        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 text-primary animate-pulse"><Mail size={32} /></div>
         <h3 className="text-xl font-bold">Verify your email</h3>
         <p className="text-white/40 text-sm">We've sent a 6-digit code to <span className="text-white font-bold">{email}</span></p>
       </div>
-
       <SegmentedOTP value={otp} onChange={setOtp} disabled={loading} />
-
-      <button 
-        onClick={() => handleVerifyOTP()}
-        disabled={loading || otp.length < 6}
-        className="w-full bg-primary text-white py-6 rounded-2xl font-black text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-primary/90 transition-all transform active:scale-[0.98] disabled:opacity-50 shadow-2xl shadow-primary/20"
-      >
+      <button onClick={() => handleVerifyOTP()} disabled={loading || otp.length < 6} className="w-full bg-primary text-white py-6 rounded-2xl font-black text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-primary/90 transition-all transform active:scale-[0.98] disabled:opacity-50 shadow-2xl shadow-primary/20">
         {loading ? 'Verifying...' : 'Verify Code'}
       </button>
-
-      <button 
-        onClick={() => { setStep('initial'); setOtp(''); }}
-        className="w-full text-[10px] font-black text-white/20 hover:text-white/60 uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
-      >
+      <button onClick={() => { setStep('initial'); setOtp(''); }} className="w-full text-[10px] font-black text-white/20 hover:text-white/60 uppercase tracking-widest transition-colors flex items-center justify-center gap-2">
         <ArrowLeft size={12} /> Use different email
       </button>
     </motion.div>
   );
 
   const renderDetails = () => (
-    <motion.div 
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      className="space-y-6"
-    >
+    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
       <div className="text-center space-y-2 mb-8">
-        <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-green-500">
-          <CheckCircle2 size={32} />
-        </div>
+        <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-green-500"><CheckCircle2 size={32} /></div>
         <h3 className="text-xl font-bold">Verification Successful</h3>
         <p className="text-white/40 text-sm">Now, let's set up your profile.</p>
       </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
           <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Full Name</label>
           <div className="relative group">
             <User className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors" size={18} />
-            <input 
-              type="text" 
-              required
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="John Doe"
-              className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm font-bold placeholder:text-white/20 text-white"
-            />
+            <input type="text" required value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="John Doe" className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm font-bold placeholder:text-white/20 text-white" />
           </div>
         </div>
         <div className="space-y-2">
           <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Phone</label>
           <div className="relative group">
             <Phone className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors" size={18} />
-            <input 
-              type="tel" 
-              required
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="9876543210"
-              className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm font-bold placeholder:text-white/20 text-white"
-            />
+            <input type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="9876543210" className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm font-bold placeholder:text-white/20 text-white" />
           </div>
         </div>
       </div>
-
       <div className="space-y-2">
         <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Create Password</label>
         <div className="relative group">
           <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors" size={18} />
-          <input 
-            type={showPassword ? 'text' : 'password'}
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="At least 6 characters"
-            className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-14 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm font-bold placeholder:text-white/20 text-white"
-          />
-          <button 
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-5 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/60 transition-colors"
-          >
+          <input type={showPassword ? 'text' : 'password'} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 6 characters" className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-14 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm font-bold placeholder:text-white/20 text-white" />
+          <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-5 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/60 transition-colors">
             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
       </div>
-
-      <button 
-        onClick={handleCompleteSignup}
-        disabled={loading}
-        className="w-full bg-[#E75129] text-white py-6 rounded-2xl font-black text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-[#ff613b] transition-all transform active:scale-[0.98] disabled:opacity-50 shadow-2xl shadow-orange-500/20 mt-4 group"
-      >
+      <button onClick={handleCompleteSignup} disabled={loading} className="w-full bg-[#E75129] text-white py-6 rounded-2xl font-black text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-[#ff613b] transition-all transform active:scale-[0.98] disabled:opacity-50 shadow-2xl shadow-orange-500/20 mt-4 group">
         {loading ? 'Creating Account...' : 'Complete Registration'}
         {!loading && <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />}
       </button>
@@ -393,90 +306,32 @@ function AuthContent() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 md:p-6 relative overflow-hidden bg-black font-geist">
-      {/* Background with Premium Image and Blur */}
       <div className="absolute inset-0 z-0">
-        <div 
-          className="absolute inset-0 bg-cover bg-center grayscale-[0.2] scale-105 transition-transform duration-[20s] animate-pulse"
-          style={{ backgroundImage: 'url("/auth-bg.png")' }}
-        />
+        <div className="absolute inset-0 bg-cover bg-center grayscale-[0.2] scale-105 transition-transform duration-[20s] animate-pulse" style={{ backgroundImage: 'url("/auth-bg.png")' }} />
         <div className="absolute inset-0 bg-black/60 backdrop-blur-[8px]" />
-        
-        {/* Animated Gradient Orbs */}
-        <div className="absolute top-0 -left-20 w-96 h-96 bg-primary/20 rounded-full blur-[120px] animate-blob" />
-        <div className="absolute bottom-0 -right-20 w-96 h-96 bg-orange-500/20 rounded-full blur-[120px] animate-blob animation-delay-2000" />
       </div>
-
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative z-10 w-full max-w-2xl"
-      >
-        <Link 
-          href="/"
-          className="inline-flex items-center gap-2 text-white/40 hover:text-white transition-all mb-8 font-black uppercase tracking-widest text-[10px] group"
-        >
-          <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
-          Back to Store
-        </Link>
-
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 w-full max-w-2xl">
+        <Link href="/" className="inline-flex items-center gap-2 text-white/40 hover:text-white transition-all mb-8 font-black uppercase tracking-widest text-[10px] group"><ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />Back to Store</Link>
         <div className="bg-white/5 border border-white/10 backdrop-blur-2xl rounded-[2.5rem] p-8 md:p-12 text-white shadow-2xl overflow-hidden relative group">
-          {/* Brand Logo */}
           <div className="flex items-center gap-4 mb-12">
-            <div className="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-primary/40 rotate-3 group-hover:rotate-0 transition-transform duration-500">
-              <Leaf size={32} />
-            </div>
-            <div>
-              <span className="text-2xl font-black tracking-tighter text-white block leading-none">
-                FARMERS FACTORY
-              </span>
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30">
-                Premium Organics
-              </span>
-            </div>
+            <div className="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-primary/40 rotate-3 group-hover:rotate-0 transition-transform duration-500"><Leaf size={32} /></div>
+            <div><span className="text-2xl font-black tracking-tighter text-white block leading-none">FARMERS FACTORY</span><span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30">Premium Organics</span></div>
           </div>
-
           <div className="mb-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-4 border border-white/10">
-              <Sparkles size={12} className="text-orange-500" />
-              {step === 'initial' ? 'Identity Verification' : step === 'otp' ? 'Security Check' : 'Profile Completion'}
-            </div>
-            <h1 className="text-4xl md:text-5xl font-black mb-4 uppercase tracking-tighter leading-none text-white">
-              {mode === 'login' ? 'Welcome Back' : 'Create Account'}
-            </h1>
-            <p className="text-white/40 font-bold text-sm">
-              {mode === 'login' 
-                ? 'Sign in to access your farm-fresh favorites.' 
-                : 'Join our community for the best organic produce.'}
-            </p>
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-4 border border-white/10"><Sparkles size={12} className="text-orange-500" />{step === 'initial' ? 'Identity Verification' : step === 'otp' ? 'Security Check' : 'Profile Completion'}</div>
+            <h1 className="text-4xl md:text-5xl font-black mb-4 uppercase tracking-tighter leading-none text-white">{mode === 'login' ? 'Welcome Back' : 'Create Account'}</h1>
           </div>
-
-          {/* Mode Switcher (only in initial step) */}
           {step === 'initial' && (
             <div className="flex p-1 bg-white/5 rounded-2xl mb-10 border border-white/5">
-              <button 
-                onClick={() => setMode('login')}
-                className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'login' ? 'bg-white/10 text-white shadow-xl' : 'text-white/30 hover:text-white/60'}`}
-              >
-                Login
-              </button>
-              <button 
-                onClick={() => setMode('signup')}
-                className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'signup' ? 'bg-white/10 text-white shadow-xl' : 'text-white/30 hover:text-white/60'}`}
-              >
-                Join
-              </button>
+              <button onClick={() => setMode('login')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'login' ? 'bg-white/10 text-white shadow-xl' : 'text-white/30 hover:text-white/60'}`}>Login</button>
+              <button onClick={() => setMode('signup')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'signup' ? 'bg-white/10 text-white shadow-xl' : 'text-white/30 hover:text-white/60'}`}>Join</button>
             </div>
           )}
-
           <AnimatePresence mode="wait">
             {step === 'initial' && renderInitial()}
             {step === 'otp' && renderOTP()}
             {step === 'details' && renderDetails()}
           </AnimatePresence>
-
-          <p className="mt-12 text-center text-[9px] font-bold text-white/10 uppercase tracking-[0.5em]">
-            Authorized Secure Access Protocol • Farmers Factory v2.0
-          </p>
         </div>
       </motion.div>
     </div>

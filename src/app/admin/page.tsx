@@ -9,15 +9,23 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Clock,
-  Loader2
+  Loader2,
+  Activity,
+  Zap,
+  Sparkles,
+  MessageSquare
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getAdminStats, getAllOrders, getRecentVisitors, getAllProducts } from '@/lib/admin';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import LiveVisitorHub from '@/components/LiveVisitorHub';
 import ProductMediaManager from '@/components/ProductMediaManager';
 import AdminAnalytics from '@/components/AdminAnalytics';
+import FarmCommandCenter from '@/components/FarmCommandCenter';
+import InventoryForecast from '@/components/InventoryForecast';
+import SentimentAI from '@/components/SentimentAI';
+import DynamicPricing from '@/components/DynamicPricing';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<any>(null);
@@ -30,193 +38,108 @@ export default function AdminDashboard() {
     async function loadData() {
       try {
         setLoading(true);
-        // 10-second timeout - if Supabase is unreachable, we fail fast
-        const timeout = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Request timed out. Check Supabase connection.')), 10000)
-        );
-        const [statsData, ordersData, visitorsData, productsData] = await Promise.race([
-          Promise.all([
-            getAdminStats(),
-            getAllOrders(),
-            getRecentVisitors(),
-            getAllProducts()
-          ]),
-          timeout
-        ]) as [any, any[], any[], any];
-        
+        const [statsData, ordersData, visitorsData, productsData] = await Promise.all([
+          getAdminStats(),
+          getAllOrders(),
+          getRecentVisitors(),
+          getAllProducts()
+        ]);
         setStats(statsData);
         setRecentOrders(ordersData.slice(0, 5));
         setRecentVisitors(visitorsData);
         setProducts(productsData.data?.slice(0, 3) || []);
       } catch (error) {
         console.error('Failed to load dashboard data:', error);
-        // Set empty defaults so the page renders something useful
-        setStats({ totalRevenue: '₹0', totalOrders: '0', activeProducts: '0', totalCustomers: '0', outOfStockCount: '0' });
-        setRecentOrders([]);
-        setRecentVisitors([]);
-        setProducts([]);
       } finally {
         setLoading(false);
       }
     }
-    
     loadData();
 
-    // Set up real-time subscriptions for live updates
-    const productsChannel = supabase
-      .channel('admin_dashboard_products')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
-        // Refresh stats when products change
-        getAdminStats().then(data => setStats(data));
-      })
-      .subscribe();
-
-    const ordersChannel = supabase
-      .channel('admin_dashboard_orders')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (payload) => {
-        // Add new order to list and refresh stats
-        setRecentOrders(prev => [payload.new, ...prev].slice(0, 5));
-        getAdminStats().then(data => setStats(data));
-      })
-      .subscribe();
-
-    const profilesChannel = supabase
-      .channel('admin_dashboard_profiles')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, () => {
-        // Refresh visitors when profiles are updated (e.g., last_visited_at)
-        getRecentVisitors().then(data => setRecentVisitors(data));
-      })
-      .subscribe();
-
-    // Polling as fallback for visitor status (online/offline)
-    const visitorInterval = setInterval(() => {
-      getRecentVisitors().then(data => setRecentVisitors(data));
-    }, 60000); // Every minute
-
-    return () => {
-      supabase.removeChannel(productsChannel);
-      supabase.removeChannel(ordersChannel);
-      supabase.removeChannel(profilesChannel);
-      clearInterval(visitorInterval);
-    };
+    const ordersChannel = supabase.channel('admin_live_updates').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => loadData()).subscribe();
+    return () => { supabase.removeChannel(ordersChannel); };
   }, []);
 
-  const statCards = [
-    { name: 'Total Revenue', value: stats?.totalRevenue || '₹0', icon: <TrendingUp className="text-emerald-500" />, change: '+12%', trend: 'up' },
-    { name: 'Total Orders', value: stats?.totalOrders || '0', icon: <ShoppingBag className="text-blue-500" />, change: '+5%', trend: 'up' },
-    { name: 'Stock Health', value: `${stats?.activeProducts || 0} items`, icon: <Package className="text-amber-500" />, change: `${stats?.outOfStockCount || 0} Out`, trend: stats?.outOfStockCount > 0 ? 'down' : 'up' },
-    { name: 'Live Visitors', value: recentVisitors.filter(v => new Date().getTime() - new Date(v.last_visited_at || 0).getTime() < 300000).length.toString(), icon: <Users className="text-primary" />, change: 'Real-time', trend: 'up' },
-  ];
-
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-        <Loader2 className="w-10 h-10 text-primary animate-spin" />
-        <p className="text-muted-foreground font-bold">Loading dashboard data...</p>
-      </div>
-    );
-  }
+  if (loading) return <div className="flex flex-col items-center justify-center min-h-screen gap-4 bg-[#0A0A0A] text-white"><div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" /><p className="text-primary font-black uppercase tracking-[0.5em] text-[10px] animate-pulse">Syncing Titan Intelligence...</p></div>;
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-16 pb-20">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
+        <div>
+          <div className="flex items-center gap-3 text-primary font-black text-xs uppercase tracking-[0.4em] mb-4">
+             <div className="w-2 h-2 rounded-full bg-primary animate-ping" />
+             <span>Titan Control Systems v7.0</span>
+          </div>
+          <h1 className="text-5xl md:text-7xl font-black text-foreground tracking-tighter uppercase leading-none">
+             Executive <br /> <span className="text-primary italic font-serif lowercase">Intelligence</span>
+          </h1>
+        </div>
+        <div className="flex items-center gap-4">
+           <div className="bg-white p-6 rounded-[2rem] border border-border shadow-2xl flex items-center gap-6">
+              <div className="text-right">
+                 <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Total Revenue</p>
+                 <p className="text-3xl font-black text-foreground">{stats?.totalRevenue}</p>
+              </div>
+              <div className="w-14 h-14 bg-primary text-white rounded-2xl flex items-center justify-center shadow-xl shadow-primary/20"><TrendingUp size={28} /></div>
+           </div>
+        </div>
+      </div>
+
       <AdminAnalytics />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-        {/* Main Content: Media Lab and Orders */}
         <div className="lg:col-span-2 space-y-12">
-          {/* Professional Media Lab */}
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-2xl font-black uppercase tracking-tight">Product Media Lab</h3>
-                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">Manage high-resolution harvest imagery</p>
-              </div>
-              <Link href="/admin/products" className="text-xs font-black text-primary uppercase tracking-widest hover:underline">View All Inventory</Link>
-            </div>
-            
-            <div className="grid grid-cols-1 gap-6">
-              {products.map(product => (
-                <ProductMediaManager 
-                  key={product.id} 
-                  product={product} 
-                  onUpdate={() => getAllProducts().then(res => setProducts(res.data?.slice(0, 3) || []))}
-                />
-              ))}
-            </div>
-          </div>
+           {/* Phase 1: Real-time Command & Pricing */}
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <FarmCommandCenter />
+              <DynamicPricing />
+           </div>
 
-          {/* Recent Orders */}
-          <div className="bg-white rounded-[2.5rem] border border-border shadow-sm overflow-hidden">
-            <div className="p-8 border-b border-border flex items-center justify-between">
-              <h3 className="text-xl font-black">Recent Orders</h3>
-              <Link href="/admin/orders" className="text-primary font-bold text-sm hover:underline">View All</Link>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="bg-muted/30 text-xs font-black uppercase tracking-widest text-muted-foreground">
-                    <th className="px-8 py-4">Order ID</th>
-                    <th className="px-8 py-4">Customer</th>
-                    <th className="px-8 py-4">Amount</th>
-                    <th className="px-8 py-4">Status</th>
-                    <th className="px-8 py-4 text-right">Time</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {recentOrders.length > 0 ? (
-                    recentOrders.map((order) => (
-                      <tr key={order.id} className="hover:bg-muted/10 transition-colors">
-                        <td className="px-8 py-5 font-bold">#{order.id?.slice(0, 8) || 'N/A'}</td>
-                        <td className="px-8 py-5 font-bold">{order.customer?.full_name || 'Guest'}</td>
-                        <td className="px-8 py-5 font-black text-primary">₹{Number(order.total_amount || 0).toLocaleString()}</td>
-                        <td className="px-8 py-5">
-                          <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                            order.status === 'delivered' ? 'bg-emerald-100 text-emerald-600' :
-                            order.status === 'processing' ? 'bg-amber-100 text-amber-600' :
-                            order.status === 'shipped' ? 'bg-blue-100 text-blue-600' :
-                            'bg-slate-100 text-slate-600'
-                          }`}>
-                            {order.status}
-                          </span>
-                        </td>
-                        <td className="px-8 py-5 text-right text-xs text-muted-foreground flex items-center justify-end gap-1 font-bold">
-                          <Clock size={12} />
-                          {order.created_at ? new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '---'}
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={5} className="px-8 py-10 text-center text-muted-foreground italic">No recent orders found.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+           {/* Phase 2: Live Operations Table */}
+           <div className="bg-white rounded-[2.5rem] border border-border shadow-xl overflow-hidden">
+             <div className="p-10 border-b border-border flex items-center justify-between bg-muted/5">
+               <div className="flex items-center gap-3">
+                 <div className="w-10 h-10 bg-black text-white rounded-xl flex items-center justify-center"><ShoppingBag size={20} /></div>
+                 <h3 className="text-2xl font-black uppercase tracking-tight">Real-time Order Stream</h3>
+               </div>
+               <Link href="/admin/orders" className="bg-white border border-border px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-muted transition-all">View Full Manifest</Link>
+             </div>
+             <div className="overflow-x-auto">
+               <table className="w-full text-left">
+                 <thead>
+                   <tr className="bg-muted/30 text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">
+                     <th className="px-10 py-6">ID</th>
+                     <th className="px-10 py-6">Customer</th>
+                     <th className="px-10 py-6">Capital</th>
+                     <th className="px-10 py-6">Protocol</th>
+                     <th className="px-10 py-6 text-right">Delta</th>
+                   </tr>
+                 </thead>
+                 <tbody className="divide-y divide-border">
+                   {recentOrders.map((order) => (
+                     <tr key={order.id} className="hover:bg-primary/5 transition-all group font-bold">
+                       <td className="px-10 py-6 text-muted-foreground group-hover:text-primary transition-colors">#{order.id?.slice(0, 8)}</td>
+                       <td className="px-10 py-6 text-foreground">{order.customer?.full_name || 'Guest User'}</td>
+                       <td className="px-10 py-6 text-primary font-black text-lg">₹{order.total_amount}</td>
+                       <td className="px-10 py-6"><span className="px-4 py-1.5 rounded-full text-[9px] font-black uppercase bg-primary/10 text-primary border border-primary/20">{order.status}</span></td>
+                       <td className="px-10 py-6 text-right text-xs text-muted-foreground"><Clock size={12} className="inline mr-2" />{new Date(order.created_at).toLocaleTimeString()}</td>
+                     </tr>
+                   ))}
+                 </tbody>
+               </table>
+             </div>
+           </div>
         </div>
 
-        {/* Sidebar: Quick Actions and Live Tracking */}
         <div className="space-y-12">
-          <div className="bg-primary rounded-[2.5rem] p-8 text-white shadow-xl shadow-primary/20 flex flex-col">
-            <h3 className="text-2xl font-black mb-6 uppercase tracking-tight">Quick Actions</h3>
-            <div className="space-y-4 flex-1">
-              <Link href="/admin/products" className="w-full bg-white/20 hover:bg-white/30 backdrop-blur-md py-4 rounded-2xl font-bold transition-all text-left px-6 flex items-center justify-between group">
-                Add New Product
-                <ArrowUpRight size={20} className="transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
-              </Link>
-              <Link href="/admin/products" className="w-full bg-white/20 hover:bg-white/30 backdrop-blur-md py-4 rounded-2xl font-bold transition-all text-left px-6 flex items-center justify-between group">
-                Manage Inventory
-                <ArrowUpRight size={20} className="transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
-              </Link>
-              <Link href="/admin/orders" className="w-full bg-white/20 hover:bg-white/30 backdrop-blur-md py-4 rounded-2xl font-bold transition-all text-left px-6 flex items-center justify-between group">
-                Track Orders
-                <ArrowUpRight size={20} className="transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
-              </Link>
-            </div>
-          </div>
+           {/* Advanced Sentiment AI */}
+           <SentimentAI />
 
-          <LiveVisitorHub />
+           {/* AI Supply Forecasting */}
+           <InventoryForecast />
+           
+           {/* Live Tracking Hub */}
+           <LiveVisitorHub />
         </div>
       </div>
     </div>

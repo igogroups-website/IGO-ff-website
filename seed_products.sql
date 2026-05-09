@@ -8,9 +8,9 @@ ALTER TABLE products ADD COLUMN IF NOT EXISTS is_seasonal BOOLEAN DEFAULT FALSE;
 -- STEP 2: Clear old data to ensure ONLY these products exist
 DELETE FROM products;
 
--- STEP 3: Insert all 44 products with correct image paths
+-- STEP 3: Insert all 61 products with correct image paths
 INSERT INTO products (name, category, price, image_url, description, stock, unit, is_active, is_seasonal) VALUES
--- VEGETABLES (20 items)
+-- VEGETABLES (32 items)
 ('Beetroot', 'Vegetables', 45.00, '/Vegetables/Beetroot.png', 'Fresh and earthy beetroots, rich in nutrients.', 100, 'kg', true, false),
 ('Bitter Gourd', 'Vegetables', 35.00, '/Vegetables/Bitter Gourd.png', 'Fresh bitter gourd, great for healthy cooking.', 100, 'kg', true, false),
 ('Bottle Gourd', 'Vegetables', 30.00, '/Vegetables/Bottle Gourd.png', 'Hydrating and fresh bottle gourd.', 100, 'kg', true, false),
@@ -31,8 +31,20 @@ INSERT INTO products (name, category, price, image_url, description, stock, unit
 ('Snake Gourd', 'Vegetables', 30.00, '/Vegetables/Snake Gourd.png', 'Fresh and long snake gourds.', 100, 'kg', true, false),
 ('Spinach', 'Vegetables', 15.00, '/Vegetables/Spinach.png', 'Nutritious green spinach leaves.', 100, 'bundle', true, false),
 ('Tomato', 'Vegetables', 30.00, '/Vegetables/Tomato.png', 'Juicy red farm tomatoes.', 100, 'kg', true, false),
+('Garlic', 'Vegetables', 120.00, '/Vegetables/Garlic.png', 'Fresh organic garlic bulbs, essential for seasoning.', 100, 'kg', true, false),
+('Ginger', 'Vegetables', 100.00, '/Vegetables/Ginger.png', 'Fresh and aromatic ginger root.', 100, 'kg', true, false),
+('Lemon', 'Vegetables', 5.00, '/Vegetables/Lemon.png', 'Juicy fresh lemons, rich in Vitamin C.', 100, 'piece', true, false),
+('French Beans', 'Vegetables', 60.00, '/Vegetables/French Beans.png', 'Fresh green french beans, crunchy and sweet.', 100, 'kg', true, false),
+('Green Peas', 'Vegetables', 80.00, '/Vegetables/Green Peas.png', 'Fresh green peas, sweet and nutritious.', 100, 'kg', true, false),
+('Cucumber', 'Vegetables', 30.00, '/Vegetables/Cucumber.png', 'Cool and hydrating fresh cucumbers.', 100, 'kg', true, false),
+('Sweet Potato', 'Vegetables', 45.00, '/Vegetables/Sweet Potato.png', 'Nutritious and sweet farm-grown sweet potatoes.', 100, 'kg', true, false),
+('Broccoli', 'Vegetables', 150.00, '/Vegetables/Broccoli.png', 'Fresh green broccoli, high in fiber and vitamins.', 100, 'kg', true, false),
+('Mushroom', 'Vegetables', 50.00, '/Vegetables/Mushroom.png', 'Fresh button mushrooms, perfect for varied dishes.', 100, 'pack', true, false),
+('Ridge Gourd', 'Vegetables', 35.00, '/Vegetables/Ridge Gourd.png', 'Fresh and healthy ridge gourd (peerkangai).', 100, 'kg', true, false),
+('Fenugreek Leaves', 'Vegetables', 15.00, '/Vegetables/Fenugreek Leaves.png', 'Fresh methi leaves, aromatic and healthy.', 100, 'bundle', true, false),
+('Curry Leaves', 'Vegetables', 5.00, '/Vegetables/Curry Leaves.png', 'Fresh and aromatic curry leaves.', 100, 'bundle', true, false),
 
--- FRUITS (14 items)
+-- FRUITS (19 items)
 ('Apple', 'Fruits', 180.00, '/Fruits/Apple.png', 'Sweet and crunchy premium apples.', 100, 'kg', true, true),
 ('Banana', 'Fruits', 60.00, '/Fruits/Banana.png', 'Ripe and sweet yellow bananas.', 100, 'dozen', true, false),
 ('Custard Apple', 'Fruits', 120.00, '/Fruits/Custard Apple.png', 'Sweet and creamy custard apples.', 100, 'kg', true, true),
@@ -47,6 +59,11 @@ INSERT INTO products (name, category, price, image_url, description, stock, unit
 ('Sapota', 'Fruits', 60.00, '/Fruits/Sapota (Chikoo).png', 'Sweet and grainy sapota (chikoo).', 100, 'kg', true, false),
 ('Sweet Lime', 'Fruits', 80.00, '/Fruits/Sweet Lime (Mosambi).png', 'Fresh and juicy mosambi.', 100, 'kg', true, false),
 ('Watermelon', 'Fruits', 40.00, '/Fruits/Watermelon.png', 'Refreshing sweet watermelons.', 100, 'piece', true, true),
+('Strawberry', 'Fruits', 150.00, '/Fruits/Strawberry.png', 'Fresh and juicy red strawberries.', 100, 'pack', true, true),
+('Blueberry', 'Fruits', 250.00, '/Fruits/Blueberry.png', 'Fresh antioxidant-rich blueberries.', 100, 'pack', true, true),
+('Kiwi', 'Fruits', 120.00, '/Fruits/Kiwi.png', 'Zesty and vitamin-rich fresh kiwi.', 100, 'kg', true, false),
+('Dragon Fruit', 'Fruits', 80.00, '/Fruits/Dragon Fruit.png', 'Exotic and healthy dragon fruit.', 100, 'piece', true, false),
+('Avocado', 'Fruits', 180.00, '/Fruits/Avocado.png', 'Creamy and nutritious fresh avocados.', 100, 'kg', true, false),
 
 -- VALLUVAM PRODUCTS (10 items)
 ('Cold Pressed Coconut Oil', 'Valluvam Products', 280, '/Valluvam/coconut-1L.jpg', 'Pure, unrefined cold pressed coconut oil.', 100, '1L', true, false),
