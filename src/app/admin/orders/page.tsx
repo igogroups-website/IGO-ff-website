@@ -24,7 +24,11 @@ import {
   X,
   FileSpreadsheet,
   FileText,
-  Truck
+  Truck,
+  Phone,
+  Calendar,
+  XCircle,
+  Check
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';

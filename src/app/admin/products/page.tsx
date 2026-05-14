@@ -635,7 +635,7 @@ function ProductsContent() {
                   toast.error('Sync failed: ' + e.message);
                 } finally {
                   setIsBulkLoading(false);
-                  loadProducts();
+                  fetchProducts();
                 }
               }
             }}
