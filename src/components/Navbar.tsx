@@ -172,10 +172,52 @@ export default function Navbar() {
 }
 
 function NotificationsDrawer({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
-  const notifications = [
-    { id: 1, title: 'Fresh Harvest Arrived!', message: 'Our organic beetroots have just reached the warehouse.', time: '2 min ago', type: 'info', link: '/products' },
-    { id: 2, title: 'Order Confirmed', message: 'Your order #FF-12345 has been confirmed.', time: '1 hour ago', type: 'success', link: '/profile' },
-  ];
+  const [notifications, setNotifications] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const { user } = useAuth();
+
+  const fetchNotifications = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .or(`user_id.is.null,user_id.eq.${user?.id || '00000000-0000-0000-0000-000000000000'}`)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (!error) setNotifications(data || []);
+    } catch (err) {
+      console.error('Failed to fetch notifications');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchNotifications();
+
+    // Listen for real-time notifications
+    const channel = supabase
+      .channel('realtime_notifications')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, () => {
+        fetchNotifications();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  const getTimeAgo = (date: string) => {
+    const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
+    if (seconds < 60) return 'Just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    return new Date(date).toLocaleDateString();
+  };
 
   return (
     <div className={`fixed inset-0 z-[100] transition-all duration-500 ${isOpen ? 'visible' : 'invisible pointer-events-none'}`}>
@@ -184,18 +226,38 @@ function NotificationsDrawer({ isOpen, onClose }: { isOpen: boolean, onClose: ()
         <div className="p-6 border-b border-border flex items-center justify-between bg-primary/5">
           <div>
             <h2 className="text-2xl font-black text-foreground">Notifications</h2>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-primary mt-1">Real-time Updates</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-white rounded-full transition-colors shadow-sm">
             <X size={24} />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {notifications.map((notif) => (
-            <Link key={notif.id} href={notif.link} onClick={onClose} className="block p-5 rounded-2xl border border-border hover:border-primary transition-all group bg-white">
-              <h3 className="text-base font-black text-foreground mb-1 group-hover:text-primary transition-colors">{notif.title}</h3>
-              <p className="text-sm text-muted-foreground font-medium">{notif.message}</p>
-            </Link>
-          ))}
+          {loading ? (
+            <div className="flex items-center justify-center py-20 text-muted-foreground font-bold italic">Loading alerts...</div>
+          ) : notifications.length === 0 ? (
+            <div className="text-center py-20 px-10">
+              <div className="w-16 h-16 bg-muted/20 rounded-full flex items-center justify-center mx-auto mb-4 text-muted-foreground/30"><Bell size={32} /></div>
+              <p className="text-muted-foreground font-bold">No new notifications</p>
+              <p className="text-xs text-muted-foreground/60 mt-2 italic">You're all caught up with the farm!</p>
+            </div>
+          ) : (
+            notifications.map((notif) => (
+              <Link 
+                key={notif.id} 
+                href={notif.link || '/products'} 
+                onClick={onClose} 
+                className={`block p-5 rounded-2xl border transition-all group bg-white ${notif.is_read ? 'border-border opacity-70' : 'border-primary/20 shadow-lg shadow-primary/5'}`}
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="text-base font-black text-foreground group-hover:text-primary transition-colors pr-4">{notif.title}</h3>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 bg-muted/30 px-2 py-0.5 rounded-full whitespace-nowrap">{getTimeAgo(notif.created_at)}</span>
+                </div>
+                <p className="text-sm text-muted-foreground font-medium leading-relaxed">{notif.message}</p>
+                {notif.type === 'promo' && <div className="mt-3 inline-block px-2 py-0.5 bg-orange-100 text-orange-600 text-[9px] font-black uppercase tracking-widest rounded-md">Special Offer</div>}
+              </Link>
+            ))
+          )}
         </div>
       </div>
     </div>
