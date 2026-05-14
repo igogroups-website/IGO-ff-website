@@ -11,79 +11,103 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense } from 'react';
 
-const PREMIUM_SAMPLES = [
-  // VEGETABLES (Updated with Live Premium Images)
-  { name: 'Carrot', category: 'Vegetables', price: 60.00, image_url: 'https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?q=80&w=600&auto=format&fit=crop', description: 'Sweet and crunchy farm carrots.', unit: 'kg' },
-  { name: 'Tomato', category: 'Vegetables', price: 30.00, image_url: 'https://images.unsplash.com/photo-1591857177580-dc82b9ac4e1e?q=80&w=600&auto=format&fit=crop', description: 'Juicy red farm tomatoes.', unit: 'kg' },
-  { name: 'Spinach', category: 'Vegetables', price: 15.00, image_url: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?q=80&w=600&auto=format&fit=crop', description: 'Nutritious green spinach leaves.', unit: 'bundle' },
-  { name: 'Potato', category: 'Vegetables', price: 35.00, image_url: '/Vegetables/Potato.png', description: 'Quality potatoes from local farms.', unit: 'kg' },
-  { name: 'Onion', category: 'Vegetables', price: 45.00, image_url: '/Vegetables/Onion.png', description: 'Farm fresh red onions.', unit: 'kg' },
-  { name: 'Beetroot', category: 'Vegetables', price: 45.00, image_url: '/Vegetables/Beetroot.png', description: 'Fresh and earthy beetroots, rich in nutrients.', unit: 'kg' },
-  { name: 'Bitter Gourd', category: 'Vegetables', price: 35.00, image_url: '/Vegetables/Bitter Gourd.png', description: 'Fresh bitter gourd, great for healthy cooking.', unit: 'kg' },
-  { name: 'Bottle Gourd', category: 'Vegetables', price: 30.00, image_url: '/Vegetables/Bottle Gourd.png', description: 'Hydrating and fresh bottle gourd.', unit: 'kg' },
-  { name: 'Brinjal', category: 'Vegetables', price: 40.00, image_url: '/Vegetables/Brinjal.png', description: 'Fresh purple brinjals, perfect for curries.', unit: 'kg' },
-  { name: 'Cabbage', category: 'Vegetables', price: 25.00, image_url: '/Vegetables/Cabbage.png', description: 'Crunchy and fresh green cabbage.', unit: 'kg' },
-  { name: 'Capsicum', category: 'Vegetables', price: 80.00, image_url: '/Vegetables/Capsicum.png', description: 'Fresh green capsicum, perfect for salads.', unit: 'kg' },
-  { name: 'Cauliflower', category: 'Vegetables', price: 45.00, image_url: '/Vegetables/Cauliflower.png', description: 'Fresh white cauliflower heads.', unit: 'kg' },
-  { name: 'Cucumber', category: 'Vegetables', price: 30.00, image_url: '/Vegetables/Cucumber.png', description: 'Cool and hydrating fresh cucumbers.', unit: 'kg' },
-  
-  // FRUITS (Updated with Live Premium Images)
-  { name: 'Apple', category: 'Fruits', price: 180.00, image_url: 'https://images.unsplash.com/photo-1560806887-1e4cd0b6bcd6?q=80&w=600&auto=format&fit=crop', description: 'Sweet and crunchy premium apples.', unit: 'kg', is_seasonal: true },
-  { name: 'Mango', category: 'Fruits', price: 150.00, image_url: 'https://images.unsplash.com/photo-1553279768-865429fa0078?q=80&w=600&auto=format&fit=crop', description: 'Premium Alphonso mangoes.', unit: 'kg', is_seasonal: true },
-  { name: 'Pomegranate', category: 'Fruits', price: 160.00, image_url: 'https://images.unsplash.com/photo-1615485290382-441e4d049cb5?q=80&w=600&auto=format&fit=crop', description: 'Premium red pomegranates.', unit: 'kg' },
-  { name: 'Banana', category: 'Fruits', price: 60.00, image_url: '/Fruits/Banana.png', description: 'Ripe and sweet yellow bananas.', unit: 'dozen' },
-  { name: 'Watermelon', category: 'Fruits', price: 40.00, image_url: '/Fruits/Watermelon.png', description: 'Refreshing sweet watermelons.', unit: 'piece', is_seasonal: true },
-  { name: 'Grapes', category: 'Fruits', price: 90.00, image_url: '/Fruits/Grapes.png', description: 'Fresh green seedless grapes.', unit: 'kg' },
-  
-  // VALLUVAM PRODUCTS
-  { name: 'Coconut Oil', category: 'Valluvam Products', price: 280, image_url: '/Valluvam/coconut-1L.jpg', description: 'Pure, unrefined cold pressed coconut oil.', unit: '1L' },
-  { name: 'Groundnut Oil', category: 'Valluvam Products', price: 320, image_url: '/Valluvam/ground-1L.jpg', description: 'Traditional cold pressed groundnut oil.', unit: '1L' },
-  { name: 'Sesame Oil', category: 'Valluvam Products', price: 450, image_url: '/Valluvam/sesame-1L.jpg', description: 'Rich and aromatic cold pressed sesame oil.', unit: '1L' },
-  { name: 'Palm Jaggery', category: 'Valluvam Products', price: 180, image_url: '/Valluvam/products-plam.jpg', description: 'Authentic palm jaggery with no additives.', unit: '500g' },
-  { name: 'Forest Honey', category: 'Valluvam Products', price: 350, image_url: '/Valluvam/products-naatu.jpg', description: 'Raw, unprocessed honey from deep forests.', unit: '500g' },
-].map((p, idx) => ({ ...p, id: `live-${idx}`, stock: 100, is_active: true }));
+import { VERIFIED_INVENTORY } from '@/lib/constants';
 
 function ProductsContent() {
   const searchParams = useSearchParams();
-  const initialCategory = searchParams.get('category') || 'All';
   const [products, setProducts] = useState<any[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [category, setCategory] = useState(initialCategory);
+  const [category, setCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [priceRange, setPriceRange] = useState(2000);
 
   const categories = ['All', 'Seasonal', 'Fruits', 'Vegetables', 'Valluvam Products'];
+
+  // Sync category and search state with URL params
+  useEffect(() => {
+    const catParam = searchParams.get('category');
+    if (catParam) {
+      const matched = categories.find(c => c.toLowerCase() === catParam.toLowerCase());
+      setCategory(matched || 'All');
+    } else {
+      setCategory('All');
+    }
+
+    const searchParam = searchParams.get('search');
+    if (searchParam) {
+      setSearchQuery(searchParam);
+    }
+  }, [searchParams]);
 
   const normalizeProduct = (p: any) => {
     let img = p.image_url || (Array.isArray(p.image_urls) ? p.image_urls[0] : null);
     if (img && typeof img === 'string' && !img.startsWith('http') && !img.startsWith('/')) {
       img = '/' + img;
     }
+    
+    // Robust category mapping
+    let cat = p.category || '';
+    if (!cat && p.category_id) {
+      if (p.category_id === 'cat-fruit') cat = 'Fruits';
+      else if (p.category_id === 'cat-veg') cat = 'Vegetables';
+      else if (p.category_id === 'cat-trad' || p.category_id === 'cat-val') cat = 'Valluvam Products';
+      else cat = p.category_id;
+    }
+
+    // Ensure a unique ID exists
+    const id = p.id || `temp-${p.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || Math.random().toString(36).substr(2, 9)}`;
+
     return {
       ...p,
-      category: p.category || (p.category_id === 'cat-veg' ? 'Vegetables' : p.category_id === 'cat-fruit' ? 'Fruits' : p.category_id === 'cat-val' ? 'Valluvam Products' : p.category_id) || '',
+      id,
+      category: cat,
       image_url: img || '/placeholder_product.png',
-      stock: p.stock !== undefined ? p.stock : (p.in_stock ? 100 : 0)
+      stock: p.stock !== undefined ? p.stock : (p.in_stock ? 100 : 0),
+      is_seasonal: p.is_seasonal === true || p.is_seasonal === 'true'
     };
   };
 
   async function fetchProducts() {
     try {
       setLoading(true);
-      const { data, error } = await supabase.from('products').select('*').or('is_active.eq.true,is_active.is.null');
-      let dbProducts = (data || []).map(normalizeProduct);
+      // Fetch all products to handle active/inactive states correctly during merge
+      const { data, error } = await supabase
+        .from('products')
+        .select('*');
+      
+      const dbProducts = (data || []).map(normalizeProduct);
       
       const allProductsMap = new Map();
-      PREMIUM_SAMPLES.forEach(p => allProductsMap.set(p.name, p));
-      dbProducts.forEach(p => allProductsMap.set(p.name, p));
       
-      const finalProducts = Array.from(allProductsMap.values());
+      // 1. Seed with Local Inventory
+      VERIFIED_INVENTORY.forEach(p => {
+        allProductsMap.set(p.name.toLowerCase().trim(), normalizeProduct(p));
+      });
+      
+      // 2. Merge with Database items
+      dbProducts.forEach(p => {
+        const key = p.name.toLowerCase().trim();
+        if (p.is_active === false) {
+          // Explicitly remove if marked as inactive in DB
+          allProductsMap.delete(key);
+        } else {
+          // Overwrite with DB version
+          allProductsMap.set(key, p);
+        }
+      });
+      
+      const finalProducts = Array.from(allProductsMap.values())
+        .sort((a, b) => {
+          const orderA = a.order_index ?? 999;
+          const orderB = b.order_index ?? 999;
+          if (orderA !== orderB) return orderA - orderB;
+          return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+        });
       setProducts(finalProducts);
-      setFilteredProducts(finalProducts);
     } catch (err) {
-      setProducts(PREMIUM_SAMPLES);
-      setFilteredProducts(PREMIUM_SAMPLES);
+      console.error('Fetch failed, using fallbacks:', err);
+      setProducts(VERIFIED_INVENTORY.map(normalizeProduct));
     } finally {
       setLoading(false);
     }
@@ -96,11 +120,29 @@ function ProductsContent() {
   }, []);
 
   useEffect(() => {
-    let filtered = products;
-    if (category === 'Seasonal') filtered = filtered.filter(p => p.is_seasonal);
-    else if (category !== 'All') filtered = filtered.filter(p => (p.category || '').toString().toLowerCase() === category.toLowerCase());
-    if (searchQuery) filtered = filtered.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()) || (p.category || '').toLowerCase().includes(searchQuery.toLowerCase()));
+    let filtered = [...products];
+    
+    // 1. Category Filter
+    if (category === 'Seasonal') {
+      filtered = filtered.filter(p => p.is_seasonal === true);
+    } else if (category !== 'All') {
+      filtered = filtered.filter(p => 
+        (p.category || '').toString().toLowerCase().trim() === category.toLowerCase().trim()
+      );
+    }
+    
+    // 2. Search Filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(p => 
+        p.name.toLowerCase().includes(q) || 
+        (p.category || '').toLowerCase().includes(q)
+      );
+    }
+    
+    // 3. Price Filter
     filtered = filtered.filter(p => Number(p.price) <= priceRange);
+    
     setFilteredProducts(filtered);
   }, [category, searchQuery, priceRange, products]);
 
@@ -148,7 +190,15 @@ function ProductsContent() {
             <div className="flex flex-col md:flex-row gap-6 items-center mb-12">
               <div className="relative flex-1 w-full">
                 <div className="absolute left-6 top-1/2 -translate-y-1/2 text-muted-foreground/60"><Search size={22} /></div>
-                <input type="text" placeholder="Search fresh products..." className="w-full bg-white border border-border/60 rounded-[1.5rem] py-5 pl-16 pr-8 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all text-lg shadow-sm" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                <input type="text" placeholder="Search fresh products..." className="w-full bg-white border border-border/60 rounded-[1.5rem] py-5 pl-16 pr-16 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all text-lg shadow-sm" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                {searchQuery && (
+                  <button 
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-6 top-1/2 -translate-y-1/2 p-2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -158,7 +208,7 @@ function ProductsContent() {
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
                 <AnimatePresence mode="popLayout">
                   {filteredProducts.map((product) => (
-                    <motion.div key={product.id} layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}><ProductCard product={product} /></motion.div>
+                    <motion.div key={product.id || product.name} layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}><ProductCard product={product} /></motion.div>
                   ))}
                 </AnimatePresence>
               </div>

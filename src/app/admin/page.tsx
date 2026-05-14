@@ -38,18 +38,32 @@ export default function AdminDashboard() {
     async function loadData() {
       try {
         setLoading(true);
-        const [statsData, ordersData, visitorsData, productsData] = await Promise.all([
+        
+        // Add a safety timeout to prevent hanging on network issues (e.g. Supabase down)
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Fetch timeout')), 8000)
+        );
+
+        const fetchDataPromise = Promise.all([
           getAdminStats(),
           getAllOrders(),
           getRecentVisitors(),
           getAllProducts()
         ]);
+
+        const [statsData, ordersData, visitorsData, productsData] = await Promise.race([
+          fetchDataPromise,
+          timeoutPromise
+        ]) as any;
+
         setStats(statsData);
         setRecentOrders(ordersData.slice(0, 5));
         setRecentVisitors(visitorsData);
         setProducts(productsData.data?.slice(0, 3) || []);
       } catch (error) {
         console.error('Failed to load dashboard data:', error);
+        // Fallback to empty state if everything fails to keep UI interactive
+        setStats({ totalRevenue: '₹0', totalOrders: '0', activeProducts: '0', totalCustomers: '0', outOfStockCount: '0' });
       } finally {
         setLoading(false);
       }
@@ -60,7 +74,7 @@ export default function AdminDashboard() {
     return () => { supabase.removeChannel(ordersChannel); };
   }, []);
 
-  if (loading) return <div className="flex flex-col items-center justify-center min-h-screen gap-4 bg-[#0A0A0A] text-white"><div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" /><p className="text-primary font-black uppercase tracking-[0.5em] text-[10px] animate-pulse">Syncing Titan Intelligence...</p></div>;
+  if (loading) return <div className="flex flex-col items-center justify-center min-h-screen gap-4 bg-white text-primary"><div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" /><p className="text-primary font-black uppercase tracking-[0.5em] text-[10px] animate-pulse">Syncing Business Data...</p></div>;
 
   return (
     <div className="space-y-16 pb-20">
@@ -68,10 +82,10 @@ export default function AdminDashboard() {
         <div>
           <div className="flex items-center gap-3 text-primary font-black text-xs uppercase tracking-[0.4em] mb-4">
              <div className="w-2 h-2 rounded-full bg-primary animate-ping" />
-             <span>Titan Control Systems v7.0</span>
+             <span>Operations Management v7.0</span>
           </div>
           <h1 className="text-5xl md:text-7xl font-black text-foreground tracking-tighter uppercase leading-none">
-             Executive <br /> <span className="text-primary italic font-serif lowercase">Intelligence</span>
+             Business <br /> <span className="text-primary italic font-serif lowercase">Performance</span>
           </h1>
         </div>
         <div className="flex items-center gap-4">

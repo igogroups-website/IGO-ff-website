@@ -93,6 +93,14 @@ export default function ProductCard({ product }: ProductCardProps) {
             </div>
           )}
 
+          {/* Customer Favorite Badge */}
+          {['Small Onion', 'Tomato - Hybrid', 'Carrot', 'Ghee', 'Mangoes'].includes(product.name) && (
+            <div className="absolute top-16 left-4 bg-primary text-white px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg z-10 flex items-center gap-1.5">
+              <Star size={10} className="fill-white" />
+              Customer Favorite
+            </div>
+          )}
+
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -161,6 +169,14 @@ export default function ProductCard({ product }: ProductCardProps) {
             <p className="text-[10px] uppercase tracking-[0.2em] text-primary font-black mb-2 opacity-70">
               {product.category || 'Fresh Harvest'}
             </p>
+            <div className="flex items-center gap-1 mb-2">
+              <div className="flex items-center gap-0.5">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} size={10} className={i < 4 ? 'fill-amber-400 text-amber-400' : 'text-slate-200'} />
+                ))}
+              </div>
+              <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">4.8 (120+)</span>
+            </div>
             <h3 className="text-xl font-black text-foreground line-clamp-1 group-hover:text-primary transition-colors leading-tight">
               {product.name}
             </h3>

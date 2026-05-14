@@ -5,9 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Eye, Users, MapPin, Wind, Thermometer, Droplets, Clock } from 'lucide-react';
 
 const STREAMS = [
-  { id: 'block-a', name: 'Veggie Block A', location: 'North Field', temp: '28°C', humidity: '65%', wind: '12 km/h', viewers: 124, url: 'https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?q=80&w=1200&auto=format&fit=crop' },
-  { id: 'orchard', name: 'Fruit Orchard', location: 'East Hill', temp: '26°C', humidity: '60%', wind: '8 km/h', viewers: 89, url: 'https://images.unsplash.com/photo-1592394933243-951d39a51535?q=80&w=1200&auto=format&fit=crop' },
-  { id: 'greenhouse', name: 'Smart Greenhouse', location: 'Central Hub', temp: '24°C', humidity: '75%', wind: '2 km/h', viewers: 256, url: 'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?q=80&w=1200&auto=format&fit=crop' }
+  { id: 'block-a', name: 'Veggie Block A', location: 'North Field', temp: '28°C', humidity: '65%', wind: '12 km/h', viewers: 124, url: '/seasonal_harvest_bg.png' },
+  { id: 'orchard', name: 'Fruit Orchard', location: 'East Hill', temp: '26°C', humidity: '60%', wind: '8 km/h', viewers: 89, url: '/category_fruits.png' },
+  { id: 'greenhouse', name: 'Smart Greenhouse', location: 'Central Hub', temp: '24°C', humidity: '75%', wind: '2 km/h', viewers: 256, url: '/category_vegetables.png' }
 ];
 
 export default function LiveFarmStream() {

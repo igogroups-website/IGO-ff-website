@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Leaf, Lock, User, ArrowRight, Loader2, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getAdminPassword } from '@/lib/admin';
 
 export default function AdminLogin() {
   const [password, setPassword] = useState('');
@@ -20,8 +21,8 @@ export default function AdminLogin() {
     e.preventDefault();
     setLoading(true);
 
-    // Using the password provided by the user
-    if (password === 'Admin@123') {
+    const correctPassword = await getAdminPassword();
+    if (password === correctPassword) {
       // Set session in both cookie (for middleware) and localStorage (for UI)
       document.cookie = "admin_auth=true; path=/; max-age=86400; SameSite=Strict";
       localStorage.setItem('admin_auth', 'true');

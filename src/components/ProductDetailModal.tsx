@@ -114,7 +114,28 @@ export default function ProductDetailModal({ isOpen, onClose, product }: Product
           <motion.div initial={{ opacity: 0, scale: 0.9, y: 40 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 40 }} className="relative w-full max-w-6xl bg-white rounded-[2rem] md:rounded-[3rem] overflow-hidden shadow-2xl flex flex-col md:flex-row max-h-[90vh] border border-white/20">
             <button onClick={onClose} className="absolute top-4 right-4 md:top-8 md:right-8 p-2 md:p-4 bg-white/90 hover:bg-red-500 hover:text-white text-foreground rounded-full transition-all z-20 shadow-xl border border-border group"><X size={24} className="group-hover:rotate-90 transition-transform" /></button>
             <div className="w-full md:w-1/2 h-[300px] md:h-auto bg-muted/20 relative overflow-hidden flex items-center justify-center">
-              {!imageError ? <img src={currentProduct.image_url} alt={currentProduct.name} onError={() => setImageError(true)} className="w-full h-full object-cover transition-transform duration-1000 hover:scale-110" /> : <div className="text-center p-8"><AlertCircle size={48} className="mx-auto opacity-20 mb-4" /><p className="font-bold">Image not available</p></div>}
+              {(currentProduct as any).video_url ? (
+                <video 
+                  src={(currentProduct as any).video_url} 
+                  autoPlay 
+                  muted 
+                  loop 
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+              ) : !imageError ? (
+                <img 
+                  src={currentProduct.image_url} 
+                  alt={currentProduct.name} 
+                  onError={() => setImageError(true)} 
+                  className="w-full h-full object-cover transition-transform duration-1000 hover:scale-110" 
+                />
+              ) : (
+                <div className="text-center p-8">
+                  <AlertCircle size={48} className="mx-auto opacity-20 mb-4" />
+                  <p className="font-bold">Image not available</p>
+                </div>
+              )}
               <div className="absolute top-6 left-6 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-2xl flex items-center gap-2 shadow-xl border border-border"><Star size={18} className="fill-primary text-primary" /><span className="font-black text-lg">5.0</span></div>
             </div>
             <div className="w-full md:w-1/2 p-8 md:p-14 lg:p-20 overflow-y-auto custom-scrollbar flex flex-col bg-white">

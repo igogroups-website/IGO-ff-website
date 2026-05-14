@@ -6,19 +6,19 @@ import CategoryCard from './CategoryCard';
 const CATEGORIES = [
   {
     name: 'Vegetables',
-    image: 'https://images.unsplash.com/photo-1566385101042-1a000c1267c4?q=80&w=800&auto=format&fit=crop',
+    image: '/category_vegetables.png',
     count: '20+ Varieties',
     color: 'bg-green-50'
   },
   {
     name: 'Fruits',
-    image: 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?q=80&w=800&auto=format&fit=crop',
+    image: '/category_fruits.png',
     count: '15+ Varieties',
     color: 'bg-orange-50'
   },
   {
     name: 'Valluvam Products',
-    image: 'https://images.unsplash.com/photo-1546549032-637110b50193?q=80&w=800&auto=format&fit=crop',
+    image: '/category_valluvam.png',
     count: '10+ Essentials',
     color: 'bg-yellow-50'
   }

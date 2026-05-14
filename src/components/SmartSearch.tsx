@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import ProductDetailModal from './ProductDetailModal';
 import { toast } from 'react-hot-toast';
+import { VERIFIED_INVENTORY } from '@/lib/constants';
 
 export default function SmartSearch() {
   const [query, setQuery] = useState('');
@@ -33,16 +34,33 @@ export default function SmartSearch() {
   useEffect(() => {
     const fetchResults = async () => {
       if (query.length > 1) {
-        const { data, error } = await supabase
+        // 1. Search Database
+        const { data: dbData } = await supabase
           .from('products')
           .select('*')
           .or(`name.ilike.%${query}%,category.ilike.%${query}%`)
           .limit(6);
         
-        if (!error && data) {
-          setResults(data);
-          setIsOpen(true);
-        }
+        // 2. Search Local Inventory
+        const localData = VERIFIED_INVENTORY.filter(p => 
+          p.name.toLowerCase().includes(query.toLowerCase()) || 
+          p.category.toLowerCase().includes(query.toLowerCase())
+        ).slice(0, 6);
+
+        // 3. Merge results (prioritize DB, deduplicate by name, filter inactive)
+        const combined = new Map();
+        localData.forEach(p => combined.set(p.name.toLowerCase(), p));
+        (dbData || []).forEach(p => {
+          if (p.is_active !== false) {
+            combined.set(p.name.toLowerCase(), p);
+          } else {
+            combined.delete(p.name.toLowerCase());
+          }
+        });
+        
+        const finalResults = Array.from(combined.values()).slice(0, 6);
+        setResults(finalResults);
+        setIsOpen(finalResults.length > 0);
       } else {
         setResults([]);
         setIsOpen(false);
@@ -93,7 +111,7 @@ export default function SmartSearch() {
         {isOpen && results.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute top-full left-0 right-0 mt-3 bg-white rounded-[2rem] shadow-2xl border border-border overflow-hidden z-[100] p-2">
             {results.map((product) => (
-              <button key={product.id} onClick={() => handleProductClick(product)} className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-primary/5 transition-all text-left">
+              <button key={product.id || product.name} onClick={() => handleProductClick(product)} className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-primary/5 transition-all text-left">
                 <div className="w-12 h-12 rounded-lg bg-muted/20 overflow-hidden flex-shrink-0"><img src={product.image_url} alt={product.name} className="w-full h-full object-cover" /></div>
                 <div className="flex-1"><p className="text-sm font-black text-foreground">{product.name}</p><p className="text-[10px] text-muted-foreground font-bold uppercase">{product.category}</p></div>
                 <p className="text-xs font-black text-primary">₹{product.price}</p>

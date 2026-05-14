@@ -21,8 +21,14 @@ import {
   ArrowRight,
   TrendingUp,
   History,
-  X
+  X,
+  FileSpreadsheet,
+  FileText,
+  Truck
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
@@ -39,6 +45,8 @@ function OrdersContent() {
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [orderDetails, setOrderDetails] = useState<any[]>([]);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [showHarvestSummary, setShowHarvestSummary] = useState(false);
+  const [harvestSummary, setHarvestSummary] = useState<any[]>([]);
 
   const searchParams = useSearchParams();
   const initialSearch = searchParams.get('search') || '';
@@ -117,6 +125,64 @@ function OrdersContent() {
     return matchesSearch && matchesStatus;
   });
 
+  const calculateHarvestSummary = async () => {
+    const activeOrders = orders.filter(o => ['pending', 'processing', 'shipped'].includes(o.status));
+    const itemCounts: Record<string, { name: string, quantity: number, unit: string, category: string }> = {};
+
+    for (const order of activeOrders) {
+      const details = await getOrderDetails(order.id);
+      details.forEach((item: any) => {
+        const productId = item.product_id;
+        if (!itemCounts[productId]) {
+          itemCounts[productId] = { 
+            name: item.products?.name || 'Unknown', 
+            quantity: 0, 
+            unit: item.products?.unit || 'unit',
+            category: item.products?.category || 'General'
+          };
+        }
+        itemCounts[productId].quantity += item.quantity;
+      });
+    }
+
+    setHarvestSummary(Object.values(itemCounts).sort((a, b) => b.quantity - a.quantity));
+    setShowHarvestSummary(true);
+  };
+
+  const exportToExcel = () => {
+    const data = filteredOrders.map(o => ({
+      ID: o.id.slice(0, 8),
+      Customer: o.customer?.full_name || 'Guest',
+      Email: o.customer?.email || 'N/A',
+      Amount: o.total_amount,
+      Status: o.status,
+      Date: new Date(o.created_at).toLocaleDateString(),
+      Address: o.delivery_address
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Orders");
+    XLSX.writeFile(wb, `FF_Orders_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  const exportToPDF = () => {
+    const doc = new jsPDF() as any;
+    doc.text("Farmer Factory - Order Manifest", 14, 15);
+    const tableData = filteredOrders.map(o => [
+      o.id.slice(0, 8),
+      o.customer?.full_name || 'Guest',
+      `INR ${o.total_amount}`,
+      o.status.toUpperCase(),
+      new Date(o.created_at).toLocaleDateString()
+    ]);
+    doc.autoTable({
+      head: [['ID', 'Customer', 'Amount', 'Status', 'Date']],
+      body: tableData,
+      startY: 20,
+    });
+    doc.save(`FF_Orders_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'delivered': return 'bg-emerald-100 text-emerald-600 border-emerald-200';
@@ -175,6 +241,30 @@ function OrdersContent() {
           >
             <Clock size={20} />
           </button>
+          
+          <div className="flex items-center gap-2 border-l border-border pl-3">
+            <button 
+              onClick={calculateHarvestSummary}
+              className="bg-primary text-white px-5 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-primary/20 hover:scale-105 transition-all"
+            >
+              <Truck size={16} />
+              Harvest Summary
+            </button>
+            <button 
+              onClick={exportToExcel}
+              className="p-3 bg-white border border-border rounded-2xl text-emerald-600 hover:bg-emerald-50 transition-all"
+              title="Export Excel"
+            >
+              <FileSpreadsheet size={20} />
+            </button>
+            <button 
+              onClick={exportToPDF}
+              className="p-3 bg-white border border-border rounded-2xl text-red-600 hover:bg-red-50 transition-all"
+              title="Export PDF"
+            >
+              <FileText size={20} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -469,6 +559,93 @@ function OrdersContent() {
                     <p className="text-muted-foreground font-bold italic">Loading order items...</p>
                   </div>
                 )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Harvest Summary Modal */}
+      <AnimatePresence>
+        {showHarvestSummary && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowHarvestSummary(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white w-full max-w-4xl rounded-[3rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[85vh]"
+            >
+              <div className="p-10 border-b border-border flex items-center justify-between bg-primary text-white">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center shadow-lg border border-white/20">
+                    <Truck size={30} />
+                  </div>
+                  <div>
+                    <h2 className="text-3xl font-black tracking-tight uppercase">Harvest Summary</h2>
+                    <p className="text-sm font-bold opacity-80">Aggregate requirements for all active orders</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowHarvestSummary(false)} className="p-3 hover:bg-white/10 rounded-full transition-all">
+                  <X size={28} />
+                </button>
+              </div>
+
+              <div className="p-10 overflow-y-auto custom-scrollbar bg-slate-50 flex-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {harvestSummary.map((item, idx) => (
+                    <motion.div 
+                      key={idx}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: idx * 0.05 }}
+                      className="bg-white p-6 rounded-[2rem] border border-border shadow-sm flex flex-col justify-between group hover:shadow-xl hover:shadow-primary/5 transition-all"
+                    >
+                      <div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-primary mb-1 block opacity-60">{item.category}</span>
+                        <h4 className="text-xl font-black text-foreground mb-4 leading-tight">{item.name}</h4>
+                      </div>
+                      <div className="flex items-end justify-between border-t border-slate-100 pt-4">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Required</span>
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-3xl font-black text-primary">{item.quantity}</span>
+                            <span className="text-sm font-bold text-muted-foreground">{item.unit}</span>
+                          </div>
+                        </div>
+                        <div className="w-12 h-12 bg-primary/5 rounded-xl flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all">
+                          <Check size={20} />
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+
+                {harvestSummary.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
+                    <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center text-slate-300">
+                      <Truck size={40} />
+                    </div>
+                    <h3 className="text-xl font-black">No Active Requirements</h3>
+                    <p className="text-muted-foreground max-w-xs mx-auto font-medium">All active orders have been processed or no orders currently require harvest.</p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="p-8 bg-white border-t border-border flex items-center justify-between">
+                <p className="text-sm font-bold text-muted-foreground">Total Unique Items: <span className="text-foreground font-black">{harvestSummary.length}</span></p>
+                <button 
+                  onClick={() => window.print()}
+                  className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-slate-800 transition-all shadow-xl"
+                >
+                  Print Picklist
+                </button>
               </div>
             </motion.div>
           </div>

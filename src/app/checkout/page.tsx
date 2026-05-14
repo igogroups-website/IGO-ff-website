@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { motion } from 'framer-motion';
-import { Truck, CreditCard, ShieldCheck, ArrowRight, MapPin, Phone, User } from 'lucide-react';
+import { Truck, CreditCard, ShieldCheck, ArrowRight, MapPin, Phone, User, Crosshair, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
@@ -23,6 +23,7 @@ export default function Checkout() {
     city: '',
     zip: ''
   });
+  const [isLocating, setIsLocating] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'COD' | 'CARD'>('COD');
   const [cardDetails, setCardDetails] = useState({
     number: '',
@@ -53,6 +54,49 @@ export default function Checkout() {
       fetchProfile();
     }
   }, [user, authLoading, router]);
+  
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by your browser');
+      return;
+    }
+
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          // Use Nominatim (OpenStreetMap) for free reverse geocoding
+          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`);
+          const data = await response.json();
+          
+          if (data.address) {
+            const addr = data.address;
+            setAddress(prev => ({
+              ...prev,
+              street: `${addr.road || ''} ${addr.suburb || addr.neighbourhood || ''}`.trim() || prev.street,
+              city: addr.city || addr.town || addr.village || prev.city,
+              zip: addr.postcode || prev.zip
+            }));
+            toast.success('Location captured successfully!');
+          }
+        } catch (error) {
+          toast.error('Failed to get address details, but coordinates captured.');
+          setAddress(prev => ({
+            ...prev,
+            street: `${prev.street} (Lat: ${latitude.toFixed(4)}, Lon: ${longitude.toFixed(4)})`.trim()
+          }));
+        } finally {
+          setIsLocating(false);
+        }
+      },
+      (error) => {
+        setIsLocating(false);
+        toast.error('Please enable location permissions in your browser');
+      },
+      { enableHighAccuracy: true }
+    );
+  };
 
   const subtotal = cartTotal;
 
@@ -74,6 +118,20 @@ export default function Checkout() {
       }
       if (cardDetails.number.length < 16) {
         toast.error('Invalid card number');
+        return;
+      }
+    }
+
+    // Business Rule: Onion Order Constraint
+    const onionItems = cartItems.filter(item => item.products.name.toLowerCase().includes('onion'));
+    if (onionItems.length > 0) {
+      const totalOnionKg = onionItems.reduce((sum, item) => sum + item.quantity, 0);
+      if (totalOnionKg < 5) {
+        toast.error('Logistics Notice: Onion orders must be at least 5kg for bulk delivery.', {
+          icon: '🧅',
+          duration: 5000
+        });
+        setLoading(false);
         return;
       }
     }
@@ -152,6 +210,14 @@ export default function Checkout() {
                   <MapPin size={20} />
                 </div>
                 <h2 className="text-xl font-bold">Delivery Address</h2>
+                <button 
+                  onClick={handleGetLocation}
+                  disabled={isLocating}
+                  className="ml-auto flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary/20 transition-all border border-primary/10"
+                >
+                  {isLocating ? <Loader2 size={14} className="animate-spin" /> : <Crosshair size={14} />}
+                  {isLocating ? 'Locating...' : 'Use Live Location'}
+                </button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

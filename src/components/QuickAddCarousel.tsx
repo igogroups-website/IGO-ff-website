@@ -63,7 +63,7 @@ export default function QuickAddCarousel({ products, title = "You might also lik
           
           return (
             <motion.div
-              key={product.id}
+              key={product.id || product.name}
               initial={{ opacity: 0, x: 20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}

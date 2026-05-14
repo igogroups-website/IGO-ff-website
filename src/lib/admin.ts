@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { VERIFIED_INVENTORY } from './constants';
 
 export async function isAdmin() {
   const { data: { user } } = await supabase.auth.getUser();
@@ -11,6 +12,25 @@ export async function isAdmin() {
     .single();
 
   return profile?.role === 'admin';
+}
+
+export async function getAdminPassword() {
+  const { data, error } = await supabase
+    .from('site_settings')
+    .select('value')
+    .eq('key', 'admin_password')
+    .single();
+  
+  if (error || !data) return 'Admin@123'; // Fallback
+  return data.value;
+}
+
+export async function updateAdminPassword(newPassword: string) {
+  const { error } = await supabase
+    .from('site_settings')
+    .upsert({ key: 'admin_password', value: newPassword });
+  
+  return { success: !error, error };
 }
 
 export async function getAdminStats() {
@@ -122,6 +142,7 @@ export async function getAllProducts(includeInactive = true) {
   let query = supabase
     .from('products')
     .select('*')
+    .order('order_index', { ascending: true })
     .order('created_at', { ascending: false });
 
   if (!includeInactive) {
@@ -130,15 +151,31 @@ export async function getAllProducts(includeInactive = true) {
 
   const { data, error } = await query;
   
-  // Normalize data for UI if needed (handle complex schema)
-  const normalizedData = data?.map((p: any) => ({
+  // Normalize database data
+  const dbProducts = (data || []).map((p: any) => ({
     ...p,
-    category: p.category || (p.category_id === 'cat-fruit' ? 'Fruits' : p.category_id === 'cat-trad' ? 'Valluvam Products' : 'Vegetables'),
+    category: p.category || (p.category_id === 'cat-fruit' ? 'Fruits' : (p.category_id === 'cat-trad' || p.category_id === 'cat-val') ? 'Valluvam Products' : 'Vegetables'),
     image_url: p.image_url || (p.image_urls && p.image_urls[0]) || '',
-    stock: p.stock !== undefined ? p.stock : (p.in_stock ? 100 : 0)
+    stock: p.stock !== undefined ? p.stock : (p.in_stock ? 100 : 0),
+    is_synced: true
   }));
 
-  return { data: normalizedData, error };
+  // Create a map to merge local and DB products (prefer DB)
+  const allProductsMap = new Map();
+
+  // 1. Seed with Local Inventory
+  VERIFIED_INVENTORY.forEach(p => {
+    allProductsMap.set(p.name.toLowerCase().trim(), { ...p, is_synced: false });
+  });
+
+  // 2. Overwrite with DB products
+  dbProducts.forEach(p => {
+    allProductsMap.set(p.name.toLowerCase().trim(), p);
+  });
+
+  const finalData = Array.from(allProductsMap.values());
+
+  return { data: finalData, error };
 }
 
 export async function updateProductStock(productId: string, inStock: boolean) {
@@ -248,12 +285,12 @@ export async function deleteAllProducts() {
   try {
     console.log('Initiating total catalog wipe...');
     // 1. Clear dependent tables first to avoid foreign key violations
-    // We use neq id '0' as a trick to delete all rows in mock and real Supabase
+    // We wrap each in a try/catch because some tables might not exist in early setups
     const allIds = '00000000-0000-0000-0000-000000000000';
     
-    await supabase.from('order_items').delete().neq('id', allIds);
-    await supabase.from('cart').delete().neq('id', allIds);
-    await supabase.from('wishlist').delete().neq('id', allIds);
+    try { await supabase.from('order_items').delete().neq('id', allIds); } catch(e) {}
+    try { await supabase.from('cart').delete().neq('id', allIds); } catch(e) {}
+    try { await supabase.from('wishlist').delete().neq('id', allIds); } catch(e) {}
     
     // 2. Now safe to delete all products
     const { error } = await supabase
@@ -276,70 +313,70 @@ export async function deleteAllProducts() {
 
 export async function syncVerifiedCatalog(samples: any[]) {
   try {
-    console.log('Starting robust catalog sync with', samples.length, 'items');
+    console.log('Starting robust catalog upsert with', samples.length, 'items');
     
-    // 1. Total Wipe - Clear all existing products to ensure no "phantoms" survive
-    const result = await deleteAllProducts();
-    if (result.error) {
-      console.error('CRITICAL: Catalog wipe failed. Aborting sync to prevent duplicates.', result.error);
-      return { success: false, error: new Error(`Wipe failed: ${result.error.message || 'Unknown error'}. Products might be locked by active orders.`) };
-    }
+    // 1. Prepare items for upsert
+    const mappedSamples = samples.map(p => {
+      // Map category to category_id and slug
+      let category_id = 'cat-veg';
+      let category_slug = 'vegetables';
+      if (p.category === 'Fruits') {
+        category_id = 'cat-fruit';
+        category_slug = 'fruits';
+      } else if (p.category === 'Valluvam Products') {
+        category_id = 'cat-trad';
+        category_slug = 'trad';
+      }
 
-    // 2. Prepare items for insertion
-    await new Promise(resolve => setTimeout(resolve, 500));
+      return {
+        name: p.name,
+        slug: p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        description: p.description,
+        image_urls: [p.image_url], // Database uses array
+        category_id: category_id,
+        category_slug: category_slug,
+        price: p.price,
+        mrp: p.price * 1.2,
+        unit: p.unit,
+        in_stock: true,
+        is_active: true,
+        is_featured: p.is_seasonal || false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+    });
 
-    // 3. Try Direct Insert first (Standard Schema)
-    let { data: insertedData, error: insertError } = await supabase
+    // 2. Perform Upsert based on 'name'
+    const { data: upsertedData, error: upsertError } = await supabase
       .from('products')
-      .insert(samples)
+      .upsert(mappedSamples, { onConflict: 'name' })
       .select();
 
-    // 4. SMART MAPPING FALLBACK (If Standard Insert Fails)
-    if (insertError && (insertError.message.includes('category') || insertError.message.includes('image_url'))) {
-      console.log('Detected schema mismatch. Attempting smart mapping...');
-      
-      const mappedSamples = samples.map(p => {
-        // Map category to category_id
-        let category_id = 'cat-veg';
-        if (p.category === 'Fruits') category_id = 'cat-fruit';
-        else if (p.category === 'Valluvam Products') category_id = 'cat-trad';
-
-        return {
-          name: p.name,
-          slug: p.name.toLowerCase().replace(/\s+/g, '-'),
-          description: p.description,
-          image_urls: [p.image_url], // Wrap in array
-          category_id: category_id,
-          category_slug: category_id.replace('cat-', ''),
-          price: p.price,
-          unit: p.unit,
-          in_stock: p.stock > 0, // Convert to boolean
-          is_active: p.is_active !== false,
-          is_featured: p.is_seasonal || false,
-          mrp: p.price * 1.2, // Mock MRP
-          created_at: new Date().toISOString()
-        };
-      });
-
-      const { data: retryData, error: retryError } = await supabase
-        .from('products')
-        .insert(mappedSamples)
-        .select();
-      
-      if (retryError) throw retryError;
-      insertedData = retryData;
-    } else if (insertError) {
-      throw insertError;
+    if (upsertError) {
+      console.error('Upsert phase failed:', upsertError);
+      return { success: false, error: upsertError };
     }
 
     return { 
       success: true, 
-      added: insertedData?.length || 0, 
-      updated: 0, 
-      removed: 'All previous items' 
+      added: upsertedData?.length || 0, 
+      updated: upsertedData?.length || 0, 
+      removed: 0 
     };
   } catch (error) {
     console.error('Sync failed:', error);
     return { success: false, error };
   }
+}
+
+export async function getProductRating(productId: string) {
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('rating')
+    .eq('product_id', productId);
+
+  if (error || !data || data.length === 0) return { average: 0, count: 0 };
+
+  const average = data.reduce((acc, r) => acc + r.rating, 0) / data.length;
+  return { average: Number(average.toFixed(1)), count: data.length };
 }

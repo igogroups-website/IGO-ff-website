@@ -6,10 +6,10 @@ import { Play, Heart, MessageCircle, Share2, Sparkles, User } from 'lucide-react
 
 export default function FarmStories() {
   const stories = [
-    { id: 1, farmer: 'Arjun', title: 'Morning Harvest', image: 'https://images.unsplash.com/photo-1595855759920-86582396756a?q=80&w=400&auto=format&fit=crop' },
-    { id: 2, farmer: 'Meera', title: 'Organic Secrets', image: 'https://images.unsplash.com/photo-1592919016381-f07ecd5a244a?q=80&w=400&auto=format&fit=crop' },
-    { id: 3, farmer: 'Senthil', title: 'Oil Extraction', image: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?q=80&w=400&auto=format&fit=crop' },
-    { id: 4, farmer: 'Kiran', title: 'Soil Quality', image: 'https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?q=80&w=400&auto=format&fit=crop' },
+    { id: 1, farmer: 'Arjun', title: 'Morning Harvest', image: '/Vegetables/drumstick.jpg' },
+    { id: 2, farmer: 'Meera', title: 'Organic Secrets', image: '/Fruits/MangoBanganapalli.jfif' },
+    { id: 3, farmer: 'Senthil', title: 'Oil Extraction', image: '/Valluvam/coconut-1L.jpg' },
+    { id: 4, farmer: 'Kiran', title: 'Soil Quality', image: '/Vegetables/ooty-carrot.jpg' },
   ];
 
   return (

@@ -4,7 +4,6 @@ import React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight, Leaf, ShieldCheck, Truck, Sparkles } from 'lucide-react';
-import ThreeHero from './ThreeHero';
 import { useTranslation } from '@/context/TranslationContext';
 
 interface HeroProps {
@@ -16,18 +15,42 @@ export default function Hero({ greeting = 'Welcome' }: HeroProps) {
 
   return (
     <section className="relative min-h-[95vh] flex items-center pt-36 overflow-hidden">
-      {/* 3D Background Scene */}
-      <ThreeHero />
-      
-      {/* Parallax Image Overlay */}
-      <motion.div 
-        initial={{ scale: 1.1 }}
-        animate={{ scale: 1 }}
-        transition={{ duration: 1.5, ease: "easeOut" }}
-        className="absolute inset-0 z-0 pointer-events-none"
-      >
-        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/80 to-transparent" />
-      </motion.div>
+      {/* Professional Background Image */}
+      <div className="absolute inset-0 z-[-1] overflow-hidden">
+        <div className="absolute inset-0 bg-black/40 z-10 md:hidden" /> {/* Mobile overlay */}
+        <img 
+          src="/seasonal_harvest_bg.png" 
+          alt="Farm Background" 
+          className="w-full h-full object-cover opacity-30 md:opacity-40 scale-105"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/80 md:via-white/60 to-transparent" />
+      </div>
+
+      {/* Decorative Images */}
+      <div className="absolute right-0 top-0 w-1/2 h-full hidden lg:block pointer-events-none">
+        <motion.div 
+          initial={{ opacity: 0, x: 100 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 1, delay: 0.5 }}
+          className="relative w-full h-full"
+        >
+          <img 
+            src="/Vegetables/ooty-carrot.jpg" 
+            alt="Fresh Carrots" 
+            className="absolute top-[15%] right-[10%] w-64 h-64 object-cover rounded-[3rem] shadow-2xl rotate-6 border-8 border-white"
+          />
+          <img 
+            src="/Fruits/apple.jfif" 
+            alt="Fresh Apples" 
+            className="absolute top-[45%] right-[25%] w-56 h-56 object-cover rounded-[3rem] shadow-2xl -rotate-12 border-8 border-white"
+          />
+          <img 
+            src="/Vegetables/TomatoCountry.jfif" 
+            alt="Fresh Tomatoes" 
+            className="absolute bottom-[10%] right-[5%] w-72 h-72 object-cover rounded-[3rem] shadow-2xl rotate-3 border-8 border-white"
+          />
+        </motion.div>
+      </div>
 
       <div className="container mx-auto px-6 relative z-10">
         <div className="max-w-2xl">
