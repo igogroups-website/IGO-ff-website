@@ -8,12 +8,69 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, Package, MapPin, Shield, Bell, LogOut, 
   ChevronRight, Truck, Mail, Phone, CreditCard, 
-  Settings, Inbox, Search, Sparkles, Eye, Leaf, Users, Zap, ShoppingBag
+  Settings, Inbox, Search, Sparkles, Eye, Leaf, Users, Zap, ShoppingBag, Heart
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import OrderDetailModal from '@/components/OrderDetailModal';
 import SustainabilityDashboard from '@/components/SustainabilityDashboard';
 import GroupBuyingSection from '@/components/GroupBuyingSection';
+import { useWishlist } from '@/context/WishlistContext';
+import { useCart } from '@/context/CartContext';
+
+function WishlistTab() {
+  const { wishlistItems, toggleWishlist } = useWishlist();
+  const { addToCart } = useCart();
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+      <div className="mb-12">
+        <h2 className="text-4xl font-black uppercase tracking-tight mb-2">My Wishlist</h2>
+        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Your personal farm-fresh favorites</p>
+      </div>
+
+      {wishlistItems.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {wishlistItems.map((item) => (
+            <div key={item.id} className="glass p-6 rounded-[2rem] border border-border/50 flex gap-6 group hover:shadow-2xl transition-all">
+              <div className="w-24 h-24 rounded-2xl overflow-hidden bg-muted/20 flex-shrink-0">
+                <img src={item.products?.image_url} alt={item.products?.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+              </div>
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  <h3 className="text-lg font-black uppercase tracking-tight">{item.products?.name}</h3>
+                  <p className="text-primary font-black text-sm">₹{item.products?.price} <span className="text-muted-foreground text-[10px]">per {item.products?.unit}</span></p>
+                </div>
+                <div className="flex gap-2 mt-4">
+                  <button 
+                    onClick={() => {
+                      addToCart(item.products);
+                      toast.success("Added to basket!");
+                    }}
+                    className="flex-1 bg-primary text-white py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary/90 transition-all"
+                  >
+                    Move to Cart
+                  </button>
+                  <button 
+                    onClick={() => toggleWishlist(item.product_id)}
+                    className="w-10 h-10 bg-muted flex items-center justify-center rounded-xl hover:bg-red-50 hover:text-red-500 transition-all"
+                  >
+                    <Heart size={16} className="fill-current" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-24 glass rounded-[3rem] border-dashed border-2">
+          <div className="w-20 h-20 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6"><Heart size={40} /></div>
+          <h3 className="text-2xl font-black uppercase">Your Wishlist is Empty</h3>
+          <p className="text-muted-foreground max-w-xs mx-auto mt-2">Start adding fresh harvests to your favorites to see them here!</p>
+        </div>
+      )}
+    </motion.div>
+  );
+}
 
 export default function ProfilePage() {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -45,6 +102,7 @@ export default function ProfilePage() {
     { id: 'impact', label: 'GREEN IMPACT', icon: Leaf },
     { id: 'community', label: 'COMMUNITY', icon: Users },
     { id: 'orders', label: 'MY ORDERS', icon: Package },
+    { id: 'wishlist', label: 'MY WISHLIST', icon: Heart },
     { id: 'track', label: 'TRACK ORDER', icon: Truck },
     { id: 'settings', label: 'SETTINGS', icon: Settings },
   ];
@@ -77,6 +135,10 @@ export default function ProfilePage() {
                 {activeTab === 'community' && <motion.div key="community" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}><GroupBuyingSection /></motion.div>}
                 {activeTab === 'account' && <motion.div key="account" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-8"><div className="mb-12 flex flex-col md:flex-row md:items-end gap-6"><div className="w-20 h-20 rounded-[1.5rem] overflow-hidden shadow-2xl border-4 border-white"><img src="/logo.png" alt="Logo" className="w-full h-full object-cover" /></div><div><h2 className="text-5xl font-black uppercase tracking-tighter mb-2">Account Center</h2><p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em]">Manage your farm-fresh profile</p></div></div><div className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="glass p-8 rounded-[2.5rem] border border-border/50"><div className="flex items-center gap-4 mb-6"><div className="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center"><Mail size={22} /></div><div><p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Email Address</p><p className="text-lg font-black">{user?.email}</p></div></div></div><div className="glass p-8 rounded-[2.5rem] border border-border/50"><div className="flex items-center gap-4 mb-6"><div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center"><Phone size={22} /></div><div><p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Phone Number</p><p className="text-lg font-black">{profile?.phone || 'Not provided'}</p></div></div></div></div></motion.div>}
                 
+                {activeTab === 'wishlist' && (
+                  <WishlistTab />
+                )}
+
                 {activeTab === 'orders' && (
                   <motion.div key="orders" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
                     <div className="bg-primary/5 p-10 rounded-[3rem] border border-primary/10 relative overflow-hidden group mb-12">
