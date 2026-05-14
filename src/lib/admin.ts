@@ -330,6 +330,7 @@ export async function syncVerifiedCatalog(samples: any[]) {
 
       return {
         name: p.name,
+        sku: p.id || `sku-${p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
         slug: p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
         description: p.description,
         image_urls: [p.image_url], // Database uses array
@@ -338,8 +339,9 @@ export async function syncVerifiedCatalog(samples: any[]) {
         price: p.price,
         mrp: p.price * 1.2,
         unit: p.unit,
-        in_stock: true,
-        is_active: true,
+        in_stock: p.stock !== 0,
+        stock: p.stock ?? 100,
+        is_active: p.is_active !== false,
         is_featured: p.is_seasonal || false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()

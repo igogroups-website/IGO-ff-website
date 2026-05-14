@@ -87,6 +87,14 @@ export default function ProductCard({ product }: ProductCardProps) {
             }`}
           />
 
+          {product.stock === 0 && (
+            <div className="absolute inset-0 z-20 bg-black/40 backdrop-blur-[2px] flex items-center justify-center pointer-events-none">
+              <div className="bg-white/95 px-6 py-2 rounded-full shadow-2xl border-2 border-red-500 transform -rotate-12 scale-110">
+                <span className="text-red-600 font-black text-xs uppercase tracking-[0.2em]">Sold Out</span>
+              </div>
+            </div>
+          )}
+
           {product.is_seasonal && (
             <div className="absolute top-4 left-4 bg-accent text-accent-foreground px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg z-10">
               Seasonal
@@ -216,9 +224,9 @@ export default function ProductCard({ product }: ProductCardProps) {
               <button
                 onClick={handleAddToCart}
                 disabled={loading || product.stock === 0}
-                className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all transform active:scale-[0.85] shadow-xl relative overflow-hidden group/btn ${
+                className={`w-full h-12 rounded-2xl flex items-center justify-center transition-all transform active:scale-[0.95] shadow-xl relative overflow-hidden group/btn ${
                   product.stock === 0 
-                    ? 'bg-muted text-muted-foreground cursor-not-allowed shadow-none' 
+                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none border border-slate-200' 
                     : 'bg-primary text-white hover:bg-primary/90 shadow-primary/20'
                 }`}
               >
@@ -226,7 +234,9 @@ export default function ProductCard({ product }: ProductCardProps) {
                 {loading ? (
                   <Loader2 size={20} className="animate-spin relative z-10" />
                 ) : (
-                  <Plus size={24} className="relative z-10" />
+                  <span className="text-[10px] font-black uppercase tracking-widest relative z-10">
+                    {product.stock === 0 ? 'Not in Stock' : 'Add to Basket'}
+                  </span>
                 )}
               </button>
             )}
