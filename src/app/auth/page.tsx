@@ -129,12 +129,28 @@ function AuthContent() {
     }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.verifyOtp({
+      // 1. Try as magiclink (for returning users)
+      const { error: magicError } = await supabase.auth.verifyOtp({
         email: email.trim(),
         token: otp,
-        type: 'email'
+        type: 'magiclink'
       });
-      if (error) throw error;
+      
+      if (!magicError) {
+        setStep('details');
+        toast.success('Email verified!');
+        return;
+      }
+
+      // 2. Try as signup (for new users)
+      const { error: signupError } = await supabase.auth.verifyOtp({
+        email: email.trim(),
+        token: otp,
+        type: 'signup'
+      });
+
+      if (signupError) throw signupError;
+      
       setStep('details');
       toast.success('Email verified! Let\'s complete your profile.');
     } catch (error: any) {
