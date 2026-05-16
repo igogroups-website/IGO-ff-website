@@ -112,67 +112,73 @@ export default function SmartSearch({ isSolid = false }: { isSolid?: boolean }) 
   };
 
   const handleVoiceSearch = () => {
-    // 1. Identify the engine (Chrome/Safari/Mobile)
     const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
     
     if (!SpeechRecognition) {
-      toast.error('Voice search is not supported in this browser. Please use Google Chrome.', { id: 'voice-search' });
+      toast.error('Voice search is not supported in this browser.', { id: 'voice-search' });
       return;
     }
 
-    // 2. Stop if already running
+    // 1. Force a clean reset of any existing instance
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.onend = null; // Remove listener to avoid state loops
+        recognitionRef.current.abort(); // Force kill
+      } catch (e) {
+        console.warn('Abort error:', e);
+      }
+      recognitionRef.current = null;
+    }
+
+    // 2. If we were listening, just stop and return
     if (isListening) {
-      if (recognitionRef.current) recognitionRef.current.stop();
       setIsListening(false);
       return;
     }
 
-    // 3. Launch a fresh recognition session
+    // 3. Create and start a brand new instance
     try {
       const recognition = new SpeechRecognition();
-      recognition.lang = 'en-IN'; // Robust Indian locale (handles Tamil/English accents)
+      recognition.lang = 'en-IN';
       recognition.continuous = false;
       recognition.interimResults = true;
-      recognition.maxAlternatives = 3;
 
       recognition.onstart = () => {
         setIsListening(true);
-        toast.loading('Voice active. Say a product name...', { id: 'voice-search' });
+        toast.loading('Voice active. Say a product...', { id: 'voice-search' });
       };
 
       recognition.onresult = (event: any) => {
         const transcript = event.results[event.results.length - 1][0].transcript;
         setQuery(transcript);
-        
-        // Finalize search when speaking stops
         if (event.results[event.results.length - 1].isFinal) {
           setIsOpen(true);
           setIsListening(false);
-          toast.success(`Searching for "${transcript}"`, { id: 'voice-search' });
+          toast.success(`Found: "${transcript}"`, { id: 'voice-search' });
         }
       };
 
       recognition.onerror = (event: any) => {
-        console.warn('Voice Engine Notice:', event.error);
         setIsListening(false);
         if (event.error === 'not-allowed') {
-          toast.error('Mic blocked. Click the Lock icon in your URL bar and ALLOW microphone.', { id: 'voice-search' });
-        } else if (event.error === 'network') {
-          toast.error('Network error. Check your connection.', { id: 'voice-search' });
+          toast.error('Microphone blocked. Please ALLOW access in your browser settings.', { id: 'voice-search' });
+        } else if (event.error === 'no-speech') {
+          toast.error('No speech heard. Please try again.', { id: 'voice-search' });
         } else {
-          // General retry for all other errors
-          toast.error('Mic error. Please try clicking it again.', { id: 'voice-search' });
+          // If it's a generic error, we just reset the state so they can click again
+          console.warn('Voice Engine Notice:', event.error);
         }
       };
 
       recognition.onend = () => {
         setIsListening(false);
+        recognitionRef.current = null;
       };
 
       recognitionRef.current = recognition;
       recognition.start();
     } catch (err) {
-      console.error('Voice engine failed to start:', err);
+      console.error('Critical voice failure:', err);
       setIsListening(false);
     }
   };
