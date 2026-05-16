@@ -54,6 +54,25 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         
         if (error) throw error;
         
+        // Handle guest cart migration on login
+        const savedGuest = typeof window !== 'undefined' ? localStorage.getItem('farmers_factory_guest_cart') : null;
+        if (savedGuest) {
+          const guestItems = JSON.parse(savedGuest);
+          if (guestItems.length > 0) {
+            // Migrate each guest item to DB
+            for (const item of guestItems) {
+              await supabase.from('cart').insert({
+                user_id: user.id,
+                product_id: item.product_id,
+                quantity: item.quantity
+              });
+            }
+            localStorage.removeItem('farmers_factory_guest_cart');
+            // Refetch to get newly migrated items
+            return fetchCart();
+          }
+        }
+        
         const normalized = (data || []).map((item: any) => ({
           ...item,
           products: item.products ? {
@@ -69,7 +88,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const saved = typeof window !== 'undefined' ? localStorage.getItem('farmers_factory_guest_cart') : null;
         if (saved) {
           try {
-            setCartItems(JSON.parse(saved));
+            const parsed = JSON.parse(saved);
+            // Ensure product images are mapped for guest items too
+            const guestNormalized = parsed.map((item: any) => ({
+              ...item,
+              products: {
+                ...item.products,
+                image_url: item.products?.image_url || (Array.isArray(item.products?.image_urls) ? item.products?.image_urls[0] : null) || ''
+              }
+            }));
+            setCartItems(guestNormalized);
           } catch (e) {
             console.error('Failed to parse guest cart:', e);
             setCartItems([]);
