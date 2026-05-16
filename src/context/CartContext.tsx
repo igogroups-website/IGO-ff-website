@@ -116,6 +116,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   // Refetch cart whenever user or auth loading state changes
   useEffect(() => {
     fetchCart();
+    
+    // Listen for custom cart updates to sync across components
+    if (typeof window !== 'undefined') {
+      window.addEventListener('cart-updated', fetchCart);
+      window.addEventListener('storage', fetchCart);
+      return () => {
+        window.removeEventListener('cart-updated', fetchCart);
+        window.removeEventListener('storage', fetchCart);
+      };
+    }
   }, [fetchCart]);
 
   const addToCart = async (productId: string, quantity = 1, productData?: any): Promise<boolean> => {
@@ -182,8 +192,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         setCartItems(newCart);
         if (typeof window !== 'undefined') {
           localStorage.setItem('farmers_factory_guest_cart', JSON.stringify(newCart));
-          // Dispatch custom event to notify other components (like Navbar)
+          // Dispatch custom event to notify all components (Navbar, Drawer, etc.)
           window.dispatchEvent(new Event('cart-updated'));
+          window.dispatchEvent(new Event('storage')); // Trigger cross-tab sync
         }
       }
       return true;
