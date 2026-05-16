@@ -142,9 +142,12 @@ export default function SmartSearch({ isSolid = false }: { isSolid?: boolean }) 
       recognition.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         setQuery(transcript);
+        
+        // CRITICAL: Force stop as soon as we have a result to prevent "forever listening"
         if (event.results[0].isFinal) {
-          setIsOpen(true);
+          recognition.stop();
           setIsListening(false);
+          setIsOpen(true);
           toast.success(`Searching for "${transcript}"`, { id: 'voice-search' });
         }
       };
