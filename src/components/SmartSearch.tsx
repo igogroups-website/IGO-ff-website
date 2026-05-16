@@ -129,25 +129,27 @@ export default function SmartSearch({ isSolid = false }: { isSolid?: boolean }) 
     // 3. Create fresh instance
     try {
       const recognition = new SpeechRecognition();
-      recognition.lang = 'en-IN'; // Optimized for Indian voices
+      // Use 'en-IN' as it handles English with strong Indian/Tamil influence best, 
+      // or we can detect/toggle, but 'en-IN' is the most versatile for mixed speech.
+      recognition.lang = 'en-IN'; 
       recognition.continuous = false;
       recognition.interimResults = true;
-      recognition.maxAlternatives = 1;
+      recognition.maxAlternatives = 5; // Allow more alternatives to find the best match
 
       recognition.onstart = () => {
         setIsListening(true);
-        toast.loading('Listening... Say "Mango" or "Potato"', { id: 'voice-search' });
+        toast.loading('Listening... (English/தமிழ்)', { id: 'voice-search' });
       };
 
       recognition.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         setQuery(transcript);
         
-        // Final search trigger
+        // When speech is final, we check for matches
         if (event.results[0].isFinal) {
           setIsOpen(true);
           setIsListening(false);
-          toast.success(`Found results for "${transcript}"`, { id: 'voice-search' });
+          toast.success(`Results for "${transcript}"`, { id: 'voice-search' });
         }
       };
 
