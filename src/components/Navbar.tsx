@@ -48,8 +48,8 @@ export default function Navbar() {
       <div className="container mx-auto px-6 lg:px-12 flex items-center justify-between">
         {/* Brand Logo & Name */}
         <Link href="/" className="flex items-center gap-3 group">
-          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 shadow-lg overflow-hidden border ${isSolid ? 'bg-primary border-primary/10' : 'bg-white border-white/20'}`}>
-            <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 group-hover:scale-110 shadow-lg overflow-hidden border ${isSolid ? 'bg-primary border-primary/10' : 'bg-white border-white/20'}`}>
+            <img src="/logo.png" alt="Logo" className="w-9 h-9 object-contain" />
           </div>
           <div className="flex flex-col">
             <span className={`text-xl font-black tracking-tighter uppercase leading-none ${isSolid ? 'text-primary' : 'text-white'}`}>
