@@ -141,6 +141,7 @@ export default function SmartSearch({ isSolid = false }: { isSolid?: boolean }) 
       recognition.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         setQuery(transcript);
+        setIsOpen(true); // Automatically open the results dropdown
         toast.success(`Searching for "${transcript}"`, { id: 'voice-search' });
       };
 
