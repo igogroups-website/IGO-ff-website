@@ -3,58 +3,89 @@
 import { toast } from 'react-hot-toast';
 
 /**
- * PRODUCTION-GRADE EMAIL NOTIFICATION SERVICE
- * This service handles transactional emails for Farmers Factory.
- * In a real production environment, this would call a backend API 
- * (e.g., via Resend, SendGrid, or AWS SES).
+ * EMAIL SERVICE — Sends transactional emails via SMTP (Gmail / any provider)
+ * Configured through environment variables. No Resend, no paid service.
+ * 
+ * Calls the internal /api/send-email route which uses nodemailer SMTP.
  */
 
-interface EmailData {
+export interface EmailData {
   to: string;
   subject: string;
-  template: 'welcome' | 'order_confirmation' | 'harvest_update' | 'security_code';
+  template:
+    | 'welcome'
+    | 'order_confirmation'
+    | 'order_status_update'
+    | 'security_code'
+    | 'order_confirmed'
+    | 'order_packed'
+    | 'order_shipped'
+    | 'order_delivered'
+    | 'order_cancelled'
+    | 'order_rejected';
   data: any;
 }
 
 export const sendLiveEmail = async ({ to, subject, template, data }: EmailData) => {
-  console.log(`[Email Service] Sending ${template} email to ${to}...`, data);
-  
-  // Simulate API Latency
-  await new Promise(resolve => setTimeout(resolve, 800));
+  try {
+    const response = await fetch('/api/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to, subject, template, data }),
+    });
 
-  // In a real live environment, you would use:
-  // await fetch('/api/send-email', { method: 'POST', body: JSON.stringify({ to, subject, template, data }) });
+    const result = await response.json();
 
-  // For visual feedback in the live portal:
-  toast.success(`Live Email Notification Sent to ${to}`, {
-    icon: '📧',
-    style: {
-      borderRadius: '16px',
-      background: '#000',
-      color: '#fff',
-      fontSize: '12px',
-      fontWeight: 'bold',
-      border: '1px solid rgba(255,255,255,0.1)'
+    if (result.skipped) {
+      // SMTP not configured — silent skip, order still works
+      console.warn('[Email] SMTP not configured, email skipped.');
+      return { success: false, skipped: true };
     }
-  });
 
-  return { success: true };
+    if (!result.success) {
+      console.error('[Email] Send failed:', result.error);
+      return { success: false, error: result.error };
+    }
+
+    console.log(`[Email] ✅ Sent ${template} to ${to}`);
+    return { success: true };
+
+  } catch (error) {
+    console.error('[Email] Network error:', error);
+    return { success: false, error };
+  }
 };
 
-export const sendOrderConfirmation = async (email: string, orderId: string, total: number) => {
-  return await sendLiveEmail({
+// ─── Helper Functions ─────────────────────────────────────────
+
+export const sendOrderConfirmation = (email: string, orderId: string, total: number) =>
+  sendLiveEmail({
     to: email,
-    subject: `Order Confirmed: #${orderId.slice(0, 8)} - Farmers Factory`,
+    subject: `Order Confirmed ✅ #${orderId.slice(0, 8)} — Farmers Factory`,
     template: 'order_confirmation',
-    data: { orderId, total, date: new Date().toLocaleDateString() }
+    data: { orderId, total, date: new Date().toLocaleDateString('en-IN') },
   });
-};
 
-export const sendWelcomeEmail = async (email: string, name: string) => {
-  return await sendLiveEmail({
+export const sendWelcomeEmail = (email: string, name: string) =>
+  sendLiveEmail({
     to: email,
-    subject: `Welcome to the Farm, ${name}!`,
+    subject: `Welcome to Farmers Factory, ${name}! 🌿`,
     template: 'welcome',
-    data: { name }
+    data: { name },
   });
-};
+
+export const sendOTPEmail = (email: string, code: string) =>
+  sendLiveEmail({
+    to: email,
+    subject: `Your Verification Code: ${code} — Farmers Factory`,
+    template: 'security_code',
+    data: { code },
+  });
+
+export const sendOrderStatusEmail = (email: string, orderId: string, status: string) =>
+  sendLiveEmail({
+    to: email,
+    subject: `Order Update: ${status.toUpperCase()} — Farmers Factory`,
+    template: `order_${status}` as any,
+    data: { orderId, status },
+  });

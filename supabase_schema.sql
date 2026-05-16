@@ -23,6 +23,8 @@ CREATE TABLE profiles (
   address TEXT,
   avatar_url TEXT,
   role TEXT DEFAULT 'user' CHECK (role IN ('user', 'admin')),
+  email_notifications_enabled BOOLEAN DEFAULT TRUE,
+  in_app_notifications_enabled BOOLEAN DEFAULT TRUE,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   last_visited_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -42,7 +44,7 @@ CREATE TABLE orders (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
   total_amount DECIMAL(10, 2) NOT NULL,
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'shipped', 'delivered', 'cancelled')),
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'processing', 'packed', 'shipped', 'delivered', 'cancelled', 'rejected')),
   delivery_address TEXT NOT NULL,
   payment_method TEXT NOT NULL,
   delivery_promise TEXT DEFAULT 'Within 24 hours',
@@ -128,15 +130,140 @@ CREATE TABLE wishlist (
   UNIQUE(user_id, product_id)
 );
 
+-- 7. Notifications Table
+CREATE TABLE notifications (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  type TEXT DEFAULT 'system',
+  link TEXT,
+  is_read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 8. Banners Table (for Hero Slider)
+CREATE TABLE banners (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  title TEXT NOT NULL,
+  subtitle TEXT,
+  media_url TEXT NOT NULL,
+  media_type TEXT DEFAULT 'image' CHECK (media_type IN ('image', 'video')),
+  cta_text TEXT DEFAULT 'Shop Now',
+  cta_link TEXT DEFAULT '/products',
+  display_order INT DEFAULT 0,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 9. Farm Streams Table (Watch Your Harvest Grow)
+CREATE TABLE farm_streams (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  location TEXT NOT NULL,
+  video_url TEXT NOT NULL,
+  thumbnail_url TEXT,
+  temp TEXT DEFAULT '28°C',
+  humidity TEXT DEFAULT '65%',
+  wind TEXT DEFAULT '12 km/h',
+  viewers INT DEFAULT 0,
+  is_active BOOLEAN DEFAULT TRUE,
+  display_order INT DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 10. Harvest Events Table (Live Ticker)
+CREATE TABLE harvest_events (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  farmer_name TEXT NOT NULL,
+  product_name TEXT NOT NULL,
+  location TEXT NOT NULL,
+  quantity TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 11. Farmers Table (Directory)
+CREATE TABLE farmers (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  location TEXT NOT NULL,
+  bio TEXT,
+  image_url TEXT,
+  verified BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 12. Reviews Table
+CREATE TABLE reviews (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
+  product_id UUID REFERENCES products ON DELETE CASCADE NOT NULL,
+  rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  comment TEXT,
+  is_verified BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 13. Coupons Table
+CREATE TABLE coupons (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  code TEXT UNIQUE NOT NULL,
+  discount_type TEXT DEFAULT 'percentage' CHECK (discount_type IN ('percentage', 'fixed')),
+  discount_value DECIMAL(10, 2) NOT NULL,
+  min_spend DECIMAL(10, 2) DEFAULT 0,
+  expiry_date TIMESTAMP WITH TIME ZONE,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS for all new tables
 ALTER TABLE wishlist ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE banners ENABLE ROW LEVEL SECURITY;
+ALTER TABLE farm_streams ENABLE ROW LEVEL SECURITY;
+ALTER TABLE harvest_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE farmers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
+ALTER TABLE coupons ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can view own wishlist" ON wishlist FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can manage own wishlist" ON wishlist FOR ALL USING (auth.uid() = user_id);
+-- Policies for new tables
 
--- Sample Data
-INSERT INTO products (name, category, price, description, stock, unit, image_url) VALUES
-('Fresh Mangoes', 'Fruits', 120.00, 'Sweet and juicy Alphonso mangoes.', 50, 'kg', 'https://images.unsplash.com/photo-1553279768-865429fa0078'),
-('Organic Spinach', 'Vegetables', 40.00, 'Freshly picked organic spinach leaves.', 100, 'bundle', 'https://images.unsplash.com/photo-1576045057995-568f588f82fb'),
-('Cold Pressed Groundnut Oil', 'Valluvam Products', 220.00, 'Pure cold-pressed groundnut oil.', 30, 'litre', 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5'),
-('Proso Millet', 'Valluvam Products', 85.00, 'Nutritious Proso Millet (Panivaragu).', 40, 'kg', 'https://images.unsplash.com/photo-1586201375761-83865001e31c'),
-('Fresh Carrots', 'Vegetables', 60.00, 'Crunchy organic carrots.', 80, 'kg', 'https://images.unsplash.com/photo-1598170845058-32b9d6a5da37');
+-- Publicly readable tables
+CREATE POLICY "Banners are public" ON banners FOR SELECT USING (true);
+CREATE POLICY "Streams are public" ON farm_streams FOR SELECT USING (true);
+CREATE POLICY "Harvest events are public" ON harvest_events FOR SELECT USING (true);
+CREATE POLICY "Farmers are public" ON farmers FOR SELECT USING (true);
+CREATE POLICY "Reviews are public" ON reviews FOR SELECT USING (true);
+
+-- Admin manage policies
+CREATE POLICY "Admins manage banners" ON banners FOR ALL USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
+CREATE POLICY "Admins manage streams" ON farm_streams FOR ALL USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
+CREATE POLICY "Admins manage harvest" ON harvest_events FOR ALL USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
+CREATE POLICY "Admins manage farmers" ON farmers FOR ALL USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
+CREATE POLICY "Admins manage coupons" ON coupons FOR ALL USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
+
+-- User reviews
+CREATE POLICY "Users can create reviews" ON reviews FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can edit own reviews" ON reviews FOR UPDATE USING (auth.uid() = user_id);
+
+-- Sample Data for new tables
+INSERT INTO banners (title, subtitle, media_url, display_order) VALUES
+('Fresh Organic Harvest', 'Directly from our farms to your kitchen within 24 hours.', '/banners/harvest_video.mp4', 0);
+
+INSERT INTO harvest_events (farmer_name, product_name, location, quantity) VALUES
+('Arjun', 'Mangoes', 'Salem', '500kg'),
+('Meera', 'Spinach', 'Ooty', '200 bundles');
+
+INSERT INTO farmers (name, location, bio) VALUES
+('Arjun S.', 'Salem, TN', 'Organic farming expert with 20 years experience.');
+

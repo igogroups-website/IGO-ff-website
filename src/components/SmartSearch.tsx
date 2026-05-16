@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, X, Leaf, Star, ArrowRight, Loader2, Camera, Sparkles } from 'lucide-react';
+import { Search, X, Leaf, Star, ArrowRight, Loader2, Mic, MicOff, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -9,16 +9,16 @@ import ProductDetailModal from './ProductDetailModal';
 import { toast } from 'react-hot-toast';
 import { VERIFIED_INVENTORY } from '@/lib/constants';
 
-export default function SmartSearch() {
+export default function SmartSearch({ isSolid = false }: { isSolid?: boolean }) {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [results, setResults] = useState<any[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isVisualSearching, setIsVisualSearching] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<any>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -28,6 +28,33 @@ export default function SmartSearch() {
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
+
+    // Initialize Speech Recognition
+    if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.lang = 'en-US';
+
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setQuery(transcript);
+        setIsListening(false);
+        toast.success(`Searching for "${transcript}"`, { id: 'voice-search' });
+      };
+
+      recognitionRef.current.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+        toast.error('Voice search failed. Please try again.', { id: 'voice-search' });
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+    }
+
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
@@ -78,8 +105,20 @@ export default function SmartSearch() {
     setQuery('');
   };
 
-  const handleVisualSearch = () => {
-    fileInputRef.current?.click();
+  const handleVoiceSearch = () => {
+    if (!recognitionRef.current) {
+      toast.error('Voice search is not supported in your browser.');
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      setIsListening(true);
+      toast.loading('Listening... Say something like "Potato"', { id: 'voice-search' });
+      recognitionRef.current.start();
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -98,13 +137,30 @@ export default function SmartSearch() {
 
   return (
     <div className="relative w-full" ref={searchRef}>
-      <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
       <div className="relative group">
-        <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} onFocus={() => query.length > 1 && setIsOpen(true)} placeholder="Search for fresh harvest..." className="w-full bg-white/50 backdrop-blur-md border border-border/50 rounded-2xl py-3 pl-12 pr-20 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all shadow-sm placeholder:text-muted-foreground/60 text-sm font-medium" />
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60 group-focus-within:text-primary transition-colors" size={18} />
+        <input 
+          type="text" 
+          value={query} 
+          onChange={(e) => setQuery(e.target.value)} 
+          onFocus={() => query.length > 1 && setIsOpen(true)} 
+          placeholder='Search for fresh harvest... try "Potato"' 
+          className={`w-full backdrop-blur-3xl border rounded-full py-2.5 pl-12 pr-20 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary/40 focus:bg-white transition-all shadow-lg text-sm font-bold ${
+            isSolid 
+              ? 'bg-slate-50 border-slate-200 placeholder:text-slate-400 text-slate-800' 
+              : 'bg-white/10 border-white/20 placeholder:text-white/40 text-white group-focus-within:text-foreground'
+          }`} 
+        />
+        <Search className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${isSolid ? 'text-slate-300' : 'text-white/40'} group-focus-within:text-primary`} size={18} strokeWidth={2} />
         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
           {query && <button onClick={() => setQuery('')} className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"><X size={14} /></button>}
-          <button onClick={handleVisualSearch} className="p-1.5 text-primary hover:bg-primary/5 rounded-lg transition-all relative group/cam">{isVisualSearching ? <Loader2 size={18} className="animate-spin" /> : <Camera size={18} />}</button>
+          <button 
+            onClick={handleVoiceSearch} 
+            className={`p-2 rounded-full transition-all relative group/mic ${
+              isListening ? 'bg-red-500 text-white animate-pulse' : 'text-primary hover:bg-primary/10'
+            }`}
+          >
+            {isListening ? <MicOff size={18} strokeWidth={2} /> : <Mic size={18} strokeWidth={2} />}
+          </button>
         </div>
       </div>
       <AnimatePresence>

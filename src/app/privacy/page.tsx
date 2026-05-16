@@ -1,74 +1,40 @@
-'use client';
-
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { motion } from 'framer-motion';
-import { Shield, Eye, Lock, Database, Globe, UserCheck } from 'lucide-react';
 
 export default function PrivacyPolicy() {
-  const sections = [
-    {
-      title: 'Information We Collect',
-      icon: Database,
-      content: 'We collect information you provide directly to us, such as when you create an account, place an order, or contact us for support. This may include your name, email address, phone number, and delivery address.'
-    },
-    {
-      title: 'How We Use Your Data',
-      icon: Eye,
-      content: 'We use the information we collect to process your orders, provide customer support, and improve our services. This includes sending order confirmations, delivery updates, and personalized recommendations via our AI Guru.'
-    },
-    {
-      title: 'Data Security',
-      icon: Lock,
-      content: 'We implement state-of-the-art security measures to protect your personal information. Your data is encrypted and stored securely on our production servers, accessible only by authorized personnel.'
-    },
-    {
-      title: 'Cookies and Tracking',
-      icon: Globe,
-      content: 'We use cookies to enhance your browsing experience, remember your cart items, and analyze website traffic. You can manage your cookie preferences through your browser settings.'
-    }
-  ];
-
   return (
-    <main className="min-h-screen bg-[#fafafa]">
+    <main className="min-h-screen bg-white">
       <Navbar />
-      <div className="container mx-auto px-6 pt-40 pb-24 max-w-4xl">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-[3rem] p-12 md:p-20 border border-border shadow-2xl"
-        >
-          <div className="flex items-center gap-4 text-primary font-black text-xs uppercase tracking-[0.4em] mb-6">
-            <Shield size={20} />
-            <span>Legal & Privacy</span>
-          </div>
-          <h1 className="text-5xl md:text-7xl font-black tracking-tighter uppercase mb-12 leading-none">
-            Privacy <span className="text-primary italic font-serif lowercase">Policy</span>
-          </h1>
+      <div className="container mx-auto px-6 py-32 max-w-4xl">
+        <h1 className="text-5xl font-black mb-12 uppercase tracking-tighter">Privacy <span className="text-primary italic font-serif lowercase">Policy</span></h1>
+        
+        <div className="prose prose-slate max-w-none space-y-8 font-medium text-slate-600 leading-relaxed">
+          <section>
+            <h2 className="text-2xl font-black text-foreground uppercase tracking-tight mb-4">1. Introduction</h2>
+            <p>Welcome to Farmers Factory. We are committed to protecting your personal information and your right to privacy. If you have any questions or concerns about our policy, or our practices with regards to your personal information, please contact us.</p>
+          </section>
 
-          <div className="space-y-12">
-            {sections.map((section, i) => (
-              <div key={i} className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary/10 text-primary rounded-xl flex items-center justify-center">
-                    <section.icon size={20} />
-                  </div>
-                  <h2 className="text-xl font-black uppercase tracking-tight">{section.title}</h2>
-                </div>
-                <p className="text-muted-foreground font-medium leading-relaxed">
-                  {section.content}
-                </p>
-              </div>
-            ))}
-          </div>
+          <section>
+            <h2 className="text-2xl font-black text-foreground uppercase tracking-tight mb-4">2. Information We Collect</h2>
+            <p>We collect personal information that you provide to us such as name, address, contact information, passwords and security data, and payment information.</p>
+          </section>
 
-          <div className="mt-20 pt-12 border-t border-border">
-            <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest text-center">
-              Last Updated: May 9, 2026 • Farmers Factory Legal Dept.
-            </p>
-          </div>
-        </motion.div>
+          <section>
+            <h2 className="text-2xl font-black text-foreground uppercase tracking-tight mb-4">3. How We Use Your Information</h2>
+            <p>We use personal information collected via our Services for a variety of business purposes described below. We process your personal information for these purposes in reliance on our legitimate business interests, in order to enter into or perform a contract with you, with your consent, and/or for compliance with our legal obligations.</p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-black text-foreground uppercase tracking-tight mb-4">4. Sharing Your Information</h2>
+            <p>We only share information with your consent, to comply with laws, to provide you with services, to protect your rights, or to fulfill business obligations.</p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-black text-foreground uppercase tracking-tight mb-4">5. Your Privacy Rights</h2>
+            <p>In some regions (like the EEA and UK), you have certain rights under applicable data protection laws. These may include the right (i) to request access and obtain a copy of your personal information, (ii) to request rectification or erasure; (iii) to restrict the processing of your personal information; and (iv) if applicable, to data portability.</p>
+          </section>
+        </div>
       </div>
       <Footer />
     </main>

@@ -87,6 +87,18 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [otp, setOtp] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+
+  // Timer for Resend OTP
+  React.useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendTimer]);
 
   // --- Handlers ---
 
@@ -104,8 +116,18 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         }
       });
       if (error) throw error;
+      
       setStep('otp');
+      setResendTimer(30);
       toast.success('Verification code sent to your email!');
+
+      // Also send a simulated "Inbox" notification for CX
+      import('@/lib/notifications').then(({ sendCXNotification }) => {
+        // We don't have the user ID yet as they are not logged in, 
+        // so we can't save to DB notifications table easily without an ID.
+        // But for logged-in users or specific flows, we would.
+        console.log('OTP Notification triggered');
+      });
     } catch (error: any) {
       toast.error(error.message || 'Failed to send code');
     } finally {
@@ -139,6 +161,24 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleResendOTP = () => {
+    if (resendTimer > 0) return;
+    handleSendOTP();
+  };
+
+  const handleChangeEmail = () => {
+    setStep('initial');
+    setOtp('');
+  };
+
+  const openEmailProvider = (provider: 'gmail' | 'outlook') => {
+    const urls = {
+      gmail: 'https://mail.google.com',
+      outlook: 'https://outlook.live.com'
+    };
+    window.open(urls[provider], '_blank');
   };
 
   const handleCompleteSignup = async (e: React.FormEvent) => {
@@ -278,17 +318,44 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       <div className="text-center space-y-2">
         <h3 className="text-xl font-bold">Verify email</h3>
         <p className="text-white/40 text-sm">Code sent to <span className="text-white">{email}</span></p>
+        <button 
+          onClick={handleChangeEmail}
+          className="text-primary text-[10px] font-black uppercase tracking-widest hover:underline"
+        >
+          Change Email Address
+        </button>
       </div>
 
       <SegmentedOTP value={otp} onChange={setOtp} disabled={loading} />
 
-      <button 
-        onClick={() => handleVerifyOTP()}
-        disabled={loading || otp.length < 6}
-        className="w-full bg-primary text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-primary/90 transition-all active:scale-[0.98]"
-      >
-        {loading ? 'Verifying...' : 'Verify Code'}
-      </button>
+      <div className="space-y-4">
+        <button 
+          onClick={() => handleVerifyOTP()}
+          disabled={loading || otp.length < 6}
+          className="w-full bg-primary text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-primary/90 transition-all active:scale-[0.98]"
+        >
+          {loading ? 'Verifying...' : 'Verify Code'}
+        </button>
+
+        <div className="flex items-center justify-between px-2">
+          <button 
+            onClick={handleResendOTP}
+            disabled={resendTimer > 0 || loading}
+            className={`text-[10px] font-black uppercase tracking-widest transition-colors ${resendTimer > 0 ? 'text-white/20' : 'text-white/60 hover:text-white'}`}
+          >
+            {resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend Code'}
+          </button>
+          
+          <div className="flex gap-4">
+            <button onClick={() => openEmailProvider('gmail')} className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline">Gmail</button>
+            <button onClick={() => openEmailProvider('outlook')} className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline">Outlook</button>
+          </div>
+        </div>
+      </div>
+
+      <div className="pt-4 border-t border-white/5 text-center">
+        <p className="text-[10px] font-black uppercase tracking-widest text-white/20">Check your spam folder if code is not visible</p>
+      </div>
     </motion.div>
   );
 

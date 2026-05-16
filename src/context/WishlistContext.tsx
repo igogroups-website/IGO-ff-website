@@ -37,32 +37,43 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth();
 
   const fetchWishlist = useCallback(async () => {
+    // [PERFECT_FIX_V3] Active
     if (authLoading) return;
 
     if (user) {
       setLoading(true);
       try {
-        const { data, error } = await supabase
+        console.log('[Wishlist] Fetching for user:', user.id);
+        
+        const { data, error, status } = await supabase
           .from('wishlist')
-          .select('*, products(*)')
+          .select('id, product_id, products(*)')
           .eq('user_id', user.id);
         
-        if (error) throw error;
-        setWishlistItems(data as WishlistItem[] || []);
-      } catch (error) {
-        console.error('Error fetching wishlist:', error);
+        if (error) {
+          console.warn('[Wishlist] Fetch error:', error.message || 'No message');
+          setWishlistItems([]);
+        } else {
+          setWishlistItems((data as any[]) || []);
+        }
+      } catch (err: any) {
+        // Log the error explicitly to avoid {} showing up
+        const errorDetail = err instanceof Error ? err.message : JSON.stringify(err);
+        console.error('[Wishlist] Critical error:', errorDetail);
+        setWishlistItems([]);
       } finally {
         setLoading(false);
       }
     } else {
-      // Guest wishlist from localStorage
-      const saved = localStorage.getItem('farmers_factory_wishlist');
-      if (saved) {
-        setWishlistItems(JSON.parse(saved));
-      } else {
+      setLoading(true);
+      try {
+        const saved = localStorage.getItem('farmers_factory_wishlist');
+        setWishlistItems(saved ? JSON.parse(saved) : []);
+      } catch (e) {
         setWishlistItems([]);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
   }, [user, authLoading]);
 

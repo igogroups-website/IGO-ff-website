@@ -98,7 +98,7 @@ export async function getAllOrders() {
     const userIds = [...new Set(orders.map(o => o.user_id))];
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, full_name, avatar_url') // Removed email as it might be missing
+      .select('id, full_name, avatar_url, email') 
       .in('id', userIds);
 
     if (profilesError) {
@@ -130,10 +130,26 @@ export async function getOrderDetails(orderId: string) {
 }
 
 export async function updateOrderStatus(orderId: string, status: string) {
+  const { data: order, error: orderError } = await supabase
+    .from('orders')
+    .select('user_id, total_amount, status')
+    .eq('id', orderId)
+    .single();
+
   const { error } = await supabase
     .from('orders')
     .update({ status })
     .eq('id', orderId);
+
+  // Award Points on Delivery
+  if (!error && status === 'delivered' && order?.status !== 'delivered') {
+    const pointsToAdd = Math.floor(Number(order.total_amount) / 10); // 1 point per ₹10
+    if (pointsToAdd > 0) {
+      // Direct update for now, as we might not have RPC configured
+      const { data: profile } = await supabase.from('profiles').select('points').eq('id', order?.user_id).single();
+      await supabase.from('profiles').update({ points: (profile?.points || 0) + pointsToAdd }).eq('id', order?.user_id);
+    }
+  }
 
   return { error };
 }
@@ -368,6 +384,87 @@ export async function syncVerifiedCatalog(samples: any[]) {
   } catch (error) {
     console.error('Sync failed:', error);
     return { success: false, error };
+  }
+}
+
+export async function getCRMAnalytics() {
+  try {
+    // 1. Fetch Orders for revenue and category breakdown
+    const { data: orders, error: ordersError } = await supabase
+      .from('orders')
+      .select('*, order_items(*, products(*))');
+
+    // 2. Fetch Products for stock alerts
+    const { data: products, error: productsError } = await supabase
+      .from('products')
+      .select('*');
+
+    // 3. Fetch Cart for funnel
+    const { count: cartCount } = await supabase
+      .from('cart')
+      .select('*', { count: 'exact', head: true });
+
+    // 4. Fetch Customers for funnel
+    const { count: totalCustomers } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true });
+
+    if (ordersError || productsError) throw new Error('Analytics fetch failed');
+
+    // Calculate Category Performance
+    const categoryRevenue: Record<string, number> = {};
+    let totalRev = 0;
+    
+    (orders || []).forEach(order => {
+      totalRev += Number(order.total_amount);
+      order.order_items?.forEach((item: any) => {
+        const cat = item.products?.category || 'Other';
+        categoryRevenue[cat] = (categoryRevenue[cat] || 0) + (item.price_at_purchase * item.quantity);
+      });
+    });
+
+    const categories = Object.entries(categoryRevenue).map(([name, rev]) => ({
+      name,
+      share: totalRev > 0 ? Math.round((rev / totalRev) * 100) : 0,
+      color: name === 'Vegetables' ? 'bg-green-500' : name === 'Fruits' ? 'bg-amber-500' : 'bg-primary'
+    }));
+
+    // Funnel Mockup (Real logic where possible)
+    const funnel = [
+      { label: 'Browsing', count: (totalCustomers || 0) * 10, color: 'bg-white/20' }, // Approximation
+      { label: 'Add to Cart', count: cartCount || 0, color: 'bg-white/40' },
+      { label: 'Checkout', count: (orders || []).filter(o => o.status === 'pending').length, color: 'bg-white/60' },
+      { label: 'Paid', count: (orders || []).filter(o => o.status !== 'pending' && o.status !== 'cancelled').length, color: 'bg-white' },
+    ];
+
+    // Inventory Intelligence
+    const lowStockItems = (products || [])
+      .filter(p => p.stock < 20)
+      .map(p => ({
+        name: p.name,
+        stock: p.stock,
+        velocity: p.stock < 5 ? 'Critical' : 'High',
+        daysLeft: Math.max(1, Math.round(p.stock / 5)),
+        status: p.stock < 5 ? 'Urgent' : 'Restock Soon',
+        color: p.stock < 5 ? 'text-red-600' : 'text-amber-600',
+        bg: p.stock < 5 ? 'bg-red-50' : 'bg-amber-50'
+      }))
+      .slice(0, 3);
+
+    return {
+      categories: categories.length > 0 ? categories : [
+        { name: 'Vegetables', share: 0, color: 'bg-green-500' },
+        { name: 'Fruits', share: 0, color: 'bg-amber-500' },
+        { name: 'Valluvam Products', share: 0, color: 'bg-primary' }
+      ],
+      funnel,
+      inventoryIntelligence: lowStockItems,
+      revenue: totalRev,
+      ordersCount: orders?.length || 0,
+    };
+  } catch (err) {
+    console.error('CRM Analytics Error:', err);
+    return null;
   }
 }
 

@@ -15,7 +15,12 @@ import {
   Leaf,
   Bell,
   Lock,
-  MessageSquare
+  MessageSquare,
+  Zap,
+  Image as ImageIcon,
+  Ticket,
+  User,
+  Video
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'react-hot-toast';
@@ -128,6 +133,11 @@ export default function AdminLayout({
   const navItems = [
     { name: 'Dashboard', icon: <LayoutDashboard size={20} />, href: '/admin' },
     { name: 'Products', icon: <Package size={20} />, href: '/admin/products' },
+    { name: 'Inventory', icon: <Zap size={20} />, href: '/admin/inventory' },
+    { name: 'Banners', icon: <ImageIcon size={20} />, href: '/admin/banners' },
+    { name: 'Live Streams', icon: <Video size={20} />, href: '/admin/streams' },
+    { name: 'Coupons', icon: <Ticket size={20} />, href: '/admin/coupons' },
+    { name: 'Farmers', icon: <User size={20} />, href: '/admin/farmers' },
     { name: 'Orders', icon: <ShoppingBag size={20} />, href: '/admin/orders' },
     { name: 'Reviews', icon: <MessageSquare size={20} />, href: '/admin/reviews' },
     { name: 'Customers', icon: <Users size={20} />, href: '/admin/customers' },

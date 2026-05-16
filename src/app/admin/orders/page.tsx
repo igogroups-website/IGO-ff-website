@@ -100,6 +100,22 @@ function OrdersContent() {
     const { error } = await updateOrderStatus(orderId, newStatus);
     if (!error) {
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+      
+      // Trigger Notifications
+      const order = orders.find(o => o.id === orderId);
+      if (order && order.user_id) {
+        import('@/lib/notifications').then(({ sendCXNotification }) => {
+          sendCXNotification({
+            userId: order.user_id,
+            title: `Order Update: ${newStatus.toUpperCase()}`,
+            message: `Your order #${order.id.slice(0, 8)} status has been updated to ${newStatus}.`,
+            type: 'order_status',
+            link: `/profile`,
+            emailTemplate: `order_${newStatus}` as any,
+            emailData: { orderId: order.id, status: newStatus }
+          });
+        });
+      }
     }
   }
 
@@ -130,7 +146,7 @@ function OrdersContent() {
   });
 
   const calculateHarvestSummary = async () => {
-    const activeOrders = orders.filter(o => ['pending', 'processing', 'shipped'].includes(o.status));
+    const activeOrders = orders.filter(o => ['pending', 'confirmed', 'processing', 'packed', 'shipped'].includes(o.status));
     const itemCounts: Record<string, { name: string, quantity: number, unit: string, category: string }> = {};
 
     for (const order of activeOrders) {
@@ -193,6 +209,9 @@ function OrdersContent() {
       case 'processing': return 'bg-amber-100 text-amber-600 border-amber-200';
       case 'shipped': return 'bg-blue-100 text-blue-600 border-blue-200';
       case 'cancelled': return 'bg-red-100 text-red-600 border-red-200';
+      case 'rejected': return 'bg-rose-100 text-rose-600 border-rose-200';
+      case 'packed': return 'bg-indigo-100 text-indigo-600 border-indigo-200';
+      case 'confirmed': return 'bg-cyan-100 text-cyan-600 border-cyan-200';
       default: return 'bg-slate-100 text-slate-600 border-slate-200';
     }
   };
@@ -231,10 +250,13 @@ function OrdersContent() {
             >
               <option value="all">All Status</option>
               <option value="pending">Pending</option>
+              <option value="confirmed">Confirmed</option>
               <option value="processing">Processing</option>
+              <option value="packed">Packed</option>
               <option value="shipped">Shipped</option>
               <option value="delivered">Delivered</option>
               <option value="cancelled">Cancelled</option>
+              <option value="rejected">Rejected</option>
             </select>
             <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" size={18} />
           </div>
@@ -350,10 +372,13 @@ function OrdersContent() {
                           onChange={(e) => handleStatusChange(order.id, e.target.value)}
                         >
                           <option value="pending">Set Pending</option>
+                          <option value="confirmed">Set Confirmed</option>
                           <option value="processing">Set Processing</option>
+                          <option value="packed">Set Packed</option>
                           <option value="shipped">Set Shipped</option>
                           <option value="delivered">Set Delivered</option>
                           <option value="cancelled">Set Cancelled</option>
+                          <option value="rejected">Set Rejected</option>
                         </select>
                         <button 
                           onClick={() => viewOrderDetails(order)}

@@ -1,12 +1,21 @@
-import { supabase } from '../src/lib/supabase';
+const { createClient } = require('@supabase/supabase-client');
+require('dotenv').config({ path: '.env.local' });
 
-async function checkTable() {
-  const { data, error } = await supabase.from('site_settings').select('*').limit(1);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+async function checkSchema() {
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .limit(1);
+  
   if (error) {
-    console.log('Table site_settings does not exist or error:', error.message);
+    console.error('Error:', error);
   } else {
-    console.log('Table site_settings exists. Data:', data);
+    console.log('Columns:', Object.keys(data[0]));
   }
 }
 
-checkTable();
+checkSchema();

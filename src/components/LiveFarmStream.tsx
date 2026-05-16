@@ -1,17 +1,73 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Eye, Users, MapPin, Wind, Thermometer, Droplets, Clock } from 'lucide-react';
+import { Play, Eye, Users, MapPin, Wind, Thermometer, Droplets, Clock, Loader2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
-const STREAMS = [
-  { id: 'block-a', name: 'Veggie Block A', location: 'North Field', temp: '28°C', humidity: '65%', wind: '12 km/h', viewers: 124, url: '/seasonal_harvest_bg.png' },
-  { id: 'orchard', name: 'Fruit Orchard', location: 'East Hill', temp: '26°C', humidity: '60%', wind: '8 km/h', viewers: 89, url: '/category_fruits.png' },
-  { id: 'greenhouse', name: 'Smart Greenhouse', location: 'Central Hub', temp: '24°C', humidity: '75%', wind: '2 km/h', viewers: 256, url: '/category_vegetables.png' }
-];
+const FALLBACK_STREAM = {
+  id: 'fallback-1',
+  name: 'VEGGIE BLOCK A',
+  location: 'NORTH FIELD',
+  video_url: 'https://cdn.pixabay.com/video/2016/10/11/5815-185444985_large.mp4',
+  thumbnail_url: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=2034&auto=format&fit=crop',
+  viewers: 124,
+  temp: '28°C',
+  humidity: '65%',
+  wind: '12 km/h',
+  is_active: true
+};
 
 export default function LiveFarmStream() {
-  const [activeStream, setActiveStream] = useState(STREAMS[0]);
+  const [streams, setStreams] = useState<any[]>([]);
+  const [activeStream, setActiveStream] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  React.useEffect(() => {
+    async function fetchStreams() {
+      try {
+        const { data, error } = await supabase
+          .from('farm_streams')
+          .select('*')
+          .eq('is_active', true)
+          .order('display_order', { ascending: true });
+
+        if (!error && data && data.length > 0) {
+          setStreams(data);
+          setActiveStream(data[0]);
+        } else {
+          setStreams([FALLBACK_STREAM]);
+          setActiveStream(FALLBACK_STREAM);
+        }
+      } catch (err) {
+        console.error('Failed to fetch streams:', err);
+        setStreams([FALLBACK_STREAM]);
+        setActiveStream(FALLBACK_STREAM);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchStreams();
+
+    // Set up Realtime listener
+    const channel = supabase
+      .channel('farm_streams_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'farm_streams' }, () => {
+        fetchStreams();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  if (loading) return (
+    <div className="py-20 bg-[#0A0A0A] flex items-center justify-center">
+      <Loader2 className="w-10 h-10 text-primary animate-spin" />
+    </div>
+  );
+
+  if (!activeStream) return null;
 
   return (
     <section className="py-32 bg-[#0A0A0A] text-white relative overflow-hidden">
@@ -26,61 +82,73 @@ export default function LiveFarmStream() {
               <div className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
               <span>24/7 Live Transparency</span>
             </div>
-            <h2 className="text-5xl md:text-7xl font-black tracking-tighter uppercase leading-none">
-              Watch Your <br /> <span className="text-primary italic font-serif lowercase">Harvest</span> Grow
+            <h2 className="text-5xl md:text-8xl font-black tracking-tighter uppercase leading-none">
+              WATCH YOUR <br /> <span className="text-primary italic font-serif lowercase">harvest</span> GROW
             </h2>
           </div>
-          <p className="text-white/40 font-medium max-w-xs md:text-right">
+          <p className="text-white/40 font-medium max-w-sm md:text-right text-lg">
             Real-time high-definition streams from our organic plots. Total transparency from soil to basket.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
           {/* Stream Player */}
           <div className="lg:col-span-3">
-            <div className="relative aspect-video rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl group">
-              <img 
-                src={activeStream.url} 
-                alt={activeStream.name} 
-                className="w-full h-full object-cover transition-transform duration-[10s] ease-linear group-hover:scale-110" 
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40" />
+            <div className="relative aspect-video rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl group bg-black">
+              {activeStream.video_url?.endsWith('.mp4') ? (
+                <video 
+                  key={activeStream.video_url}
+                  src={activeStream.video_url} 
+                  autoPlay 
+                  muted 
+                  loop 
+                  playsInline
+                  className="w-full h-full object-cover transition-transform duration-[10s] ease-linear group-hover:scale-105"
+                />
+              ) : (
+                <img 
+                  src={activeStream.video_url || activeStream.thumbnail_url} 
+                  alt={activeStream.name} 
+                  className="w-full h-full object-cover transition-transform duration-[10s] ease-linear group-hover:scale-110" 
+                />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/40" />
               
               {/* Overlay Info */}
-              <div className="absolute top-8 left-8 flex flex-col gap-4">
-                <div className="flex items-center gap-3 bg-red-600 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl">
-                   <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                   Live: {activeStream.name}
+              <div className="absolute top-10 left-10 flex flex-col gap-4">
+                <div className="flex items-center gap-3 bg-red-600 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl">
+                   <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                   LIVE: {activeStream.name}
                 </div>
-                <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10">
-                   <Users size={12} className="text-primary" />
-                   {activeStream.viewers} Watching
+                <div className="flex items-center gap-3 bg-black/60 backdrop-blur-xl px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10">
+                   <Users size={14} className="text-primary" />
+                   {activeStream.viewers || 124} WATCHING
                 </div>
               </div>
 
-              <div className="absolute top-8 right-8 flex items-center gap-2 bg-black/40 backdrop-blur-md px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10">
-                 <MapPin size={12} className="text-primary" />
-                 {activeStream.location}
+              <div className="absolute top-10 right-10 flex items-center gap-3 bg-black/60 backdrop-blur-xl px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10">
+                 <MapPin size={14} className="text-primary" />
+                 {activeStream.location || 'NORTH FIELD'}
               </div>
 
-              <div className="absolute bottom-8 left-8 right-8 flex flex-wrap items-center justify-between gap-6">
-                 <div className="flex items-center gap-8">
-                    <div className="flex flex-col gap-1">
-                       <div className="flex items-center gap-2 text-white/60 uppercase text-[9px] font-black tracking-widest"><Thermometer size={12} /> Temp</div>
-                       <span className="text-xl font-black">{activeStream.temp}</span>
+              <div className="absolute bottom-10 left-10 right-10 flex flex-wrap items-end justify-between gap-6">
+                 <div className="flex items-center gap-12">
+                    <div className="flex flex-col">
+                       <div className="flex items-center gap-2 text-white/40 uppercase text-[9px] font-black tracking-widest mb-1"><Thermometer size={14} /> TEMP</div>
+                       <span className="text-2xl font-black">{activeStream.temp || '28°C'}</span>
                     </div>
-                    <div className="flex flex-col gap-1">
-                       <div className="flex items-center gap-2 text-white/60 uppercase text-[9px] font-black tracking-widest"><Droplets size={12} /> Humidity</div>
-                       <span className="text-xl font-black">{activeStream.humidity}</span>
+                    <div className="flex flex-col">
+                       <div className="flex items-center gap-2 text-white/40 uppercase text-[9px] font-black tracking-widest mb-1"><Droplets size={14} /> HUMIDITY</div>
+                       <span className="text-2xl font-black">{activeStream.humidity || '65%'}</span>
                     </div>
-                    <div className="flex flex-col gap-1">
-                       <div className="flex items-center gap-2 text-white/60 uppercase text-[9px] font-black tracking-widest"><Wind size={12} /> Wind</div>
-                       <span className="text-xl font-black">{activeStream.wind}</span>
+                    <div className="flex flex-col">
+                       <div className="flex items-center gap-2 text-white/40 uppercase text-[9px] font-black tracking-widest mb-1"><Wind size={14} /> WIND</div>
+                       <span className="text-2xl font-black">{activeStream.wind || '12 km/h'}</span>
                     </div>
                  </div>
-                 <div className="flex items-center gap-2 text-primary font-black uppercase text-[10px] tracking-widest">
-                    <Clock size={14} />
-                    Auto-Irrigation: Active
+                 <div className="flex items-center gap-2 text-primary font-black uppercase text-[10px] tracking-widest mb-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                    AUTO-IRRIGATION: ACTIVE
                  </div>
               </div>
             </div>
@@ -88,7 +156,7 @@ export default function LiveFarmStream() {
 
           {/* Stream Selector */}
           <div className="flex flex-col gap-4">
-            {STREAMS.map((stream) => (
+            {streams.map((stream) => (
               <button
                 key={stream.id}
                 onClick={() => setActiveStream(stream)}
@@ -96,7 +164,7 @@ export default function LiveFarmStream() {
                   activeStream.id === stream.id ? 'border-primary ring-2 ring-primary/20' : 'border-white/10 opacity-60 hover:opacity-100'
                 }`}
               >
-                <img src={stream.url} alt={stream.name} className="absolute inset-0 w-full h-full object-cover" />
+                <img src={stream.thumbnail_url || stream.video_url} alt={stream.name} className="absolute inset-0 w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-black/60 group-hover:bg-black/40 transition-colors" />
                 <div className="relative p-6 flex flex-col justify-end h-full">
                   <h4 className="text-lg font-black uppercase tracking-tight">{stream.name}</h4>

@@ -61,7 +61,6 @@ export default function RootLayout({
                   <GlobalUI />
                   <AIRecipeAssistant />
                   {children}
-                  <Footer />
                 </CartProvider>
               </LoyaltyProvider>
             </WishlistProvider>

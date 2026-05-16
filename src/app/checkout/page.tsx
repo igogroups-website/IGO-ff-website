@@ -31,6 +31,11 @@ export default function Checkout() {
     cvv: ''
   });
 
+  const [couponCode, setCouponCode] = useState('');
+  const [discount, setDiscount] = useState(0);
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+
   useEffect(() => {
     if (!authLoading && !user) {
       toast.error('Please login to checkout');
@@ -98,7 +103,53 @@ export default function Checkout() {
     );
   };
 
+  const handleApplyCoupon = async () => {
+    if (!couponCode) return;
+    setIsValidatingCoupon(true);
+    try {
+      const { data: coupon, error } = await supabase
+        .from('coupons')
+        .select('*')
+        .eq('code', couponCode.toUpperCase())
+        .eq('is_active', true)
+        .single();
+
+      if (error || !coupon) {
+        toast.error('Invalid coupon code');
+        setDiscount(0);
+        setAppliedCoupon(null);
+      } else {
+        // Check expiry
+        if (coupon.expiry_date && new Date(coupon.expiry_date) < new Date()) {
+          toast.error('Coupon has expired');
+          return;
+        }
+        // Check min spend
+        if (cartTotal < (coupon.min_spend || 0)) {
+          toast.error(`Min spend of ₹${coupon.min_spend} required`);
+          return;
+        }
+
+        let calculatedDiscount = 0;
+        if (coupon.discount_type === 'percentage') {
+          calculatedDiscount = (cartTotal * coupon.discount_value) / 100;
+        } else {
+          calculatedDiscount = coupon.discount_value;
+        }
+
+        setDiscount(calculatedDiscount);
+        setAppliedCoupon(coupon);
+        toast.success(`Coupon applied: ₹${calculatedDiscount} off!`);
+      }
+    } catch (err) {
+      toast.error('Error validating coupon');
+    } finally {
+      setIsValidatingCoupon(false);
+    }
+  };
+
   const subtotal = cartTotal;
+  const total = Math.max(0, subtotal - discount);
 
   const handlePlaceOrder = async () => {
     if (!user) {
@@ -143,10 +194,11 @@ export default function Checkout() {
         .from('orders')
         .insert({
           user_id: user.id,
-          total_amount: subtotal,
+          total_amount: total,
           delivery_address: `${address.name}, ${address.street}, ${address.city} - ${address.zip}`,
           payment_method: paymentMethod,
-          status: 'pending'
+          status: 'pending',
+          coupon_id: appliedCoupon?.id || null
         })
         .select()
         .single();
@@ -176,7 +228,7 @@ export default function Checkout() {
       
       // Send Order Confirmation Email
       import('@/lib/email').then(({ sendOrderConfirmation }) => {
-        sendOrderConfirmation(user.email || address.name, order.id, subtotal);
+        sendOrderConfirmation(user.email || address.name, order.id, total);
       });
 
       router.push(`/checkout/success?id=${order.id}`);
@@ -406,18 +458,50 @@ export default function Checkout() {
                 ))}
               </div>
 
+              {/* Coupon Field */}
+              <div className="mb-8 p-6 bg-primary/5 rounded-3xl border border-primary/10">
+                <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-3">Promotional Code</p>
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    placeholder="ENTER CODE"
+                    className="flex-1 bg-white border border-border rounded-xl px-4 py-2 text-sm font-black uppercase tracking-widest focus:ring-2 focus:ring-primary/20 outline-none"
+                    value={couponCode}
+                    onChange={e => setCouponCode(e.target.value)}
+                    disabled={appliedCoupon}
+                  />
+                  <button 
+                    onClick={appliedCoupon ? () => { setAppliedCoupon(null); setDiscount(0); setCouponCode(''); } : handleApplyCoupon}
+                    disabled={isValidatingCoupon}
+                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                      appliedCoupon 
+                        ? 'bg-red-50 text-red-600 hover:bg-red-500 hover:text-white' 
+                        : 'bg-primary text-white hover:bg-primary/90'
+                    }`}
+                  >
+                    {isValidatingCoupon ? <Loader2 size={14} className="animate-spin" /> : (appliedCoupon ? 'REMOVE' : 'APPLY')}
+                  </button>
+                </div>
+              </div>
+
               <div className="space-y-3 border-t border-border pt-6 mb-8">
                 <div className="flex justify-between text-muted-foreground">
                   <span>Subtotal</span>
                   <span>₹{subtotal}</span>
                 </div>
+                {discount > 0 && (
+                  <div className="flex justify-between text-emerald-600 font-bold">
+                    <span>Discount</span>
+                    <span>-₹{discount}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-muted-foreground">
                   <span>Delivery</span>
                   <span className="text-primary font-bold">FREE</span>
                 </div>
                 <div className="flex justify-between text-xl font-black pt-4">
                   <span>Total</span>
-                  <span className="text-primary">₹{subtotal}</span>
+                  <span className="text-primary">₹{total}</span>
                 </div>
               </div>
 

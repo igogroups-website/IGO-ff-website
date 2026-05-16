@@ -12,6 +12,8 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense } from 'react';
 
 import { VERIFIED_INVENTORY } from '@/lib/constants';
+import Footer from '@/components/Footer';
+import ThreeHero from '@/components/ThreeHero';
 
 function ProductsContent() {
   const searchParams = useSearchParams();
@@ -149,8 +151,9 @@ function ProductsContent() {
   return (
     <main className="min-h-screen bg-white">
       <Navbar />
-      <div className="bg-[#f9f9f7] pt-40 pb-12">
-        <div className="container mx-auto px-6 md:px-10">
+      <div className="relative bg-[#f9f9f7] pt-48 pb-20 overflow-hidden">
+        <ThreeHero />
+        <div className="container mx-auto px-6 md:px-10 relative z-10">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
               <div className="flex items-center gap-2 text-primary font-black text-xs mb-3 uppercase tracking-[0.3em]"><Leaf size={14} /><span>Harvest Catalog</span></div>
@@ -216,6 +219,7 @@ function ProductsContent() {
           </div>
         </div>
       </div>
+      <Footer />
     </main>
   );
 }

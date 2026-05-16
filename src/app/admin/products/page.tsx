@@ -12,6 +12,7 @@ import {
   deleteAllProducts,
   syncVerifiedCatalog
 } from '@/lib/admin';
+import { uploadProductMedia } from '@/lib/storage';
 import { 
   Plus, 
   Search, 
@@ -141,7 +142,8 @@ function ProductsContent() {
     video_url: '',
     order_index: 0,
     stock: 100,
-    is_seasonal: false
+    is_seasonal: false,
+    image_urls: ['']
   });
 
   const [editFormData, setEditFormData] = useState({
@@ -154,7 +156,8 @@ function ProductsContent() {
     video_url: '',
     order_index: 0,
     stock: 100,
-    is_seasonal: false
+    is_seasonal: false,
+    image_urls: ['']
   });
 
   const searchParams = useSearchParams();
@@ -376,7 +379,8 @@ function ProductsContent() {
       video_url: product.video_url || '',
       order_index: product.order_index || 0,
       stock: product.stock,
-      is_seasonal: product.is_seasonal || false
+      is_seasonal: product.is_seasonal || false,
+      image_urls: product.image_urls && product.image_urls.length > 0 ? product.image_urls : [product.image_url || '']
     });
     setIsAddModalOpen(true);
   }
@@ -407,13 +411,28 @@ function ProductsContent() {
         video_url: editFormData.video_url,
         order_index: editFormData.order_index,
         slug: editFormData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-        category_id,
         category_slug,
-        image_urls: [editFormData.image_url],
+        image_url: editFormData.image_urls[0] || editFormData.image_url, 
+        image_urls: editFormData.image_urls.filter(url => url.trim() !== ''),
         updated_at: new Date().toISOString()
       };
 
-      const { data, error } = await updateProduct(editingProduct.id, dbUpdate);
+      // Check if the ID is a valid UUID
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(editingProduct.id);
+      
+      let response;
+      if (isUUID) {
+        response = await updateProduct(editingProduct.id, dbUpdate);
+      } else {
+        // For local products, we use upsert by name to ensure they enter the DB correctly
+        response = await supabase
+          .from('products')
+          .upsert({ ...dbUpdate, in_stock: true, is_active: true }, { onConflict: 'name' })
+          .select()
+          .single();
+      }
+
+      const { data, error } = response;
       
       if (!error && data) {
         toast.success('Product updated successfully!');
@@ -422,7 +441,7 @@ function ProductsContent() {
         setEditingProduct(null);
       } else {
         console.error('Update error:', error);
-        toast.error('Failed to update product');
+        toast.error(`Update failed: ${error?.message || 'Check database connection'}`);
       }
     } else {
       // Duplicate name check
@@ -455,18 +474,23 @@ function ProductsContent() {
         slug: newProduct.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
         category_id,
         category_slug,
-        image_urls: [newProduct.image_url],
+        image_url: newProduct.image_urls[0] || '',
+        image_urls: newProduct.image_urls.filter(url => url.trim() !== ''),
         in_stock: true,
         is_active: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
 
-      const { data, error } = await addProduct(dbInsert);
-      
+      const { data, error } = await supabase
+        .from('products')
+        .insert([dbInsert])
+        .select()
+        .single();
+
       if (!error && data) {
-        toast.success('New product added!');
-        setProducts([data, ...products]);
+        toast.success('Product added successfully!');
+        setProducts((prev: any[]) => [data, ...prev]);
         setIsAddModalOpen(false);
         setNewProduct({
           name: '',
@@ -478,11 +502,12 @@ function ProductsContent() {
           video_url: '',
           order_index: 0,
           stock: 100,
-          is_seasonal: false
+          is_seasonal: false,
+          image_urls: ['']
         });
       } else {
         console.error('Add product error:', error);
-        toast.error('Failed to add product. Check if all fields are valid.');
+        toast.error(`Addition failed: ${error?.message || 'Check database connection'}`);
       }
     }
   }
@@ -1060,19 +1085,21 @@ function ProductsContent() {
                     type="file" 
                     accept="image/*"
                     className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                    onChange={(e) => {
+                    onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (file) {
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                          const base64String = reader.result as string;
+                        const loadingToast = toast.loading('Uploading primary image...');
+                        try {
+                          const uploadedUrl = await uploadProductMedia(file, 'images');
                           if (editingProduct) {
-                            setEditFormData({...editFormData, image_url: base64String});
+                            setEditFormData({...editFormData, image_url: uploadedUrl});
                           } else {
-                            setNewProduct({...newProduct, image_url: base64String});
+                            setNewProduct({...newProduct, image_url: uploadedUrl});
                           }
-                        };
-                        reader.readAsDataURL(file);
+                          toast.success('Primary image updated!', { id: loadingToast });
+                        } catch (err: any) {
+                          toast.error(err.message || 'Upload failed', { id: loadingToast });
+                        }
                       }
                     }}
                   />
@@ -1085,17 +1112,77 @@ function ProductsContent() {
                 <h4 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Live Preview</h4>
                 <p className="text-center text-[10px] text-slate-500 font-medium px-4">This is how your product image will appear to customers.</p>
                 
-                <div className="mt-8 w-full space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Or Paste Image URL</label>
-                  <input 
-                    type="text" 
-                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 focus:border-primary/30 focus:ring-4 focus:ring-primary/5 outline-none font-bold transition-all text-sm"
-                    placeholder="https://images.unsplash.com/..."
-                    value={editingProduct ? editFormData.image_url : newProduct.image_url}
-                    onChange={(e) => editingProduct 
-                      ? setEditFormData({...editFormData, image_url: e.target.value})
-                      : setNewProduct({...newProduct, image_url: e.target.value})}
-                  />
+                <div className="mt-8 w-full space-y-4">
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Product Images (Gallery)</label>
+                  {(editingProduct ? editFormData.image_urls : newProduct.image_urls).map((url, idx) => (
+                    <div key={idx} className="space-y-2">
+                      <div className="relative group/input flex gap-2">
+                        <input 
+                          type="text" 
+                          className="flex-1 px-4 py-3 rounded-xl border-2 border-slate-100 focus:border-primary/30 focus:ring-4 focus:ring-primary/5 outline-none font-bold transition-all text-xs pr-10"
+                          placeholder={`Image URL ${idx + 1} (or upload below)`}
+                          value={url}
+                          onChange={(e) => {
+                            const newUrls = [...(editingProduct ? editFormData.image_urls : newProduct.image_urls)];
+                            newUrls[idx] = e.target.value;
+                            if (editingProduct) setEditFormData({...editFormData, image_urls: newUrls});
+                            else setNewProduct({...newProduct, image_urls: newUrls});
+                          }}
+                        />
+                        <div className="relative">
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const loadingToast = toast.loading('Uploading image...');
+                                try {
+                                  const uploadedUrl = await uploadProductMedia(file, 'images');
+                                  const newUrls = [...(editingProduct ? editFormData.image_urls : newProduct.image_urls)];
+                                  newUrls[idx] = uploadedUrl;
+                                  if (editingProduct) setEditFormData({...editFormData, image_urls: newUrls});
+                                  else setNewProduct({...newProduct, image_urls: newUrls});
+                                  toast.success('Gallery image updated!', { id: loadingToast });
+                                } catch (err: any) {
+                                  toast.error(err.message || 'Upload failed', { id: loadingToast });
+                                }
+                              }
+                            }}
+                          />
+                          <button type="button" className="h-full px-4 bg-slate-100 rounded-xl text-slate-500 hover:bg-primary hover:text-white transition-all">
+                            <Upload size={16} />
+                          </button>
+                        </div>
+                        {(editingProduct ? editFormData.image_urls : newProduct.image_urls).length > 1 && (
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              const newUrls = [...(editingProduct ? editFormData.image_urls : newProduct.image_urls)].filter((_, i) => i !== idx);
+                              if (editingProduct) setEditFormData({...editFormData, image_urls: newUrls});
+                              else setNewProduct({...newProduct, image_urls: newUrls});
+                            }}
+                            className="p-3 text-slate-300 hover:text-red-500 transition-colors"
+                          >
+                            <X size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      const newUrls = [...(editingProduct ? editFormData.image_urls : newProduct.image_urls), ''];
+                      if (editingProduct) setEditFormData({...editFormData, image_urls: newUrls});
+                      else setNewProduct({...newProduct, image_urls: newUrls});
+                    }}
+                    className="w-full py-3 rounded-xl border-2 border-dashed border-slate-200 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:border-primary/30 hover:text-primary transition-all flex items-center justify-center gap-2"
+                  >
+                    <Plus size={14} />
+                    Add Another Image
+                  </button>
                 </div>
               </div>
 
@@ -1216,16 +1303,43 @@ function ProductsContent() {
                       </label>
                     </div>
                     <div className="md:col-span-2 space-y-3">
-                      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Product Promo Video URL (Optional)</label>
-                      <input 
-                        type="text" 
-                        className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 focus:border-primary/30 focus:ring-4 focus:ring-primary/5 outline-none font-bold transition-all text-sm"
-                        placeholder="e.g. https://www.youtube.com/watch?v=..."
-                        value={editingProduct ? editFormData.video_url : newProduct.video_url}
-                        onChange={(e) => editingProduct
-                          ? setEditFormData({...editFormData, video_url: e.target.value})
-                          : setNewProduct({...newProduct, video_url: e.target.value})}
-                      />
+                      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Product Promo Video (URL or Local Upload)</label>
+                      <div className="flex gap-2">
+                        <input 
+                          type="text" 
+                          className="flex-1 px-6 py-4 rounded-2xl border-2 border-slate-100 focus:border-primary/30 focus:ring-4 focus:ring-primary/5 outline-none font-bold transition-all text-sm"
+                          placeholder="e.g. https://www.youtube.com/watch?v=... or local path"
+                          value={editingProduct ? editFormData.video_url : newProduct.video_url}
+                          onChange={(e) => editingProduct
+                            ? setEditFormData({...editFormData, video_url: e.target.value})
+                            : setNewProduct({...newProduct, video_url: e.target.value})}
+                        />
+                        <div className="relative">
+                          <input 
+                            type="file" 
+                            accept="video/*"
+                            className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const loadingToast = toast.loading('Uploading video...');
+                                try {
+                                  const uploadedUrl = await uploadProductMedia(file, 'videos');
+                                  if (editingProduct) setEditFormData({...editFormData, video_url: uploadedUrl});
+                                  else setNewProduct({...newProduct, video_url: uploadedUrl});
+                                  toast.success('Video uploaded!', { id: loadingToast });
+                                } catch (err) {
+                                  toast.error('Upload failed. Ensure bucket "products" exists.', { id: loadingToast });
+                                }
+                              }
+                            }}
+                          />
+                          <button type="button" className="h-full px-6 bg-slate-900 rounded-2xl text-white hover:bg-primary transition-all flex items-center gap-2">
+                            <Upload size={18} />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Upload</span>
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
 

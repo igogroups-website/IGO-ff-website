@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ShoppingCart, User, Search, Leaf, X, Bell, LayoutDashboard, Heart, Languages, ChevronDown } from 'lucide-react';
+import { ShoppingCart, User, Search, Leaf, X, Bell, LayoutDashboard, Heart, Languages, ChevronDown, Globe, Package, MapPin, Wallet, Settings, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
@@ -18,53 +18,64 @@ export default function Navbar() {
   const [scrolled, setScrolled] = React.useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = React.useState(false);
   const [isLangOpen, setIsLangOpen] = React.useState(false);
+  const [isHomePage, setIsHomePage] = React.useState(true);
   const { user, openAuthModal, signOut } = useAuth();
   const { isCartOpen, openCart, closeCart, cartCount } = useCart();
   const { openWishlist, wishlistItems } = useWishlist();
   const { language, setLanguage, t } = useTranslation();
 
   React.useEffect(() => {
+    setIsHomePage(window.location.pathname === '/');
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const languages = [
-    { code: 'en', name: 'English', native: 'English' },
-    { code: 'ta', name: 'Tamil', native: 'தமிழ்' },
-    { code: 'hi', name: 'Hindi', native: 'हिन्दी' }
+    { code: 'en', name: 'English', native: 'EN' },
+    { code: 'ta', name: 'Tamil', native: 'TA' },
+    { code: 'hi', name: 'Hindi', native: 'HI' }
   ];
 
+  const isSolid = scrolled || !isHomePage;
+
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-700 ${
-      scrolled 
-        ? 'bg-white/80 backdrop-blur-xl border-b border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.05)] py-2' 
-        : 'bg-transparent py-4'
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out ${
+      isSolid 
+        ? 'bg-white/95 backdrop-blur-2xl border-b border-slate-100 shadow-xl py-3 text-foreground' 
+        : 'bg-transparent py-6 text-white'
     }`}>
-      <div className="container mx-auto px-6 md:px-10 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-4 group">
-          <div className="w-14 h-14 rounded-xl flex items-center justify-center transition-all group-hover:scale-105 overflow-hidden shadow-sm">
-            <img src="/logo.png" alt="Logo" className="w-full h-full object-cover transform scale-110" />
+      <div className="container mx-auto px-6 lg:px-12 flex items-center justify-between">
+        {/* Brand Logo & Name */}
+        <Link href="/" className="flex items-center gap-3 group">
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 shadow-lg overflow-hidden border ${isSolid ? 'bg-primary border-primary/10' : 'bg-white border-white/20'}`}>
+            <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
           </div>
-          <span className="text-2xl font-black tracking-tighter text-primary uppercase">
-            FARMERS FACTORY
-          </span>
+          <div className="flex flex-col">
+            <span className={`text-xl font-black tracking-tighter uppercase leading-none ${isSolid ? 'text-primary' : 'text-white'}`}>
+              FARMERS FACTORY
+            </span>
+            <span className={`text-[8px] font-black uppercase tracking-[0.3em] mt-1 ${isSolid ? 'text-primary/60' : 'text-white/60'}`}>
+              Purely Organic
+            </span>
+          </div>
         </Link>
 
-        <div className="hidden lg:flex flex-1 max-w-lg mx-12">
-          <SmartSearch />
+        {/* Integrated Smart Search */}
+        <div className="hidden lg:flex flex-1 max-w-xl mx-16">
+          <SmartSearch isSolid={isSolid} />
         </div>
 
-        <div className="flex items-center gap-4">
-          {/* Language Switcher */}
+        {/* Actions Section */}
+        <div className="flex items-center gap-2 sm:gap-6">
+          {/* Language Switcher - Minimalist */}
           <div className="relative">
             <button
               onClick={() => setIsLangOpen(!isLangOpen)}
-              className="flex items-center gap-2 p-3 text-foreground/80 hover:text-primary hover:bg-primary/5 rounded-2xl transition-all font-black text-[10px] uppercase tracking-widest"
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all font-black text-xs uppercase tracking-widest ${isSolid ? 'hover:bg-primary/5 text-foreground/80' : 'hover:bg-white/10 text-white'}`}
             >
-              <Languages size={20} />
-              <span className="hidden sm:inline">{languages.find(l => l.code === language)?.native}</span>
-              <ChevronDown size={14} className={`transition-transform ${isLangOpen ? 'rotate-180' : ''}`} />
+              <Globe size={18} strokeWidth={1.5} />
+              <span className="hidden md:inline">{languages.find(l => l.code === language)?.native}</span>
             </button>
 
             <AnimatePresence>
@@ -73,7 +84,7 @@ export default function Navbar() {
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-2xl border border-border p-2 z-50"
+                  className="absolute right-0 mt-3 w-40 bg-white rounded-2xl shadow-2xl border border-border p-2 z-50"
                 >
                   {languages.map((lang) => (
                     <button
@@ -82,12 +93,12 @@ export default function Navbar() {
                         setLanguage(lang.code as any);
                         setIsLangOpen(false);
                       }}
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all ${
-                        language === lang.code ? 'bg-primary/10 text-primary font-black' : 'hover:bg-muted font-bold text-muted-foreground'
+                      className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl transition-all ${
+                        language === lang.code ? 'bg-primary text-white font-black' : 'hover:bg-muted font-bold text-muted-foreground'
                       }`}
                     >
-                      <span className="text-xs">{lang.native}</span>
-                      <span className="text-[10px] opacity-40">{lang.name}</span>
+                      <span className="text-xs">{lang.name}</span>
+                      <span className="text-[10px] opacity-60 uppercase">{lang.code}</span>
                     </button>
                   ))}
                 </motion.div>
@@ -95,70 +106,99 @@ export default function Navbar() {
             </AnimatePresence>
           </div>
 
-          <button
-            onClick={() => setIsNotificationsOpen(true)}
-            className="p-3 text-foreground/80 hover:text-primary hover:bg-primary/5 rounded-2xl transition-all relative group"
-          >
-            <Bell size={26} />
-            <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse" />
-          </button>
+          {/* Action Icons */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setIsNotificationsOpen(true)}
+              className={`p-2.5 rounded-xl transition-all relative group ${isSolid ? 'hover:bg-primary/5 text-foreground' : 'hover:bg-white/10 text-white'}`}
+            >
+              <Bell size={22} strokeWidth={1.5} />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white animate-pulse" />
+            </button>
 
-          <Link
-            href="/cart"
-            className="relative p-3 text-foreground/80 hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group"
-          >
-            <ShoppingCart size={26} />
-            {cartCount > 0 && (
-              <motion.span
-                key={cartCount}
-                initial={{ scale: 0.5, y: 5 }}
-                animate={{ scale: 1, y: 0 }}
-                className="absolute top-1 right-1 min-w-[20px] h-5 bg-accent text-accent-foreground text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-lg shadow-accent/20 px-1"
-              >
-                {cartCount > 99 ? '99+' : cartCount}
-              </motion.span>
-            )}
-          </Link>
+            <Link
+              href="/cart"
+              className={`p-2.5 rounded-xl transition-all relative group ${isSolid ? 'hover:bg-primary/5 text-foreground' : 'hover:bg-white/10 text-white'}`}
+            >
+              <ShoppingCart size={22} strokeWidth={1.5} />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-primary text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-lg px-1">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+          </div>
+
+          {/* Profile Section */}
+          <div className="h-8 w-[1px] bg-border/20 hidden sm:block mx-2" />
 
           {user ? (
             <div className="relative group">
-              <button className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-all font-bold text-sm">
-                <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center text-xs font-black">
+              <button className={`flex items-center gap-2 p-1 pr-4 rounded-full border transition-all duration-300 ${isSolid ? 'bg-white border-slate-100 hover:shadow-md' : 'bg-white/10 border-white/20 text-white hover:bg-white/20'}`}>
+                <div className="w-9 h-9 bg-primary/10 text-primary rounded-full flex items-center justify-center overflow-hidden border border-primary/20">
                   {user.email?.[0].toUpperCase() || 'U'}
                 </div>
-                <span className="hidden lg:inline">{user.email?.split('@')[0]}</span>
+                <div className="text-left hidden sm:block">
+                  <p className={`text-[9px] font-black uppercase tracking-widest leading-none mb-1 opacity-60`}>My Profile</p>
+                  <p className={`text-xs font-bold leading-none truncate max-w-[80px]`}>{user.email?.split('@')[0]}</p>
+                </div>
+                <ChevronDown size={12} className="opacity-40 group-hover:opacity-100 transition-opacity ml-1" />
               </button>
 
-              <div className="absolute right-0 mt-2 w-72 bg-white rounded-[2rem] shadow-2xl border border-border p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform origin-top-right scale-95 group-hover:scale-100 z-50">
-                <div className="mb-3">
-                  <LoyaltyWallet />
-                </div>
-                {user.email?.includes('admin') && (
-                  <Link href="/admin" className="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/5 text-primary hover:bg-primary/10 transition-colors text-sm font-black uppercase tracking-wider mb-1">
-                    <LayoutDashboard size={18} />
-                    Admin Panel
+              <div className="absolute right-0 mt-3 w-64 bg-white rounded-[2rem] shadow-2xl border border-border p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform origin-top-right scale-95 group-hover:scale-100 z-50">
+                <div className="flex flex-col gap-1">
+                  <Link 
+                    href="/profile?tab=orders" 
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-primary/5 text-slate-700 hover:text-primary transition-all text-sm font-bold"
+                  >
+                    <Package size={18} className="text-primary/60" />
+                    My Orders
                   </Link>
-                )}
-                <Link href="/profile" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-muted transition-colors text-sm font-bold text-foreground">
-                  <User size={18} className="text-primary" />
-                  My Profile
-                </Link>
-                <button
-                  onClick={signOut}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-50 transition-colors text-sm font-bold text-red-500 mt-1"
-                >
-                  <X size={18} />
-                  Logout
-                </button>
+                  <Link 
+                    href="/profile?tab=addresses" 
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-primary/5 text-slate-700 hover:text-primary transition-all text-sm font-bold"
+                  >
+                    <MapPin size={18} className="text-primary/60" />
+                    Saved Addresses
+                  </Link>
+                  <Link 
+                    href="/profile?tab=wallet" 
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-primary/5 text-slate-700 hover:text-primary transition-all text-sm font-bold"
+                  >
+                    <Wallet size={18} className="text-primary/60" />
+                    FF Wallet
+                  </Link>
+                  
+                  <div className="h-[1px] bg-slate-100 my-2 mx-2" />
+                  
+                  {user.email?.includes('admin') && (
+                    <Link href="/admin" className="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/5 text-primary hover:bg-primary/10 transition-colors text-sm font-black uppercase tracking-wider mb-1">
+                      <LayoutDashboard size={18} />
+                      Admin Dashboard
+                    </Link>
+                  )}
+                  
+                  <Link href="/profile?tab=settings" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-muted transition-colors text-sm font-bold text-slate-600">
+                    <Settings size={18} />
+                    Settings
+                  </Link>
+                  
+                  <button
+                    onClick={signOut}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-50 transition-colors text-sm font-bold text-red-500 mt-1"
+                  >
+                    <LogOut size={18} />
+                    Sign Out
+                  </button>
+                </div>
               </div>
             </div>
           ) : (
             <Link
               href="/auth"
-              className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-primary text-white hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 font-black text-sm active:scale-95 overflow-hidden group/btn relative"
+              className="px-6 py-2.5 rounded-full bg-primary text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 font-black text-xs uppercase tracking-widest active:scale-95"
             >
-              <User size={20} className="relative z-10" />
-              <span className="hidden sm:inline relative z-10">{t('nav.login')}</span>
+              Login
             </Link>
           )}
         </div>
@@ -185,9 +225,17 @@ function NotificationsDrawer({ isOpen, onClose }: { isOpen: boolean, onClose: ()
         .order('created_at', { ascending: false })
         .limit(10);
 
-      if (!error) setNotifications(data || []);
-    } catch (err) {
-      console.error('Failed to fetch notifications');
+      if (error) {
+        if (error.code === 'PGRST116' || error.message?.includes('does not exist')) {
+          setNotifications([]);
+        } else {
+          console.warn('[Navbar] Notification fetch error:', error.message);
+        }
+      } else {
+        setNotifications(data || []);
+      }
+    } catch (err: any) {
+      console.error('Failed to fetch notifications:', err.message);
     } finally {
       setLoading(false);
     }
@@ -195,15 +243,12 @@ function NotificationsDrawer({ isOpen, onClose }: { isOpen: boolean, onClose: ()
 
   React.useEffect(() => {
     fetchNotifications();
-
-    // Listen for real-time notifications
     const channel = supabase
       .channel('realtime_notifications')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, () => {
         fetchNotifications();
       })
       .subscribe();
-
     return () => {
       supabase.removeChannel(channel);
     };
@@ -234,11 +279,11 @@ function NotificationsDrawer({ isOpen, onClose }: { isOpen: boolean, onClose: ()
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {loading ? (
-            <div className="flex items-center justify-center py-20 text-muted-foreground font-bold italic">Loading alerts...</div>
+            <div className="flex items-center justify-center py-20 text-muted-foreground font-bold italic text-sm">Synchronizing alerts...</div>
           ) : notifications.length === 0 ? (
             <div className="text-center py-20 px-10">
               <div className="w-16 h-16 bg-muted/20 rounded-full flex items-center justify-center mx-auto mb-4 text-muted-foreground/30"><Bell size={32} /></div>
-              <p className="text-muted-foreground font-bold">No new notifications</p>
+              <p className="text-muted-foreground font-bold text-sm">No new notifications</p>
               <p className="text-xs text-muted-foreground/60 mt-2 italic">You're all caught up with the farm!</p>
             </div>
           ) : (
@@ -254,7 +299,6 @@ function NotificationsDrawer({ isOpen, onClose }: { isOpen: boolean, onClose: ()
                   <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 bg-muted/30 px-2 py-0.5 rounded-full whitespace-nowrap">{getTimeAgo(notif.created_at)}</span>
                 </div>
                 <p className="text-sm text-muted-foreground font-medium leading-relaxed">{notif.message}</p>
-                {notif.type === 'promo' && <div className="mt-3 inline-block px-2 py-0.5 bg-orange-100 text-orange-600 text-[9px] font-black uppercase tracking-widest rounded-md">Special Offer</div>}
               </Link>
             ))
           )}

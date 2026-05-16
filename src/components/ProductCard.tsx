@@ -72,12 +72,12 @@ export default function ProductCard({ product }: ProductCardProps) {
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        onClick={() => setIsDetailOpen(true)}
+        onClick={() => router.push(`/products/${product.id}`)}
         className="group bg-white rounded-[2rem] border border-border/50 p-5 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 cursor-pointer flex flex-col h-full"
       >
         <div className="relative aspect-[4/5] rounded-[1.5rem] overflow-hidden mb-6 bg-muted/20">
           <img
-            src={product.image_url || '/placeholder_product.png'}
+            src={product.image_url || (product as any).image_urls?.[0] || '/placeholder_product.png'}
             alt={product.name}
             onError={(e) => {
               (e.target as HTMLImageElement).src = '/placeholder_product.png';

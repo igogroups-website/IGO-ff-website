@@ -125,7 +125,7 @@ export default function ProductDetailModal({ isOpen, onClose, product }: Product
                 />
               ) : !imageError ? (
                 <img 
-                  src={currentProduct.image_url} 
+                  src={currentProduct.image_url || (currentProduct as any).image_urls?.[0] || '/placeholder_product.png'} 
                   alt={currentProduct.name} 
                   onError={() => setImageError(true)} 
                   className="w-full h-full object-cover transition-transform duration-1000 hover:scale-110" 
@@ -148,6 +148,18 @@ export default function ProductDetailModal({ isOpen, onClose, product }: Product
 
                 <p className="text-muted-foreground text-lg mb-8 font-medium leading-relaxed">{currentProduct.description}</p>
                 
+                {/* Blinkit Style Highlights */}
+                <div className="grid grid-cols-2 gap-4 mb-8">
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Shelf Life</p>
+                    <p className="text-sm font-bold text-slate-700">3-5 Days</p>
+                  </div>
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Storage</p>
+                    <p className="text-sm font-bold text-slate-700">Refrigerate</p>
+                  </div>
+                </div>
+                
                 <div className="mt-8 flex flex-col gap-6">
                   <TraceabilityBadge productId={currentProduct.id} productName={currentProduct.name} />
                   <div className="bg-muted/20 p-6 rounded-[2rem] border border-border/40 flex items-center gap-6">
@@ -166,6 +178,8 @@ export default function ProductDetailModal({ isOpen, onClose, product }: Product
                   <div onClick={() => setIsSubscribed(false)} className={`p-6 rounded-[1.5rem] border-2 cursor-pointer transition-all ${!isSubscribed ? 'border-primary bg-primary/5 shadow-lg' : 'border-border bg-white'}`}><div className="flex items-center justify-between mb-2"><div className="flex items-center gap-3"><div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${!isSubscribed ? 'border-primary' : 'border-muted'}`}>{!isSubscribed && <div className="w-3 h-3 bg-primary rounded-full" />}</div><span className="font-black text-lg">One-time Purchase</span></div><span className="font-black text-xl">₹{currentProduct.price}</span></div></div>
                   <div onClick={() => setIsSubscribed(true)} className={`p-6 rounded-[1.5rem] border-2 cursor-pointer transition-all relative overflow-hidden ${isSubscribed ? 'border-primary bg-primary/5 shadow-lg' : 'border-border bg-white'}`}><div className="absolute top-0 right-0 bg-accent text-accent-foreground px-4 py-1 text-[10px] font-black uppercase tracking-widest rounded-bl-xl">Save 10%</div><div className="flex items-center justify-between mb-2"><div className="flex items-center gap-3"><div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSubscribed ? 'border-primary' : 'border-muted'}`}>{isSubscribed && <div className="w-3 h-3 bg-primary rounded-full" />}</div><span className="font-black text-lg">Subscribe & Save</span></div><span className="font-black text-xl text-primary">₹{Math.round(currentProduct.price * 0.9)}</span></div></div>
                 </div>
+
+                <SmartMealBundling currentProduct={currentProduct} onAddSuccess={() => setShowAddedOverlay(true)} />
               </div>
 
               <div className="flex flex-col gap-6 mb-12">
