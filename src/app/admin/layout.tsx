@@ -20,7 +20,8 @@ import {
   Image as ImageIcon,
   Ticket,
   User,
-  Video
+  Video,
+  Sparkles
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'react-hot-toast';
