@@ -129,21 +129,25 @@ export default function SmartSearch({ isSolid = false }: { isSolid?: boolean }) 
     // 3. Create fresh instance
     try {
       const recognition = new SpeechRecognition();
-      recognition.lang = 'en-IN';
+      recognition.lang = 'en-IN'; // Optimized for Indian voices
       recognition.continuous = false;
-      recognition.interimResults = true; // Show results as you speak
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
 
       recognition.onstart = () => {
         setIsListening(true);
-        toast.loading('Listening... Say a product name', { id: 'voice-search' });
+        toast.loading('Listening... Say "Mango" or "Potato"', { id: 'voice-search' });
       };
 
       recognition.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         setQuery(transcript);
+        
+        // Final search trigger
         if (event.results[0].isFinal) {
           setIsOpen(true);
-          toast.success(`Searching for "${transcript}"`, { id: 'voice-search' });
+          setIsListening(false);
+          toast.success(`Found results for "${transcript}"`, { id: 'voice-search' });
         }
       };
 
