@@ -144,7 +144,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
         
         setCartItems(newCart);
-        localStorage.setItem('farmers_factory_guest_cart', JSON.stringify(newCart));
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('farmers_factory_guest_cart', JSON.stringify(newCart));
+        }
       }
       return true;
     } catch (error) {
