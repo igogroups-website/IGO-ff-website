@@ -151,19 +151,71 @@ function ProductsContent() {
   return (
     <main className="min-h-screen bg-white">
       <Navbar />
-      <div className="relative bg-[#f9f9f7] pt-48 pb-20 overflow-hidden">
-        <ThreeHero />
+      <div className="relative pt-32 pb-20 overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <img 
+            src="/banner-organic.png" 
+            alt="Organic Harvest" 
+            className="w-full h-full object-cover opacity-100"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/80 to-transparent" />
+        </div>
+        
         <div className="container mx-auto px-6 md:px-10 relative z-10">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div>
-              <div className="flex items-center gap-2 text-primary font-black text-xs mb-3 uppercase tracking-[0.3em]"><Leaf size={14} /><span>Harvest Catalog</span></div>
-              <h1 className="text-4xl md:text-6xl font-black text-foreground tracking-tighter uppercase">Explore Our <span className="text-primary italic font-serif lowercase">Freshness</span></h1>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 py-12">
+            <div className="max-w-2xl">
+              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full font-black text-[10px] mb-6 uppercase tracking-[0.3em] backdrop-blur-md border border-primary/20">
+                <Leaf size={14} />
+                <span>Premium Harvest Catalog</span>
+              </div>
+              <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter uppercase leading-[0.9]">
+                Purely <br/>
+                <span className="text-primary italic font-serif lowercase">Organic</span> <br/>
+                <span className="text-slate-800">Harvest</span>
+              </h1>
+              <p className="text-slate-600 font-medium mt-8 text-lg md:text-xl max-w-md leading-relaxed">
+                Experience the true taste of nature with our {products.length}+ live products, harvested directly from our farms to your door.
+              </p>
             </div>
-            <p className="text-muted-foreground font-medium max-w-xs md:text-right">Discover {products.length} live organic products harvested directly from our farms.</p>
+            
+            <div className="hidden lg:block">
+              <div className="bg-white/40 backdrop-blur-xl p-8 rounded-[3rem] border border-white/50 shadow-2xl shadow-primary/10">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 bg-primary text-white rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20">
+                    <Star size={24} className="fill-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-black text-slate-900 uppercase tracking-tighter">Certified Quality</h4>
+                    <p className="text-xs font-bold text-slate-500">100% Pesticide Free</p>
+                  </div>
+                </div>
+                <div className="h-px bg-slate-200/50 my-6" />
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-lg">
+                    <Leaf size={24} />
+                  </div>
+                  <div>
+                    <h4 className="font-black text-slate-900 uppercase tracking-tighter">Eco Friendly</h4>
+                    <p className="text-xs font-bold text-slate-500">Zero Waste Packaging</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="mt-12 flex gap-3 overflow-x-auto pb-4 scrollbar-hide -mx-1 px-1">
+          
+          <div className="mt-8 flex gap-3 overflow-x-auto pb-4 scrollbar-hide -mx-1 px-1">
             {categories.map((cat) => (
-              <button key={cat} onClick={() => setCategory(cat)} className={`flex-shrink-0 px-6 py-3 rounded-full font-black text-[10px] uppercase tracking-widest transition-all ${category === cat ? 'bg-primary text-white shadow-lg scale-105' : 'bg-white text-muted-foreground border border-border/50'}`}>{cat}</button>
+              <button 
+                key={cat} 
+                onClick={() => setCategory(cat)} 
+                className={`flex-shrink-0 px-8 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all backdrop-blur-md ${
+                  category === cat 
+                    ? 'bg-primary text-white shadow-2xl shadow-primary/30 scale-105 border-transparent' 
+                    : 'bg-white/60 text-slate-500 border border-slate-200/50 hover:bg-white hover:text-primary hover:border-primary/30'
+                }`}
+              >
+                {cat}
+              </button>
             ))}
           </div>
         </div>
