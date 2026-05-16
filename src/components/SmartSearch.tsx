@@ -112,57 +112,57 @@ export default function SmartSearch({ isSolid = false }: { isSolid?: boolean }) 
   };
 
   const handleVoiceSearch = () => {
-    // 1. Check for API support
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    // 1. Identify the engine (Chrome/Safari/Mobile)
+    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+    
     if (!SpeechRecognition) {
-      toast.error('Voice search is only supported in Chrome browser.', { id: 'voice-search' });
+      toast.error('Voice search is not supported in this browser. Please use Google Chrome.', { id: 'voice-search' });
       return;
     }
 
-    // 2. Clear previous instance to avoid "already started" errors
+    // 2. Stop if already running
     if (isListening) {
       if (recognitionRef.current) recognitionRef.current.stop();
       setIsListening(false);
       return;
     }
 
-    // 3. Create fresh instance
+    // 3. Launch a fresh recognition session
     try {
       const recognition = new SpeechRecognition();
-      // Use 'en-IN' as it handles English with strong Indian/Tamil influence best, 
-      // or we can detect/toggle, but 'en-IN' is the most versatile for mixed speech.
-      recognition.lang = 'en-IN'; 
+      recognition.lang = 'en-IN'; // Robust Indian locale (handles Tamil/English accents)
       recognition.continuous = false;
       recognition.interimResults = true;
-      recognition.maxAlternatives = 5; // Allow more alternatives to find the best match
+      recognition.maxAlternatives = 3;
 
       recognition.onstart = () => {
         setIsListening(true);
-        toast.loading('Listening... (English/தமிழ்)', { id: 'voice-search' });
+        toast.loading('Voice active. Say a product name...', { id: 'voice-search' });
       };
 
       recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
+        const transcript = event.results[event.results.length - 1][0].transcript;
         setQuery(transcript);
         
-        // When speech is final, we check for matches
-        if (event.results[0].isFinal) {
+        // Finalize search when speaking stops
+        if (event.results[event.results.length - 1].isFinal) {
           setIsOpen(true);
           setIsListening(false);
-          toast.success(`Results for "${transcript}"`, { id: 'voice-search' });
+          toast.success(`Searching for "${transcript}"`, { id: 'voice-search' });
         }
       };
 
       recognition.onerror = (event: any) => {
-        console.warn('Speech Recognition Error:', event.error);
-        if (event.error === 'not-allowed') {
-          toast.error('Microphone blocked. Please click the lock icon in your browser address bar to allow.', { id: 'voice-search' });
-        } else if (event.error === 'no-speech') {
-          toast.error('No speech heard. Try again.', { id: 'voice-search' });
-        } else {
-          toast.error('Voice search failed. Use Chrome for best results.', { id: 'voice-search' });
-        }
+        console.warn('Voice Engine Notice:', event.error);
         setIsListening(false);
+        if (event.error === 'not-allowed') {
+          toast.error('Mic blocked. Click the Lock icon in your URL bar and ALLOW microphone.', { id: 'voice-search' });
+        } else if (event.error === 'network') {
+          toast.error('Network error. Check your connection.', { id: 'voice-search' });
+        } else {
+          // General retry for all other errors
+          toast.error('Mic error. Please try clicking it again.', { id: 'voice-search' });
+        }
       };
 
       recognition.onend = () => {
@@ -172,7 +172,7 @@ export default function SmartSearch({ isSolid = false }: { isSolid?: boolean }) 
       recognitionRef.current = recognition;
       recognition.start();
     } catch (err) {
-      console.error('Failed to start speech recognition:', err);
+      console.error('Voice engine failed to start:', err);
       setIsListening(false);
     }
   };
