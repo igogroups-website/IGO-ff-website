@@ -144,13 +144,15 @@ export default function SmartSearch({ isSolid = false }: { isSolid?: boolean }) 
         recognition.stop();
         setIsListening(false);
         setIsOpen(true);
-        toast.success(`Found: "${transcript}"`, { id: 'voice-search' });
+        toast.dismiss('voice-search'); // Clear the loading toast immediately
+        toast.success(`Found: "${transcript}"`, { id: 'voice-search-success' });
       };
 
       recognition.onerror = (event: any) => {
         setIsListening(false);
+        toast.dismiss('voice-search'); // Clear the loading toast on error
         if (event.error === 'not-allowed') {
-          toast.error('Mic blocked. Click Lock in URL bar to ALLOW.', { id: 'voice-search' });
+          toast.error('Mic blocked. Click Lock in URL bar to ALLOW.', { id: 'voice-search-error' });
         }
       };
 
