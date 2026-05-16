@@ -39,17 +39,20 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (product.stock === 0) return;
+    if (product.stock === 0 || loading) return;
 
     setLoading(true);
     try {
       const success = await addToCart(product.id, 1, product);
       if (success) {
         setShowAddedOverlay(true);
+        // Force immediate sync across components
+        window.dispatchEvent(new Event('cart-updated'));
         setTimeout(() => setShowAddedOverlay(false), 3000);
       }
     } catch (error: any) {
-      toast.error('Failed to add to cart');
+      console.error('Basket Error:', error);
+      toast.error('Failed to add to basket');
     } finally {
       setLoading(false);
     }
