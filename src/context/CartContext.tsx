@@ -41,37 +41,30 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const fetchCart = useCallback(async () => {
     // Wait for auth to settle before fetching
-    if (authLoading) return;
+    if (authLoading || !user) {
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     try {
-      if (user) {
-        const { data, error } = await supabase
-          .from('cart')
-          .select('*, products(*)')
-          .eq('user_id', user.id);
-        
-        if (error) throw error;
-        
-        const normalized = (data || []).map((item: any) => ({
-          ...item,
-          products: item.products ? {
-            ...item.products,
-            category: item.products.category || (item.products.category_id === 'cat-veg' ? 'Vegetables' : item.products.category_id === 'cat-fruit' ? 'Fruits' : item.products.category_id) || '',
-            image_url: item.products.image_url || (Array.isArray(item.products.image_urls) ? item.products.image_urls[0] : null) || ''
-          } : item.products
-        }));
-        
-        setCartItems(normalized as CartItem[]);
-      } else {
-        // Guest cart from localStorage
-        const saved = localStorage.getItem('farmers_factory_guest_cart');
-        if (saved) {
-          setCartItems(JSON.parse(saved));
-        } else {
-          setCartItems([]);
-        }
-      }
+      const { data, error } = await supabase
+        .from('cart')
+        .select('*, products(*)')
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      
+      const normalized = (data || []).map((item: any) => ({
+        ...item,
+        products: item.products ? {
+          ...item.products,
+          category: item.products.category || (item.products.category_id === 'cat-veg' ? 'Vegetables' : item.products.category_id === 'cat-fruit' ? 'Fruits' : item.products.category_id) || '',
+          image_url: item.products.image_url || (Array.isArray(item.products.image_urls) ? item.products.image_urls[0] : null) || ''
+        } : item.products
+      }));
+      
+      setCartItems(normalized as CartItem[]);
     } catch (error) {
       console.error('Error fetching cart:', error);
     } finally {
