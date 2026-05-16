@@ -112,18 +112,56 @@ export default function SmartSearch({ isSolid = false }: { isSolid?: boolean }) 
   };
 
   const handleVoiceSearch = () => {
-    if (!recognitionRef.current) {
-      toast.error('Voice search is not supported in your browser.');
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) {
+      toast.error('Voice search is not supported in this browser. Please use Chrome.', { id: 'voice-search' });
       return;
+    }
+
+    if (!recognitionRef.current) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.lang = 'en-IN';
+
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setQuery(transcript);
+        setIsListening(false);
+        toast.success(`Searching for "${transcript}"`, { id: 'voice-search' });
+      };
+
+      recognitionRef.current.onerror = (event: any) => {
+        console.warn('Speech recognition error:', event.error);
+        setIsListening(false);
+        if (event.error === 'not-allowed') {
+          toast.error('Please allow microphone access in your browser settings.', { id: 'voice-search' });
+        } else if (event.error === 'no-speech') {
+          toast.error('No speech detected. Please try again.', { id: 'voice-search' });
+        } else {
+          toast.error('Voice search failed. Please try again.', { id: 'voice-search' });
+        }
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
     }
 
     if (isListening) {
       recognitionRef.current.stop();
       setIsListening(false);
     } else {
-      setIsListening(true);
-      toast.loading('Listening... Say something like "Potato"', { id: 'voice-search' });
-      recognitionRef.current.start();
+      try {
+        setIsListening(true);
+        toast.loading('Listening...', { id: 'voice-search' });
+        recognitionRef.current.start();
+      } catch (err) {
+        console.error('Recognition start error:', err);
+        setIsListening(false);
+        recognitionRef.current = null; // Reset for next attempt
+      }
     }
   };
 
