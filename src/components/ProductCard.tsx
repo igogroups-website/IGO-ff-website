@@ -29,7 +29,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [loading, setLoading] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, openAuthModal } = useAuth();
   const { addToCart, cartItems, updateQuantity, removeItem } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const [showAddedOverlay, setShowAddedOverlay] = useState(false);
@@ -41,6 +41,13 @@ export default function ProductCard({ product }: ProductCardProps) {
     e.stopPropagation();
     if (product.stock === 0 || loading) return;
 
+    // If user is not logged in, prompt login instead of adding to guest cart
+    if (!user) {
+      openAuthModal();
+      toast.error('Please login to add items to your basket', { icon: '🔐' });
+      return;
+    }
+
     setLoading(true);
     try {
       const success = await addToCart(product.id, 1, product);
@@ -49,10 +56,13 @@ export default function ProductCard({ product }: ProductCardProps) {
         // Force immediate sync across components
         window.dispatchEvent(new Event('cart-updated'));
         setTimeout(() => setShowAddedOverlay(false), 3000);
+      } else {
+        // addToCart returned false — Supabase RLS or network issue
+        toast.error('Could not add to basket. Please refresh and try again.', { duration: 4000 });
       }
     } catch (error: any) {
       console.error('Basket Error:', error);
-      toast.error('Failed to add to basket');
+      toast.error(error?.message || 'Failed to add to basket. Please try again.');
     } finally {
       setLoading(false);
     }

@@ -197,13 +197,16 @@ export default function Checkout() {
           total_amount: total,
           delivery_address: `${address.name}, ${address.street}, ${address.city} - ${address.zip}`,
           payment_method: paymentMethod,
-          status: 'pending',
-          coupon_id: appliedCoupon?.id || null
+          status: 'pending'
+          // Note: coupon_id column not yet in schema — applied discount already reflected in total_amount
         })
         .select()
         .single();
 
-      if (orderError) throw orderError;
+      if (orderError) {
+        console.error('[Checkout] Order create error:', orderError);
+        throw new Error(orderError.message || 'Failed to create order. Please try again.');
+      }
       if (!order) throw new Error('Failed to create order record');
 
       // Add order items
@@ -215,7 +218,12 @@ export default function Checkout() {
       }));
 
       const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
-      if (itemsError) throw itemsError;
+      if (itemsError) {
+        console.error('[Checkout] Order items insert error:', itemsError);
+        // Still delete the orphaned order if items insert fails
+        await supabase.from('orders').delete().eq('id', order.id);
+        throw new Error(itemsError.message || 'Failed to save order items. Please try again.');
+      }
 
       // Clear cart
       if (user) {

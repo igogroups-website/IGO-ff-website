@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from './AuthContext';
+import { toast } from 'react-hot-toast';
 
 export interface CartItem {
   id: string;
@@ -137,12 +138,29 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             .from('cart')
             .update({ quantity: existing.quantity + quantity })
             .eq('id', existing.id);
-          if (error) throw error;
+          if (error) {
+            console.error('[Cart] Update error:', error);
+            // RLS policy violation — most common cause on live deployment
+            if (error.code === '42501' || error.message?.includes('policy')) {
+              toast.error('Basket access denied. Please logout and login again.', { duration: 5000 });
+            } else {
+              toast.error(`Basket error: ${error.message}`, { duration: 5000 });
+            }
+            throw error;
+          }
         } else {
           const { error } = await supabase
             .from('cart')
             .insert({ user_id: user.id, product_id: productId, quantity });
-          if (error) throw error;
+          if (error) {
+            console.error('[Cart] Insert error:', error);
+            if (error.code === '42501' || error.message?.includes('policy')) {
+              toast.error('Basket access denied. Please logout and login again.', { duration: 5000 });
+            } else {
+              toast.error(`Basket error: ${error.message}`, { duration: 5000 });
+            }
+            throw error;
+          }
         }
         await fetchCart();
       } else {
@@ -173,6 +191,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             
             if (error || !data) {
               console.error('Failed to fetch product for guest cart:', error);
+              toast.error('Failed to load product details. Please refresh.');
               return false;
             }
             product = {
@@ -192,9 +211,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         setCartItems(newCart);
         if (typeof window !== 'undefined') {
           localStorage.setItem('farmers_factory_guest_cart', JSON.stringify(newCart));
-          // Dispatch custom event to notify all components (Navbar, Drawer, etc.)
           window.dispatchEvent(new Event('cart-updated'));
-          window.dispatchEvent(new Event('storage')); // Trigger cross-tab sync
+          window.dispatchEvent(new Event('storage'));
         }
       }
       // Force explicit UI sync
@@ -202,8 +220,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         window.dispatchEvent(new Event('cart-updated'));
       }
       return true;
-    } catch (error) {
-      console.error('Error adding to cart:', error);
+    } catch (error: any) {
+      console.error('[Cart] addToCart failed:', error);
+      // Only show generic toast if a specific one wasn't already shown above
+      if (!error?.code && !error?.message?.includes('policy')) {
+        toast.error('Could not add to basket. Check your connection and try again.');
+      }
       return false;
     }
   };
@@ -212,12 +234,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (newQty < 0) return;
     
     if (user) {
-      if (newQty === 0) {
-        await supabase.from('cart').delete().eq('id', cartItemId);
-      } else {
-        await supabase.from('cart').update({ quantity: newQty }).eq('id', cartItemId);
+      try {
+        if (newQty === 0) {
+          const { error } = await supabase.from('cart').delete().eq('id', cartItemId);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase.from('cart').update({ quantity: newQty }).eq('id', cartItemId);
+          if (error) throw error;
+        }
+        await fetchCart();
+      } catch (error: any) {
+        console.error('[Cart] updateQuantity failed:', error);
+        toast.error('Could not update quantity. Please try again.');
       }
-      await fetchCart();
     } else {
       let newCart;
       if (newQty === 0) {
@@ -229,7 +258,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('farmers_factory_guest_cart', JSON.stringify(newCart));
     }
 
-    // Force explicit UI sync
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event('cart-updated'));
     }
@@ -237,15 +265,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const removeItem = async (cartItemId: string) => {
     if (user) {
-      await supabase.from('cart').delete().eq('id', cartItemId);
-      await fetchCart();
+      try {
+        const { error } = await supabase.from('cart').delete().eq('id', cartItemId);
+        if (error) throw error;
+        await fetchCart();
+      } catch (error: any) {
+        console.error('[Cart] removeItem failed:', error);
+        toast.error('Could not remove item. Please try again.');
+      }
     } else {
       const newCart = cartItems.filter(item => item.id !== cartItemId);
       setCartItems(newCart);
       localStorage.setItem('farmers_factory_guest_cart', JSON.stringify(newCart));
     }
 
-    // Force explicit UI sync
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event('cart-updated'));
     }
