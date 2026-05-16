@@ -40,33 +40,46 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth();
 
   const fetchCart = useCallback(async () => {
-    // Wait for auth to settle before fetching
-    if (authLoading || !user) {
-      setLoading(false);
-      return;
-    }
+    // Wait for auth to settle
+    if (authLoading) return;
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('cart')
-        .select('*, products(*)')
-        .eq('user_id', user.id);
-      
-      if (error) throw error;
-      
-      const normalized = (data || []).map((item: any) => ({
-        ...item,
-        products: item.products ? {
-          ...item.products,
-          category: item.products.category || (item.products.category_id === 'cat-veg' ? 'Vegetables' : item.products.category_id === 'cat-fruit' ? 'Fruits' : item.products.category_id) || '',
-          image_url: item.products.image_url || (Array.isArray(item.products.image_urls) ? item.products.image_urls[0] : null) || ''
-        } : item.products
-      }));
-      
-      setCartItems(normalized as CartItem[]);
+      if (user?.id) {
+        // Logged in user: fetch from Supabase
+        const { data, error } = await supabase
+          .from('cart')
+          .select('*, products(*)')
+          .eq('user_id', user.id);
+        
+        if (error) throw error;
+        
+        const normalized = (data || []).map((item: any) => ({
+          ...item,
+          products: item.products ? {
+            ...item.products,
+            category: item.products.category || (item.products.category_id === 'cat-veg' ? 'Vegetables' : item.products.category_id === 'cat-fruit' ? 'Fruits' : item.products.category_id) || '',
+            image_url: item.products.image_url || (Array.isArray(item.products.image_urls) ? item.products.image_urls[0] : null) || ''
+          } : item.products
+        }));
+        
+        setCartItems(normalized as CartItem[]);
+      } else {
+        // Guest user: fetch from LocalStorage
+        const saved = typeof window !== 'undefined' ? localStorage.getItem('farmers_factory_guest_cart') : null;
+        if (saved) {
+          try {
+            setCartItems(JSON.parse(saved));
+          } catch (e) {
+            console.error('Failed to parse guest cart:', e);
+            setCartItems([]);
+          }
+        } else {
+          setCartItems([]);
+        }
+      }
     } catch (error) {
-      console.error('Error fetching cart:', error);
+      console.warn('Cart Fetch Notice:', error);
     } finally {
       setLoading(false);
     }
