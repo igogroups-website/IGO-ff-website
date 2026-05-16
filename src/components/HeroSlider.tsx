@@ -220,19 +220,19 @@ export default function HeroSlider() {
               animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
               exit={{ opacity: 0, x: -direction * 100, filter: 'blur(10px)' }}
               transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-              className="absolute inset-y-0 left-0 w-full max-w-5xl flex flex-col justify-center pointer-events-auto"
+              className="absolute inset-y-0 left-0 w-full max-w-2xl flex flex-col justify-center pointer-events-auto"
             >
               {/* No Box - Pure Transparent Floating Content */}
             <motion.span 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="inline-block px-6 py-2 bg-primary/10 backdrop-blur-xl rounded-full text-[12px] font-black text-primary uppercase tracking-[0.5em] mb-12 border border-primary/20 w-fit shadow-2xl"
+              className="inline-block px-6 py-2 bg-primary/10 backdrop-blur-xl rounded-full text-[10px] font-black text-primary uppercase tracking-[0.5em] mb-12 border border-primary/20 w-fit shadow-2xl"
             >
               Premium Quality Guaranteed
             </motion.span>
             
-            <h1 className="text-5xl md:text-8xl font-black text-white mb-8 leading-[1.1] tracking-tighter uppercase drop-shadow-2xl">
+            <h1 className="text-4xl md:text-7xl font-black text-white mb-8 leading-[1.1] tracking-tighter uppercase drop-shadow-2xl">
               {currentSlide.title.split(' ').map((word, i) => (
                 <span key={i} className={i % 2 === 1 ? 'text-primary' : ''}>
                   {word}{' '}
