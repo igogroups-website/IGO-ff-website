@@ -67,6 +67,10 @@ export default function ProductCard({ product }: ProductCardProps) {
     } else {
       await updateQuantity(cartItem.id, newQty);
     }
+    // Force explicit UI sync
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('cart-updated'));
+    }
   };
 
   return (

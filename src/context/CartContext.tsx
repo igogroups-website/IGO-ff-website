@@ -197,6 +197,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           window.dispatchEvent(new Event('storage')); // Trigger cross-tab sync
         }
       }
+      // Force explicit UI sync
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('cart-updated'));
+      }
       return true;
     } catch (error) {
       console.error('Error adding to cart:', error);
@@ -205,15 +209,29 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateQuantity = async (cartItemId: string, newQty: number) => {
-    if (newQty < 1) return;
+    if (newQty < 0) return;
     
     if (user) {
-      await supabase.from('cart').update({ quantity: newQty }).eq('id', cartItemId);
+      if (newQty === 0) {
+        await supabase.from('cart').delete().eq('id', cartItemId);
+      } else {
+        await supabase.from('cart').update({ quantity: newQty }).eq('id', cartItemId);
+      }
       await fetchCart();
     } else {
-      const newCart = cartItems.map(item => item.id === cartItemId ? { ...item, quantity: newQty } : item);
+      let newCart;
+      if (newQty === 0) {
+        newCart = cartItems.filter(item => item.id !== cartItemId);
+      } else {
+        newCart = cartItems.map(item => item.id === cartItemId ? { ...item, quantity: newQty } : item);
+      }
       setCartItems(newCart);
       localStorage.setItem('farmers_factory_guest_cart', JSON.stringify(newCart));
+    }
+
+    // Force explicit UI sync
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('cart-updated'));
     }
   };
 
@@ -225,6 +243,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const newCart = cartItems.filter(item => item.id !== cartItemId);
       setCartItems(newCart);
       localStorage.setItem('farmers_factory_guest_cart', JSON.stringify(newCart));
+    }
+
+    // Force explicit UI sync
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('cart-updated'));
     }
   };
 

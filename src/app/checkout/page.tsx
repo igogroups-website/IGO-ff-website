@@ -226,6 +226,11 @@ export default function Checkout() {
 
       toast.success('Order placed successfully!');
       
+      // Dispatch event to clear global UI (Navbar, Sticky Footer)
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('cart-updated'));
+      }
+
       // Send Order Confirmation Email
       import('@/lib/email').then(({ sendOrderConfirmation }) => {
         sendOrderConfirmation(user.email || address.name, order.id, total);

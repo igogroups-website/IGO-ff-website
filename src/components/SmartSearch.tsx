@@ -17,6 +17,7 @@ export default function SmartSearch({ isSolid = false }: { isSolid?: boolean }) 
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [isVisualSearching, setIsVisualSearching] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const router = useRouter();

@@ -93,14 +93,21 @@ export default function ProductPage() {
     try {
       const success = await addToCart(product.id, finalQty, product);
       if (success) {
-        if (isBuyNow) router.push('/checkout');
-        else {
+        // Dispatch event for global UI synchronization
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('cart-updated'));
+        }
+
+        if (isBuyNow) {
+          router.push('/checkout');
+        } else {
           setShowAddedOverlay(true);
-          setTimeout(() => setShowAddedOverlay(false), 2000);
+          setTimeout(() => setShowAddedOverlay(false), 3000);
         }
       }
     } catch (err) {
-      toast.error('Failed to add to cart');
+      console.error('Add to Basket Error:', err);
+      toast.error('Failed to add to basket');
     }
   };
 

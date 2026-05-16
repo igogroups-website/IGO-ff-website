@@ -89,18 +89,33 @@ export default function ProductDetailModal({ isOpen, onClose, product }: Product
     if (isBuyNow && !user) {
       toast.error("Please sign in to buy now", { icon: '🔐' });
       onClose();
+      // Swiggy/Blinkit style: redirect to auth and then back to checkout
       setTimeout(() => router.push(`/auth?mode=signup&redirect=/checkout`), 300);
       return;
     }
     setLoading(true);
     try {
-      const productWithSub = { ...currentProduct, is_subscription: isSubscribed, frequency: isSubscribed ? frequency : null };
+      const productWithSub = { 
+        ...currentProduct, 
+        is_subscription: isSubscribed, 
+        frequency: isSubscribed ? frequency : null 
+      };
       const success = await addToCart(currentProduct.id, quantity, productWithSub);
-      if (!success) throw new Error('Failed to add to cart');
-      if (isBuyNow) router.push('/checkout');
-      else triggerAddedOverlay();
+      if (!success) throw new Error('Failed to add to basket');
+      
+      // Dispatch event for global UI synchronization (Navbar, Sticky Footer)
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('cart-updated'));
+      }
+
+      if (isBuyNow) {
+        router.push('/checkout');
+      } else {
+        triggerAddedOverlay();
+      }
     } catch (error: any) {
-      toast.error(error.message || 'Failed to process request');
+      console.error('Modal Action Error:', error);
+      toast.error(error.message || 'Failed to add to basket');
     } finally {
       setLoading(false);
     }
