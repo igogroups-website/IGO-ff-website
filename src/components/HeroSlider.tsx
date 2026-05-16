@@ -232,7 +232,7 @@ export default function HeroSlider() {
               Premium Quality Guaranteed
             </motion.span>
             
-            <h1 className="text-6xl md:text-[10rem] font-black text-white mb-8 leading-[0.85] tracking-tighter uppercase drop-shadow-2xl">
+            <h1 className="text-5xl md:text-8xl font-black text-white mb-8 leading-[1.1] tracking-tighter uppercase drop-shadow-2xl">
               {currentSlide.title.split(' ').map((word, i) => (
                 <span key={i} className={i % 2 === 1 ? 'text-primary' : ''}>
                   {word}{' '}
@@ -240,7 +240,7 @@ export default function HeroSlider() {
               ))}
             </h1>
             
-            <p className="text-xl md:text-3xl text-white/90 mb-14 max-w-2xl font-medium leading-tight drop-shadow-lg">
+            <p className="text-lg md:text-xl text-white/90 mb-14 max-w-xl font-medium leading-relaxed drop-shadow-lg">
               {currentSlide.subtitle}
             </p>
             
