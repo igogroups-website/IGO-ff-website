@@ -30,12 +30,12 @@ export default function SmartSearch({ isSolid = false }: { isSolid?: boolean }) 
     document.addEventListener('mousedown', handleClickOutside);
 
     // Initialize Speech Recognition
-    if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = false;
       recognitionRef.current.interimResults = false;
-      recognitionRef.current.lang = 'en-US';
+      recognitionRef.current.lang = 'en-IN'; // Better for Indian accents (includes Tamil/Hindi context)
 
       recognitionRef.current.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
@@ -45,9 +45,15 @@ export default function SmartSearch({ isSolid = false }: { isSolid?: boolean }) 
       };
 
       recognitionRef.current.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
+        console.warn('Speech recognition error:', event.error);
         setIsListening(false);
-        toast.error('Voice search failed. Please try again.', { id: 'voice-search' });
+        if (event.error === 'not-allowed') {
+          toast.error('Microphone access denied. Please enable it in browser settings.', { id: 'voice-search' });
+        } else if (event.error === 'network') {
+          toast.error('Network error. Check your connection.', { id: 'voice-search' });
+        } else {
+          toast.error('Voice search failed. Please try again.', { id: 'voice-search' });
+        }
       };
 
       recognitionRef.current.onend = () => {
