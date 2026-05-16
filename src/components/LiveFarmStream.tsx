@@ -9,7 +9,7 @@ const FALLBACK_STREAMS = [
     id: 'fallback-sprinkler',
     name: '3D AI SPRINKLER SYSTEM',
     location: 'CENTER FIELD',
-    video_url: 'https://cdn.pixabay.com/video/2021/08/17/85356-589574488_large.mp4',
+    video_url: 'https://cdn.pixabay.com/video/2016/10/11/5815-185444985_large.mp4',
     thumbnail_url: 'https://images.unsplash.com/photo-1563514227147-6d2ff665a6a0?q=80&w=2071&auto=format&fit=crop',
     viewers: 342,
     temp: '24°C',
@@ -192,18 +192,11 @@ export default function LiveFarmStream() {
                   activeStream.id === stream.id ? 'border-primary ring-2 ring-primary/20' : 'border-white/10 opacity-60 hover:opacity-100'
                 }`}
               >
-                {stream.video_url?.endsWith('.mp4') ? (
-                  <video 
-                    src={stream.video_url} 
-                    autoPlay 
-                    muted 
-                    loop 
-                    playsInline
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                ) : (
-                  <img src={stream.thumbnail_url || stream.video_url} alt={stream.name} className="absolute inset-0 w-full h-full object-cover" />
-                )}
+                <img 
+                  src={stream.thumbnail_url || stream.video_url} 
+                  alt={stream.name} 
+                  className="absolute inset-0 w-full h-full object-cover" 
+                />
                 <div className="absolute inset-0 bg-black/60 group-hover:bg-black/40 transition-colors" />
                 <div className="relative p-6 flex flex-col justify-end h-full">
                   <h4 className="text-lg font-black uppercase tracking-tight text-left">{stream.name}</h4>
