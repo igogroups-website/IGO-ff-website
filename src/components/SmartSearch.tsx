@@ -112,56 +112,59 @@ export default function SmartSearch({ isSolid = false }: { isSolid?: boolean }) 
   };
 
   const handleVoiceSearch = () => {
+    // 1. Check for API support
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    
     if (!SpeechRecognition) {
-      toast.error('Voice search is not supported in this browser. Please use Chrome.', { id: 'voice-search' });
+      toast.error('Voice search is only supported in Chrome browser.', { id: 'voice-search' });
       return;
     }
 
-    if (!recognitionRef.current) {
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = false;
-      recognitionRef.current.lang = 'en-IN';
+    // 2. Clear previous instance to avoid "already started" errors
+    if (isListening) {
+      if (recognitionRef.current) recognitionRef.current.stop();
+      setIsListening(false);
+      return;
+    }
 
-      recognitionRef.current.onresult = (event: any) => {
+    // 3. Create fresh instance
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-IN';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        toast.loading('Listening... Say a product name', { id: 'voice-search' });
+      };
+
+      recognition.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         setQuery(transcript);
-        setIsListening(false);
         toast.success(`Searching for "${transcript}"`, { id: 'voice-search' });
       };
 
-      recognitionRef.current.onerror = (event: any) => {
-        console.warn('Speech recognition error:', event.error);
-        setIsListening(false);
+      recognition.onerror = (event: any) => {
+        console.warn('Speech Recognition Error:', event.error);
         if (event.error === 'not-allowed') {
-          toast.error('Please allow microphone access in your browser settings.', { id: 'voice-search' });
+          toast.error('Microphone blocked. Please click the lock icon in your browser address bar to allow.', { id: 'voice-search' });
         } else if (event.error === 'no-speech') {
-          toast.error('No speech detected. Please try again.', { id: 'voice-search' });
+          toast.error('No speech heard. Try again.', { id: 'voice-search' });
         } else {
-          toast.error('Voice search failed. Please try again.', { id: 'voice-search' });
+          toast.error('Voice search failed. Use Chrome for best results.', { id: 'voice-search' });
         }
-      };
-
-      recognitionRef.current.onend = () => {
         setIsListening(false);
       };
-    }
 
-    if (isListening) {
-      recognitionRef.current.stop();
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (err) {
+      console.error('Failed to start speech recognition:', err);
       setIsListening(false);
-    } else {
-      try {
-        setIsListening(true);
-        toast.loading('Listening...', { id: 'voice-search' });
-        recognitionRef.current.start();
-      } catch (err) {
-        console.error('Recognition start error:', err);
-        setIsListening(false);
-        recognitionRef.current = null; // Reset for next attempt
-      }
     }
   };
 
