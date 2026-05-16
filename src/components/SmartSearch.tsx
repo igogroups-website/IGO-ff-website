@@ -112,6 +112,7 @@ export default function SmartSearch({ isSolid = false }: { isSolid?: boolean }) 
   };
 
   const handleVoiceSearch = () => {
+    // Chrome/Edge/Safari all use webkit prefix for most stable results
     const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
     
     if (!SpeechRecognition) {
@@ -119,24 +120,14 @@ export default function SmartSearch({ isSolid = false }: { isSolid?: boolean }) 
       return;
     }
 
-    // 1. Force a clean reset of any existing instance
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.onend = null; // Remove listener to avoid state loops
-        recognitionRef.current.abort(); // Force kill
-      } catch (e) {
-        console.warn('Abort error:', e);
-      }
-      recognitionRef.current = null;
-    }
-
-    // 2. If we were listening, just stop and return
     if (isListening) {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
       setIsListening(false);
       return;
     }
 
-    // 3. Create and start a brand new instance
     try {
       const recognition = new SpeechRecognition();
       recognition.lang = 'en-IN';
@@ -145,28 +136,24 @@ export default function SmartSearch({ isSolid = false }: { isSolid?: boolean }) 
 
       recognition.onstart = () => {
         setIsListening(true);
-        toast.loading('Voice active. Say a product...', { id: 'voice-search' });
+        toast.loading('Listening...', { id: 'voice-search' });
       };
 
       recognition.onresult = (event: any) => {
-        const transcript = event.results[event.results.length - 1][0].transcript;
+        const transcript = event.results[0][0].transcript;
         setQuery(transcript);
-        if (event.results[event.results.length - 1].isFinal) {
+        if (event.results[0].isFinal) {
           setIsOpen(true);
           setIsListening(false);
-          toast.success(`Found: "${transcript}"`, { id: 'voice-search' });
+          toast.success(`Searching for "${transcript}"`, { id: 'voice-search' });
         }
       };
 
       recognition.onerror = (event: any) => {
+        console.warn('Voice Error:', event.error);
         setIsListening(false);
         if (event.error === 'not-allowed') {
-          toast.error('Microphone blocked. Please ALLOW access in your browser settings.', { id: 'voice-search' });
-        } else if (event.error === 'no-speech') {
-          toast.error('No speech heard. Please try again.', { id: 'voice-search' });
-        } else {
-          // If it's a generic error, we just reset the state so they can click again
-          console.warn('Voice Engine Notice:', event.error);
+          toast.error('Microphone blocked. Please ALLOW in browser settings.', { id: 'voice-search' });
         }
       };
 
@@ -178,7 +165,7 @@ export default function SmartSearch({ isSolid = false }: { isSolid?: boolean }) 
       recognitionRef.current = recognition;
       recognition.start();
     } catch (err) {
-      console.error('Critical voice failure:', err);
+      console.error('Voice start error:', err);
       setIsListening(false);
     }
   };
