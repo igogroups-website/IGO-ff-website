@@ -140,14 +140,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const existingIndex = cartItems.findIndex(item => item.product_id === productId);
         let newCart = [...cartItems];
         
+        // Normalize product data for guest cart consistency
+        const normalizedProduct = productData ? {
+          ...productData,
+          image_url: productData.image_url || (Array.isArray(productData.image_urls) ? productData.image_urls[0] : null) || ''
+        } : null;
+
         if (existingIndex > -1) {
           newCart[existingIndex] = {
             ...newCart[existingIndex],
             quantity: newCart[existingIndex].quantity + quantity
           };
         } else {
-          // Use provided productData or fetch it
-          let product = productData;
+          let product = normalizedProduct;
           
           if (!product) {
             const { data, error } = await supabase
@@ -160,7 +165,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
               console.error('Failed to fetch product for guest cart:', error);
               return false;
             }
-            product = data;
+            product = {
+              ...data,
+              image_url: data.image_url || (Array.isArray(data.image_urls) ? data.image_urls[0] : null) || ''
+            };
           }
 
           newCart.push({
@@ -174,6 +182,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         setCartItems(newCart);
         if (typeof window !== 'undefined') {
           localStorage.setItem('farmers_factory_guest_cart', JSON.stringify(newCart));
+          // Dispatch custom event to notify other components (like Navbar)
+          window.dispatchEvent(new Event('cart-updated'));
         }
       }
       return true;
