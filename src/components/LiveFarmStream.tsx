@@ -34,7 +34,7 @@ const FALLBACK_STREAMS = [
     name: 'FRUIT HARVEST B',
     location: 'EAST FIELD',
     video_url: '/harvest/harvesting_videos_2.mp4',
-    thumbnail_url: 'https://images.unsplash.com/photo-1615485290382-441e4d019cb0?q=80&w=2034&auto=format&fit=crop',
+    thumbnail_url: 'https://images.unsplash.com/photo-1619566627221-ad311e934055?q=80&w=2034&auto=format&fit=crop',
     viewers: 89,
     temp: '26°C',
     humidity: '60%',
