@@ -131,7 +131,7 @@ export default function SmartSearch({ isSolid = false }: { isSolid?: boolean }) 
       const recognition = new SpeechRecognition();
       recognition.lang = 'en-IN';
       recognition.continuous = false;
-      recognition.interimResults = false;
+      recognition.interimResults = true; // Show results as you speak
 
       recognition.onstart = () => {
         setIsListening(true);
@@ -141,8 +141,10 @@ export default function SmartSearch({ isSolid = false }: { isSolid?: boolean }) 
       recognition.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         setQuery(transcript);
-        setIsOpen(true); // Automatically open the results dropdown
-        toast.success(`Searching for "${transcript}"`, { id: 'voice-search' });
+        if (event.results[0].isFinal) {
+          setIsOpen(true);
+          toast.success(`Searching for "${transcript}"`, { id: 'voice-search' });
+        }
       };
 
       recognition.onerror = (event: any) => {
