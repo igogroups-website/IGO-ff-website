@@ -192,7 +192,18 @@ export default function LiveFarmStream() {
                   activeStream.id === stream.id ? 'border-primary ring-2 ring-primary/20' : 'border-white/10 opacity-60 hover:opacity-100'
                 }`}
               >
-                <img src={stream.thumbnail_url || stream.video_url} alt={stream.name} className="absolute inset-0 w-full h-full object-cover" />
+                {stream.video_url?.endsWith('.mp4') ? (
+                  <video 
+                    src={stream.video_url} 
+                    autoPlay 
+                    muted 
+                    loop 
+                    playsInline
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                ) : (
+                  <img src={stream.thumbnail_url || stream.video_url} alt={stream.name} className="absolute inset-0 w-full h-full object-cover" />
+                )}
                 <div className="absolute inset-0 bg-black/60 group-hover:bg-black/40 transition-colors" />
                 <div className="relative p-6 flex flex-col justify-end h-full">
                   <h4 className="text-lg font-black uppercase tracking-tight text-left">{stream.name}</h4>
