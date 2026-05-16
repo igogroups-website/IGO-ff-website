@@ -80,18 +80,34 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) { window.location.href = '/auth'; return; }
+    
+    // Safety check: Redirect if no user
+    if (!user) {
+      const timer = setTimeout(() => {
+        if (!user) window.location.href = '/auth';
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
     
     async function fetchData() {
       try {
         setLoading(true);
-        const { data: prof } = await supabase.from('profiles').select('*').eq('id', user?.id).single();
-        const { data: ords } = await supabase.from('orders').select('*').eq('user_id', user?.id).order('created_at', { ascending: false });
         
-        setProfile(prof);
-        setOrders(ords || []);
+        // Parallel fetch for speed
+        const [profileRes, ordersRes] = await Promise.all([
+          supabase.from('profiles').select('*').eq('id', user?.id).single(),
+          supabase.from('orders').select('*').eq('user_id', user?.id).order('created_at', { ascending: false })
+        ]);
+        
+        if (profileRes.error && profileRes.error.code !== 'PGRST116') {
+          console.warn('Profile fetch notice:', profileRes.error.message);
+        }
+        
+        setProfile(profileRes.data || null);
+        setOrders(ordersRes.data || []);
       } catch (err) {
-        console.error(err);
+        console.error('Data sync error:', err);
+        toast.error('Failed to sync your profile data');
       } finally {
         setLoading(false);
       }
