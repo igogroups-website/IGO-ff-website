@@ -4,18 +4,44 @@ import React, { useState } from 'react';
 import { Play, Eye, Users, MapPin, Wind, Thermometer, Droplets, Clock, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
-const FALLBACK_STREAM = {
-  id: 'fallback-1',
-  name: 'VEGGIE BLOCK A',
-  location: 'NORTH FIELD',
-  video_url: 'https://cdn.pixabay.com/video/2016/10/11/5815-185444985_large.mp4',
-  thumbnail_url: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=2034&auto=format&fit=crop',
-  viewers: 124,
-  temp: '28°C',
-  humidity: '65%',
-  wind: '12 km/h',
-  is_active: true
-};
+const FALLBACK_STREAMS = [
+  {
+    id: 'fallback-sprinkler',
+    name: '3D AI SPRINKLER SYSTEM',
+    location: 'CENTER FIELD',
+    video_url: 'https://cdn.pixabay.com/video/2021/08/17/85356-589574488_large.mp4',
+    thumbnail_url: 'https://images.unsplash.com/photo-1563514227147-6d2ff665a6a0?q=80&w=2071&auto=format&fit=crop',
+    viewers: 342,
+    temp: '24°C',
+    humidity: '72%',
+    wind: '8 km/h',
+    is_active: true
+  },
+  {
+    id: 'fallback-harvest-1',
+    name: 'VEGGIE HARVEST A',
+    location: 'NORTH FIELD',
+    video_url: '/harvest/harvesting_videos.mp4',
+    thumbnail_url: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=2034&auto=format&fit=crop',
+    viewers: 124,
+    temp: '28°C',
+    humidity: '65%',
+    wind: '12 km/h',
+    is_active: true
+  },
+  {
+    id: 'fallback-harvest-2',
+    name: 'FRUIT HARVEST B',
+    location: 'EAST FIELD',
+    video_url: '/harvest/harvesting_videos_2.mp4',
+    thumbnail_url: 'https://images.unsplash.com/photo-1592419044706-39796d40f98c?q=80&w=2034&auto=format&fit=crop',
+    viewers: 89,
+    temp: '26°C',
+    humidity: '60%',
+    wind: '15 km/h',
+    is_active: true
+  }
+];
 
 export default function LiveFarmStream() {
   const [streams, setStreams] = useState<any[]>([]);
@@ -35,13 +61,13 @@ export default function LiveFarmStream() {
           setStreams(data);
           setActiveStream(data[0]);
         } else {
-          setStreams([FALLBACK_STREAM]);
-          setActiveStream(FALLBACK_STREAM);
+          setStreams(FALLBACK_STREAMS);
+          setActiveStream(FALLBACK_STREAMS[0]);
         }
       } catch (err) {
         console.error('Failed to fetch streams:', err);
-        setStreams([FALLBACK_STREAM]);
-        setActiveStream(FALLBACK_STREAM);
+        setStreams(FALLBACK_STREAMS);
+        setActiveStream(FALLBACK_STREAMS[0]);
       } finally {
         setLoading(false);
       }
@@ -97,12 +123,14 @@ export default function LiveFarmStream() {
             <div className="relative aspect-video rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl group bg-black">
               {activeStream.video_url?.endsWith('.mp4') ? (
                 <video 
-                  key={activeStream.video_url}
+                  key={activeStream.id}
                   src={activeStream.video_url} 
+                  poster={activeStream.thumbnail_url}
                   autoPlay 
                   muted 
                   loop 
                   playsInline
+                  preload="auto"
                   className="w-full h-full object-cover transition-transform duration-[10s] ease-linear group-hover:scale-105"
                 />
               ) : (
@@ -167,8 +195,8 @@ export default function LiveFarmStream() {
                 <img src={stream.thumbnail_url || stream.video_url} alt={stream.name} className="absolute inset-0 w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-black/60 group-hover:bg-black/40 transition-colors" />
                 <div className="relative p-6 flex flex-col justify-end h-full">
-                  <h4 className="text-lg font-black uppercase tracking-tight">{stream.name}</h4>
-                  <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">{stream.location}</p>
+                  <h4 className="text-lg font-black uppercase tracking-tight text-left">{stream.name}</h4>
+                  <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] text-left">{stream.location}</p>
                 </div>
               </button>
             ))}

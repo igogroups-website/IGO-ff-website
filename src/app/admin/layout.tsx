@@ -136,6 +136,7 @@ export default function AdminLayout({
     { name: 'Inventory', icon: <Zap size={20} />, href: '/admin/inventory' },
     { name: 'Banners', icon: <ImageIcon size={20} />, href: '/admin/banners' },
     { name: 'Live Streams', icon: <Video size={20} />, href: '/admin/streams' },
+    { name: 'Farm Stories', icon: <Sparkles size={20} />, href: '/admin/stories' },
     { name: 'Coupons', icon: <Ticket size={20} />, href: '/admin/coupons' },
     { name: 'Farmers', icon: <User size={20} />, href: '/admin/farmers' },
     { name: 'Orders', icon: <ShoppingBag size={20} />, href: '/admin/orders' },

@@ -261,6 +261,10 @@ export default function AdminStreams() {
                       </div>
                       <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept="video/mp4" />
                     </div>
+                    <div className="flex gap-2 mt-2">
+                       <button onClick={() => setEditForm({ ...editForm, video_url: '/harvest/harvesting_videos.mp4' })} className="text-[10px] font-black uppercase bg-primary/10 text-primary px-3 py-1.5 rounded-full hover:bg-primary/20 transition-all">Use Local Video 1</button>
+                       <button onClick={() => setEditForm({ ...editForm, video_url: '/harvest/harvesting_videos_2.mp4' })} className="text-[10px] font-black uppercase bg-primary/10 text-primary px-3 py-1.5 rounded-full hover:bg-primary/20 transition-all">Use Local Video 2</button>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-4">
