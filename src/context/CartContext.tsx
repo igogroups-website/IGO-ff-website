@@ -269,6 +269,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const updateQuantity = async (cartItemId: string, newQty: number) => {
     if (newQty < 0) return;
     
+    // ── Optimistic Update ──
+    let newCart;
+    if (newQty === 0) {
+      newCart = cartItems.filter(item => item.id !== cartItemId);
+    } else {
+      newCart = cartItems.map(item => item.id === cartItemId ? { ...item, quantity: newQty } : item);
+    }
+    setCartItems(newCart);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('cart-updated'));
+    }
+
     if (user) {
       try {
         if (newQty === 0) {
@@ -278,45 +290,41 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           const { error } = await supabase.from('cart').update({ quantity: newQty }).eq('id', cartItemId);
           if (error) throw error;
         }
-        await fetchCart();
+        // Background sync
+        fetchCart();
       } catch (error: any) {
         console.error('[Cart] updateQuantity failed:', error);
         toast.error('Could not update quantity. Please try again.');
+        // Revert on failure
+        fetchCart();
       }
     } else {
-      let newCart;
-      if (newQty === 0) {
-        newCart = cartItems.filter(item => item.id !== cartItemId);
-      } else {
-        newCart = cartItems.map(item => item.id === cartItemId ? { ...item, quantity: newQty } : item);
-      }
-      setCartItems(newCart);
       localStorage.setItem('farmers_factory_guest_cart', JSON.stringify(newCart));
-    }
-
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new Event('cart-updated'));
     }
   };
 
   const removeItem = async (cartItemId: string) => {
+    // ── Optimistic Update ──
+    const newCart = cartItems.filter(item => item.id !== cartItemId);
+    setCartItems(newCart);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('cart-updated'));
+    }
+
     if (user) {
       try {
         const { error } = await supabase.from('cart').delete().eq('id', cartItemId);
         if (error) throw error;
-        await fetchCart();
+        // Background sync
+        fetchCart();
       } catch (error: any) {
         console.error('[Cart] removeItem failed:', error);
         toast.error('Could not remove item. Please try again.');
+        // Revert on failure
+        fetchCart();
       }
     } else {
-      const newCart = cartItems.filter(item => item.id !== cartItemId);
-      setCartItems(newCart);
       localStorage.setItem('farmers_factory_guest_cart', JSON.stringify(newCart));
-    }
-
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new Event('cart-updated'));
     }
   };
 

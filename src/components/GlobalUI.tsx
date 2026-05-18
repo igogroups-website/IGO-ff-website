@@ -56,7 +56,7 @@ export default function GlobalUI() {
               </div>
 
               <Link 
-                href="/cart"
+                href="/checkout"
                 className="bg-white text-primary px-8 md:px-10 py-4 rounded-2xl font-black text-xs md:text-sm uppercase tracking-[0.2em] flex items-center gap-3 hover:bg-accent hover:text-accent-foreground transition-all transform hover:scale-105 active:scale-95 shadow-xl relative z-10"
               >
                 Checkout Now
