@@ -414,7 +414,7 @@ function ProductsContent() {
         order_index: editFormData.order_index,
         slug: editFormData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
         category_slug,
-        image_urls: editFormData.image_urls.filter(url => url.trim() !== ''),
+        image_urls: [editFormData.image_url, ...(editFormData.image_urls || [])].filter(url => url && url.trim() !== ''),
         updated_at: new Date().toISOString()
       };
 
@@ -476,7 +476,7 @@ function ProductsContent() {
         slug: newProduct.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
         category_id,
         category_slug,
-        image_urls: newProduct.image_urls.filter(url => url.trim() !== ''),
+        image_urls: [newProduct.image_url, ...(newProduct.image_urls || [])].filter(url => url && url.trim() !== ''),
         in_stock: true,
         is_active: true,
         created_at: new Date().toISOString(),
@@ -1070,9 +1070,13 @@ function ProductsContent() {
               {/* Modal Sidebar - Image Preview */}
               <div className="w-full md:w-80 bg-slate-50 p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-slate-100">
                 <div className="w-full aspect-square bg-white rounded-3xl shadow-inner border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden mb-6 relative group">
-                  {(editingProduct ? editFormData.image_url : newProduct.image_url) ? (
+                  {(() => {
+                    const preview = editingProduct 
+                      ? (editFormData.image_url || editFormData.image_urls?.[0]) 
+                      : (newProduct.image_url || newProduct.image_urls?.[0]);
+                    return preview ? (
                     <img 
-                      src={editingProduct ? editFormData.image_url : newProduct.image_url} 
+                      src={preview} 
                       alt="Preview" 
                       className="w-full h-full object-cover transition-transform group-hover:scale-110"
                     />
@@ -1081,7 +1085,7 @@ function ProductsContent() {
                       <ImageIcon size={48} className="text-slate-300 mx-auto mb-2" />
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">No Image Uploaded</p>
                     </div>
-                  )}
+                  ); })()}
                   <input 
                     type="file" 
                     accept="image/*"
