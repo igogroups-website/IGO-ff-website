@@ -62,8 +62,9 @@ export default function AdminInventory() {
         editingMap[p.id] = p.stock ?? 200;
       });
       setEditingStocks(editingMap);
-    } catch (err) {
-      toast.error('Failed to load inventory');
+    } catch (err: any) {
+      console.error('Fetch inventory error:', err);
+      toast.error(`Failed to load inventory: ${err.message || JSON.stringify(err)}`);
     } finally {
       setLoading(false);
     }

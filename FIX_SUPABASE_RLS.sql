@@ -149,6 +149,25 @@ END $$;
 
 
 -- ─────────────────────────────────────────────────────────────
+-- HELPER FUNCTION: PREVENT RLS INFINITE RECURSION ON PROFILES
+-- ─────────────────────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE public.profiles.id::text = auth.uid()::text
+      AND public.profiles.role = 'admin'
+  );
+END;
+$$;
+
+
+-- ─────────────────────────────────────────────────────────────
 -- STEP 5: PRODUCTS
 -- ─────────────────────────────────────────────────────────────
 CREATE POLICY "products_select_all"
@@ -156,7 +175,7 @@ CREATE POLICY "products_select_all"
 
 CREATE POLICY "products_all_admin"
   ON products FOR ALL USING (
-    EXISTS (SELECT 1 FROM profiles WHERE profiles.id::text = auth.uid()::text AND profiles.role = 'admin')
+    public.is_admin()
   );
 
 
@@ -175,7 +194,7 @@ CREATE POLICY "profiles_update_own"
 
 CREATE POLICY "profiles_all_admin"
   ON profiles FOR ALL USING (
-    EXISTS (SELECT 1 FROM profiles p WHERE p.id::text = auth.uid()::text AND p.role = 'admin')
+    public.is_admin()
   );
 
 
@@ -210,7 +229,7 @@ CREATE POLICY "orders_update_own"
 
 CREATE POLICY "orders_all_admin"
   ON orders FOR ALL USING (
-    EXISTS (SELECT 1 FROM profiles WHERE profiles.id::text = auth.uid()::text AND profiles.role = 'admin')
+    public.is_admin()
   );
 
 
@@ -237,7 +256,7 @@ CREATE POLICY "order_items_insert_own"
 
 CREATE POLICY "order_items_all_admin"
   ON order_items FOR ALL USING (
-    EXISTS (SELECT 1 FROM profiles WHERE profiles.id::text = auth.uid()::text AND profiles.role = 'admin')
+    public.is_admin()
   );
 
 
@@ -265,7 +284,7 @@ CREATE POLICY "notifications_update_own"
 
 CREATE POLICY "notifications_insert_admin"
   ON notifications FOR INSERT WITH CHECK (
-    EXISTS (SELECT 1 FROM profiles WHERE profiles.id::text = auth.uid()::text AND profiles.role = 'admin')
+    public.is_admin()
   );
 
 
@@ -285,23 +304,23 @@ CREATE POLICY "coupons_select_auth"       ON coupons        FOR SELECT USING (tr
 -- ─────────────────────────────────────────────────────────────
 CREATE POLICY "banners_all_admin"
   ON banners FOR ALL USING (
-    EXISTS (SELECT 1 FROM profiles WHERE profiles.id::text = auth.uid()::text AND profiles.role = 'admin')
+    public.is_admin()
   );
 CREATE POLICY "farm_streams_all_admin"
   ON farm_streams FOR ALL USING (
-    EXISTS (SELECT 1 FROM profiles WHERE profiles.id::text = auth.uid()::text AND profiles.role = 'admin')
+    public.is_admin()
   );
 CREATE POLICY "harvest_events_all_admin"
   ON harvest_events FOR ALL USING (
-    EXISTS (SELECT 1 FROM profiles WHERE profiles.id::text = auth.uid()::text AND profiles.role = 'admin')
+    public.is_admin()
   );
 CREATE POLICY "farmers_all_admin"
   ON farmers FOR ALL USING (
-    EXISTS (SELECT 1 FROM profiles WHERE profiles.id::text = auth.uid()::text AND profiles.role = 'admin')
+    public.is_admin()
   );
 CREATE POLICY "coupons_all_admin"
   ON coupons FOR ALL USING (
-    EXISTS (SELECT 1 FROM profiles WHERE profiles.id::text = auth.uid()::text AND profiles.role = 'admin')
+    public.is_admin()
   );
 
 
@@ -316,7 +335,7 @@ CREATE POLICY "reviews_update_own"
 
 CREATE POLICY "reviews_all_admin"
   ON reviews FOR ALL USING (
-    EXISTS (SELECT 1 FROM profiles WHERE profiles.id::text = auth.uid()::text AND profiles.role = 'admin')
+    public.is_admin()
   );
 
 
