@@ -155,6 +155,8 @@ export default function Checkout() {
         .insert({
           user_id: user.id,
           order_number: orderNumber,
+          subtotal: subtotal,
+          total: total,
           total_amount: total,
           delivery_address: `${address.name}, ${address.street}, ${address.city} - ${address.zip}`,
           payment_method: paymentMethod,
