@@ -36,11 +36,34 @@ export default function AdminLayout({
   const [mounted, setMounted] = React.useState(false);
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
   const [showNotifications, setShowNotifications] = React.useState(false);
-  const [notifications, setNotifications] = React.useState([
-    { id: 1, title: 'New Order Received', message: 'Order #FF-123456 placed by Test User', time: '5m ago', type: 'order', href: '/admin/orders?search=FF-123456' },
-    { id: 2, title: 'Stock Alert', message: 'Tomato is running low on stock', time: '2h ago', type: 'stock', href: '/admin/products?search=Tomato' },
-  ]);
-  
+  const [notifications, setNotifications] = React.useState<any[]>([]);
+
+  const fetchNotifications = React.useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('is_read', false)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      
+      if (!error && data) {
+        const formatted = data.map(n => ({
+          id: n.id,
+          title: n.title,
+          message: n.message,
+          time: new Date(n.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+          type: n.type || 'order',
+          href: n.link || '/admin/orders',
+          is_read: n.is_read
+        }));
+        setNotifications(formatted);
+      }
+    } catch (e) {
+      console.error('Error fetching admin notifications:', e);
+    }
+  }, []);
+
   React.useEffect(() => {
     setMounted(true);
     const checkAuth = () => {
@@ -58,47 +81,25 @@ export default function AdminLayout({
     checkAuth();
     window.addEventListener('storage', checkAuth);
 
+    fetchNotifications();
+
     // Real-time Subscriptions
-    const ordersChannel = supabase
+    const notifsChannel = supabase
       .channel('admin_notifications')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => {
+        fetchNotifications();
+      })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (payload) => {
         const newOrder = payload.new;
-        setNotifications(prev => [
-          { 
-            id: Date.now(), 
-            title: 'New Order Received', 
-            message: `Order #${newOrder.order_number || String(newOrder.id).slice(0, 8)} for ₹${newOrder.total_amount}`, 
-            time: 'Just now', 
-            type: 'order', 
-            href: `/admin/orders?search=${newOrder.order_number || newOrder.id}` 
-          },
-          ...prev.slice(0, 4)
-        ]);
         toast.success('New Order Received!', { icon: '🛍️', duration: 5000 });
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'products' }, (payload) => {
-        const product = payload.new;
-        if (product.stock === 0) {
-          setNotifications(prev => [
-            { 
-              id: Date.now(), 
-              title: 'Out of Stock', 
-              message: `${product.name} is now out of stock!`, 
-              time: 'Just now', 
-              type: 'stock', 
-              href: `/admin/products?search=${product.name}` 
-            },
-            ...prev.slice(0, 4)
-          ]);
-        }
       })
       .subscribe();
 
     return () => {
       window.removeEventListener('storage', checkAuth);
-      supabase.removeChannel(ordersChannel);
+      supabase.removeChannel(notifsChannel);
     };
-  }, [pathname, router]);
+  }, [pathname, router, fetchNotifications]);
 
   // Prevent hydration mismatch by returning a simple loader until mounted
   if (!mounted) {
@@ -240,21 +241,56 @@ export default function AdminLayout({
                       >
                         <div className="p-5 border-b border-border flex items-center justify-between">
                           <h3 className="font-black uppercase tracking-widest text-xs">Notifications</h3>
-                          <button className="text-[10px] font-black text-primary hover:underline">Mark all read</button>
+                          <button 
+                            onClick={async () => {
+                              try {
+                                const { error } = await supabase
+                                  .from('notifications')
+                                  .update({ is_read: true })
+                                  .eq('is_read', false);
+                                if (!error) {
+                                  setNotifications([]);
+                                  toast.success('All notifications marked as read!');
+                                }
+                              } catch (e) {
+                                console.error('Error marking all as read:', e);
+                              }
+                            }}
+                            className="text-[10px] font-black text-primary hover:underline"
+                          >
+                            Mark all read
+                          </button>
                         </div>
                         <div className="max-h-[400px] overflow-y-auto">
-                          {notifications.map((n) => (
-                            <Link 
-                              key={n.id} 
-                              href={n.href}
-                              onClick={() => setShowNotifications(false)}
-                              className="block p-4 border-b border-border last:border-0 hover:bg-muted/30 transition-all cursor-pointer"
-                            >
-                              <p className="font-bold text-sm mb-1">{n.title}</p>
-                              <p className="text-xs text-muted-foreground line-clamp-2">{n.message}</p>
-                              <p className="text-[10px] font-black text-primary mt-2 uppercase">{n.time}</p>
-                            </Link>
-                          ))}
+                          {notifications.length === 0 ? (
+                            <div className="p-8 text-center text-xs text-muted-foreground font-bold italic">
+                              No unread alerts
+                            </div>
+                          ) : (
+                            notifications.map((n) => (
+                              <Link 
+                                key={n.id} 
+                                href={n.href}
+                                onClick={async () => {
+                                  setShowNotifications(false);
+                                  try {
+                                    await supabase
+                                      .from('notifications')
+                                      .update({ is_read: true })
+                                      .eq('id', n.id);
+                                    fetchNotifications();
+                                  } catch (e) {
+                                    console.error('Error marking unread item clicked:', e);
+                                  }
+                                }}
+                                className="block p-4 border-b border-border last:border-0 hover:bg-muted/30 transition-all cursor-pointer"
+                              >
+                                <p className="font-bold text-sm mb-1">{n.title}</p>
+                                <p className="text-xs text-muted-foreground line-clamp-2">{n.message}</p>
+                                <p className="text-[10px] font-black text-primary mt-2 uppercase">{n.time}</p>
+                              </Link>
+                            ))
+                          )}
                         </div>
                       </motion.div>
                     </>

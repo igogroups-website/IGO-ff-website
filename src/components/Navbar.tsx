@@ -23,6 +23,41 @@ export default function Navbar() {
   const { isCartOpen, openCart, closeCart, cartCount } = useCart();
   const { openWishlist, wishlistItems } = useWishlist();
   const { language, setLanguage, t } = useTranslation();
+  const [unreadCount, setUnreadCount] = React.useState(0);
+
+  const fetchUnreadCount = React.useCallback(async () => {
+    if (!user) {
+      setUnreadCount(0);
+      return;
+    }
+    try {
+      const { count, error } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .or(`user_id.is.null,user_id.eq.${user.id}`)
+        .eq('is_read', false);
+      
+      if (!error) {
+        setUnreadCount(count || 0);
+      }
+    } catch (e) {
+      console.error('Error fetching unread count:', e);
+    }
+  }, [user]);
+
+  React.useEffect(() => {
+    fetchUnreadCount();
+    const channel = supabase
+      .channel('navbar_unread_count')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => {
+        fetchUnreadCount();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchUnreadCount]);
 
   React.useEffect(() => {
     setIsHomePage(window.location.pathname === '/');
@@ -114,7 +149,9 @@ export default function Navbar() {
                 className={`p-2.5 rounded-xl transition-all relative group ${isSolid ? 'hover:bg-primary/5 text-foreground' : 'hover:bg-white/10 text-white'}`}
               >
                 <Bell size={22} strokeWidth={1.5} />
-                <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white animate-pulse" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white animate-pulse" />
+                )}
               </button>
 
               <Link
