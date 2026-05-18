@@ -43,17 +43,30 @@ export default function Checkout() {
       return;
     }
 
+    // Try loading saved address from localStorage first for premium UX auto-fill
+    try {
+      const saved = localStorage.getItem('farmers_factory_saved_address');
+      if (saved) {
+        setAddress(JSON.parse(saved));
+      }
+    } catch (e) {
+      console.warn('Failed to parse saved address from localStorage');
+    }
+
     if (user) {
       const fetchProfile = async () => {
         const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single();
         if (prof) {
-          setAddress({
-            name: prof.full_name || '',
-            phone: prof.phone || '',
-            street: prof.address || '',
-            city: prof.city || '',
-            zip: prof.zip || ''
-          });
+          const saved = localStorage.getItem('farmers_factory_saved_address');
+          if (!saved) {
+            setAddress({
+              name: prof.full_name || '',
+              phone: prof.phone || '',
+              street: prof.address || '',
+              city: prof.city || '',
+              zip: prof.zip || ''
+            });
+          }
         }
       };
       fetchProfile();
@@ -146,6 +159,24 @@ export default function Checkout() {
 
     setLoading(true);
     try {
+      // Save address details to localStorage for premium UX auto-fill
+      try {
+        localStorage.setItem('farmers_factory_saved_address', JSON.stringify(address));
+      } catch (e) {}
+
+      // Update their profiles table in the background
+      if (user) {
+        supabase.from('profiles').update({
+          full_name: address.name,
+          phone: address.phone,
+          address: address.street,
+          city: address.city,
+          zip: address.zip
+        }).eq('id', user.id).then(({ error }) => {
+          if (error) console.warn('[Checkout] Failed to sync address to profile:', error);
+        });
+      }
+
       // Generate professional order number
       const orderNumber = 'FF-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 
