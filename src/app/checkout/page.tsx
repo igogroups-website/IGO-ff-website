@@ -239,6 +239,15 @@ export default function Checkout() {
         window.dispatchEvent(new Event('cart-updated'));
       }
 
+      // Add to notifications inbox
+      await supabase.from('notifications').insert({
+        user_id: user.id,
+        title: 'Order Confirmed! 🌿',
+        message: `Your order #${order.id.slice(0, 8)} has been successfully placed and is being prepared.`,
+        type: 'order_status',
+        link: '/profile?tab=orders'
+      });
+
       // Send Order Confirmation Email
       import('@/lib/email').then(({ sendOrderConfirmation }) => {
         sendOrderConfirmation(user.email || address.name, order.id, total);

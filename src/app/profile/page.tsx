@@ -64,6 +64,7 @@ export default function ProfilePage() {
   const { user, loading: authLoading, signOut } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [orders, setOrders] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('orders');
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
@@ -94,9 +95,10 @@ export default function ProfilePage() {
         setLoading(true);
         
         // Parallel fetch for speed
-        const [profileRes, ordersRes] = await Promise.all([
+        const [profileRes, ordersRes, notifRes] = await Promise.all([
           supabase.from('profiles').select('*').eq('id', user?.id).single(),
-          supabase.from('orders').select('*').eq('user_id', user?.id).order('created_at', { ascending: false })
+          supabase.from('orders').select('*').eq('user_id', user?.id).order('created_at', { ascending: false }),
+          supabase.from('notifications').select('*').eq('user_id', user?.id).order('created_at', { ascending: false })
         ]);
         
         if (profileRes.error && profileRes.error.code !== 'PGRST116') {
@@ -105,6 +107,7 @@ export default function ProfilePage() {
         
         setProfile(profileRes.data || null);
         setOrders(ordersRes.data || []);
+        setNotifications(notifRes.data || []);
       } catch (err) {
         console.error('Data sync error:', err);
         toast.error('Failed to sync your profile data');
@@ -119,6 +122,7 @@ export default function ProfilePage() {
 
   const tabs = [
     { id: 'orders', label: 'Orders', icon: Package },
+    { id: 'inbox', label: 'Inbox', icon: Bell },
     { id: 'wallet', label: 'FF Wallet', icon: Wallet },
     { id: 'addresses', label: 'Addresses', icon: MapPin },
     { id: 'favorites', label: 'Favorites', icon: Heart },
@@ -212,6 +216,45 @@ export default function ProfilePage() {
                       <h3 className="text-xl font-black text-slate-800">No orders yet</h3>
                       <p className="text-slate-500 mt-2 max-w-xs mx-auto text-sm font-medium">When you shop from our farm, your orders will appear here.</p>
                       <button className="mt-8 px-8 py-3 bg-primary text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg shadow-primary/20">Start Shopping</button>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+
+              {/* Inbox Tab */}
+              {activeTab === 'inbox' && (
+                <motion.div key="inbox" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+                  <div className="mb-8">
+                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">Your Inbox</h2>
+                    <p className="text-slate-500 text-sm font-medium">Updates, order status, and farm news</p>
+                  </div>
+                  
+                  {notifications.length > 0 ? (
+                    <div className="space-y-4">
+                      {notifications.map(notif => (
+                        <div key={notif.id} className={`bg-white border p-6 rounded-2xl transition-all ${notif.is_read ? 'border-slate-100' : 'border-primary/30 shadow-md shadow-primary/5'}`}>
+                          <div className="flex gap-4">
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${notif.is_read ? 'bg-slate-50 text-slate-400' : 'bg-primary/10 text-primary'}`}>
+                              <Bell size={24} />
+                            </div>
+                            <div>
+                              <div className="flex items-center justify-between mb-1">
+                                <h4 className="font-bold text-slate-900">{notif.title}</h4>
+                                <span className="text-xs text-slate-400 font-medium">{new Date(notif.created_at).toLocaleDateString()}</span>
+                              </div>
+                              <p className="text-sm text-slate-500 leading-relaxed">{notif.message}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="bg-white rounded-3xl p-20 text-center border border-slate-100 shadow-sm">
+                      <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-200">
+                        <Inbox size={40} />
+                      </div>
+                      <h3 className="text-xl font-black text-slate-800">Inbox is empty</h3>
+                      <p className="text-slate-500 mt-2 max-w-xs mx-auto text-sm font-medium">You will receive order updates and important notifications here.</p>
                     </div>
                   )}
                 </motion.div>
