@@ -30,6 +30,13 @@ interface CartContextType {
   addToCart: (productId: string, quantity?: number, productData?: any) => Promise<boolean>;
   updateQuantity: (cartItemId: string, newQty: number) => Promise<void>;
   removeItem: (cartItemId: string) => Promise<void>;
+  couponCode: string;
+  setCouponCode: (code: string) => void;
+  discount: number;
+  appliedCoupon: any;
+  isValidatingCoupon: boolean;
+  applyCoupon: () => Promise<void>;
+  removeCoupon: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -39,6 +46,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const { user, loading: authLoading } = useAuth();
+
+  // Coupon State
+  const [couponCode, setCouponCode] = useState('');
+  const [discount, setDiscount] = useState(0);
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
 
   const fetchCart = useCallback(async () => {
     // Wait for auth to settle
@@ -334,6 +347,93 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return acc + (price * item.quantity);
   }, 0);
 
+  // Recalculate discount whenever cartTotal changes (or cart items change)
+  useEffect(() => {
+    if (appliedCoupon) {
+      if (cartTotal < (appliedCoupon.min_spend || 0)) {
+        toast.error(`Cart total dropped below min spend for coupon: ${appliedCoupon.code}`);
+        removeCoupon();
+        return;
+      }
+      
+      if (appliedCoupon.applicable_product_id) {
+        const hasProduct = cartItems.some(item => item.product_id === appliedCoupon.applicable_product_id);
+        if (!hasProduct) {
+          toast.error(`The required product for coupon ${appliedCoupon.code} was removed from your cart.`);
+          removeCoupon();
+          return;
+        }
+      }
+
+      let calculatedDiscount = 0;
+      if (appliedCoupon.discount_type === 'percentage') {
+        calculatedDiscount = (cartTotal * appliedCoupon.discount_value) / 100;
+      } else {
+        calculatedDiscount = appliedCoupon.discount_value;
+      }
+      setDiscount(calculatedDiscount);
+    }
+  }, [cartTotal, cartItems, appliedCoupon]);
+
+  const applyCoupon = async () => {
+    if (!couponCode) return;
+    setIsValidatingCoupon(true);
+    try {
+      const { data: coupon, error } = await supabase
+        .from('coupons')
+        .select('*')
+        .eq('code', couponCode.toUpperCase())
+        .eq('is_active', true)
+        .single();
+
+      if (error || !coupon) {
+        toast.error('Promotion code is not valid');
+        setDiscount(0);
+        setAppliedCoupon(null);
+      } else {
+        // Check expiry
+        if (coupon.expiry_date && new Date(coupon.expiry_date) < new Date()) {
+          toast.error('Promotion code has expired');
+          return;
+        }
+        // Check min spend
+        if (cartTotal < (coupon.min_spend || 0)) {
+          toast.error(`Min spend of ₹${coupon.min_spend} required for this promotion`);
+          return;
+        }
+        // Check applicable product
+        if (coupon.applicable_product_id) {
+          const hasProduct = cartItems.some(item => item.product_id === coupon.applicable_product_id);
+          if (!hasProduct) {
+            toast.error('This promotion code is not valid for the products in your basket');
+            return;
+          }
+        }
+
+        let calculatedDiscount = 0;
+        if (coupon.discount_type === 'percentage') {
+          calculatedDiscount = (cartTotal * coupon.discount_value) / 100;
+        } else {
+          calculatedDiscount = coupon.discount_value;
+        }
+
+        setDiscount(calculatedDiscount);
+        setAppliedCoupon(coupon);
+        toast.success(`Coupon applied: ₹${calculatedDiscount} off!`);
+      }
+    } catch (err) {
+      toast.error('Error validating promotion code');
+    } finally {
+      setIsValidatingCoupon(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setDiscount(0);
+    setCouponCode('');
+  };
+
   return (
     <CartContext.Provider value={{
       isCartOpen,
@@ -347,6 +447,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       addToCart,
       updateQuantity,
       removeItem,
+      couponCode,
+      setCouponCode,
+      discount,
+      appliedCoupon,
+      isValidatingCoupon,
+      applyCoupon,
+      removeCoupon,
     }}>
       {children}
     </CartContext.Provider>

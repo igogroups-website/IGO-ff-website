@@ -12,8 +12,13 @@ import { toast } from 'react-hot-toast';
 import ProgressiveRewardBar from '@/components/ProgressiveRewardBar';
 
 export default function CartPage() {
-  const { cartItems, cartTotal, updateQuantity, removeItem, loading } = useCart();
+  const { 
+    cartItems, cartTotal, updateQuantity, removeItem, loading,
+    couponCode, setCouponCode, discount, appliedCoupon, isValidatingCoupon, applyCoupon, removeCoupon 
+  } = useCart();
   const router = useRouter();
+
+  const grandTotal = Math.max(0, cartTotal - discount);
 
   if (loading) {
     return (
@@ -163,6 +168,12 @@ export default function CartPage() {
                     <span className="text-lg font-bold text-muted-foreground">Subtotal</span>
                     <span className="text-xl font-black">₹{cartTotal}</span>
                   </div>
+                  {discount > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-bold text-emerald-600">Discount</span>
+                      <span className="text-xl font-black text-emerald-600">-₹{discount}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-bold text-muted-foreground">Shipping</span>
                     <div className="flex items-center gap-2">
@@ -176,7 +187,7 @@ export default function CartPage() {
                       <span className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-1">Grand Total</span>
                       <span className="text-[10px] text-primary font-bold">Inclusive of all farm taxes</span>
                     </div>
-                    <span className="text-4xl font-black text-primary leading-none">₹{cartTotal}</span>
+                    <span className="text-4xl font-black text-primary leading-none">₹{grandTotal}</span>
                   </div>
                 </div>
 
@@ -189,10 +200,34 @@ export default function CartPage() {
                     <ArrowRight size={24} className="group-hover:translate-x-1 transition-transform" />
                   </Link>
                   
-                  <button className="w-full py-5 px-4 bg-muted/20 hover:bg-muted/40 rounded-[1.5rem] flex items-center justify-center gap-3 transition-colors border border-dashed border-border group">
-                    <Tag size={20} className="text-primary group-hover:rotate-12 transition-transform" />
-                    <span className="text-sm font-black text-muted-foreground uppercase tracking-widest">Apply Promo Code</span>
-                  </button>
+                  {/* Coupon Field */}
+                  <div className="mt-6 p-4 bg-muted/20 border border-dashed border-border rounded-[1.5rem]">
+                    <div className="flex items-center gap-2 mb-3 px-2">
+                      <Tag size={16} className="text-primary" />
+                      <span className="text-xs font-black text-muted-foreground uppercase tracking-widest">Promotional Code</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <input 
+                        type="text" 
+                        placeholder="ENTER CODE"
+                        className="flex-1 bg-white border border-border rounded-xl px-4 py-3 text-sm font-black uppercase tracking-widest focus:ring-2 focus:ring-primary/20 outline-none"
+                        value={couponCode}
+                        onChange={e => setCouponCode(e.target.value)}
+                        disabled={appliedCoupon}
+                      />
+                      <button 
+                        onClick={appliedCoupon ? removeCoupon : applyCoupon}
+                        disabled={isValidatingCoupon}
+                        className={`px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                          appliedCoupon 
+                            ? 'bg-red-50 text-red-600 hover:bg-red-500 hover:text-white' 
+                            : 'bg-primary text-white hover:bg-primary/90'
+                        }`}
+                      >
+                        {isValidatingCoupon ? '...' : (appliedCoupon ? 'REMOVE' : 'APPLY')}
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="mt-12 pt-8 border-t border-border/60 space-y-6">

@@ -12,7 +12,10 @@ import { useCart } from '@/context/CartContext';
 
 export default function Checkout() {
   const { user, loading: authLoading } = useAuth();
-  const { cartItems, cartTotal, loading: cartLoading } = useCart();
+  const { 
+    cartItems, cartTotal, loading: cartLoading,
+    couponCode, setCouponCode, discount, appliedCoupon, isValidatingCoupon, applyCoupon, removeCoupon 
+  } = useCart();
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -31,10 +34,7 @@ export default function Checkout() {
     cvv: ''
   });
 
-  const [couponCode, setCouponCode] = useState('');
-  const [discount, setDiscount] = useState(0);
-  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
-  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  // Local states removed in favor of global cart context for coupons
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -103,50 +103,7 @@ export default function Checkout() {
     );
   };
 
-  const handleApplyCoupon = async () => {
-    if (!couponCode) return;
-    setIsValidatingCoupon(true);
-    try {
-      const { data: coupon, error } = await supabase
-        .from('coupons')
-        .select('*')
-        .eq('code', couponCode.toUpperCase())
-        .eq('is_active', true)
-        .single();
-
-      if (error || !coupon) {
-        toast.error('Invalid coupon code');
-        setDiscount(0);
-        setAppliedCoupon(null);
-      } else {
-        // Check expiry
-        if (coupon.expiry_date && new Date(coupon.expiry_date) < new Date()) {
-          toast.error('Coupon has expired');
-          return;
-        }
-        // Check min spend
-        if (cartTotal < (coupon.min_spend || 0)) {
-          toast.error(`Min spend of ₹${coupon.min_spend} required`);
-          return;
-        }
-
-        let calculatedDiscount = 0;
-        if (coupon.discount_type === 'percentage') {
-          calculatedDiscount = (cartTotal * coupon.discount_value) / 100;
-        } else {
-          calculatedDiscount = coupon.discount_value;
-        }
-
-        setDiscount(calculatedDiscount);
-        setAppliedCoupon(coupon);
-        toast.success(`Coupon applied: ₹${calculatedDiscount} off!`);
-      }
-    } catch (err) {
-      toast.error('Error validating coupon');
-    } finally {
-      setIsValidatingCoupon(false);
-    }
-  };
+  // handleApplyCoupon is now handled globally in CartContext
 
   const subtotal = cartTotal;
   const total = Math.max(0, subtotal - discount);
@@ -493,7 +450,7 @@ export default function Checkout() {
                     disabled={appliedCoupon}
                   />
                   <button 
-                    onClick={appliedCoupon ? () => { setAppliedCoupon(null); setDiscount(0); setCouponCode(''); } : handleApplyCoupon}
+                    onClick={appliedCoupon ? removeCoupon : applyCoupon}
                     disabled={isValidatingCoupon}
                     className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
                       appliedCoupon 
