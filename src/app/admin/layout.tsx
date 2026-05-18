@@ -86,10 +86,17 @@ export default function AdminLayout({
           if (session) {
             await supabase.auth.signOut();
           }
-          await supabase.auth.signInWithPassword({
+          const { error } = await supabase.auth.signInWithPassword({
             email: 'admin@farmersfactory.com',
             password: 'AdminPassword123!'
           });
+          
+          if (error) {
+            console.error('Admin auto-login failed:', error);
+            localStorage.removeItem('admin_auth');
+            router.push('/admin/login');
+            return;
+          }
         }
         setIsSessionReady(true);
       } else {
