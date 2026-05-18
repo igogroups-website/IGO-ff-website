@@ -15,6 +15,7 @@ import { toast } from 'react-hot-toast';
 import OrderDetailModal from '@/components/OrderDetailModal';
 import LoyaltyWallet from '@/components/profile/LoyaltyWallet';
 import AddressManager from '@/components/profile/AddressManager';
+import { useWishlist } from '@/context/WishlistContext';
 import Footer from '@/components/Footer';
 
 function OrderCard({ order, onViewDetails }: { order: any, onViewDetails: (order: any) => void }) {
@@ -72,6 +73,7 @@ export default function ProfilePage() {
   ];
 
   const { user, loading: authLoading, signOut } = useAuth();
+  const { wishlistItems, toggleWishlist } = useWishlist();
   const [profile, setProfile] = useState<any>(null);
   const [orders, setOrders] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -341,11 +343,73 @@ export default function ProfilePage() {
               {/* Favorites Tab */}
               {activeTab === 'favorites' && (
                 <motion.div key="favorites" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-                  <div className="mb-8 text-center py-32 bg-white rounded-3xl border border-slate-100 shadow-sm">
-                    <Heart size={48} className="mx-auto mb-6 text-slate-200" />
-                    <h3 className="text-xl font-black text-slate-800">No favorites found</h3>
-                    <p className="text-slate-500 mt-2 max-w-xs mx-auto text-sm font-medium">Tap the heart on products to save them for later.</p>
+                  <div className="mb-8 flex items-center justify-between">
+                    <div>
+                      <h2 className="text-2xl font-black text-slate-900 tracking-tight">My Favorites</h2>
+                      <p className="text-slate-500 text-sm font-medium">Your curated list of organic favorites</p>
+                    </div>
+                    <span className="text-xs bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-full font-black uppercase tracking-widest">{wishlistItems.length} Saved</span>
                   </div>
+
+                  {wishlistItems.length === 0 ? (
+                    <div className="text-center py-32 bg-white rounded-3xl border border-slate-100 shadow-sm">
+                      <Heart size={48} className="mx-auto mb-6 text-slate-200" />
+                      <h3 className="text-xl font-black text-slate-800">No favorites found</h3>
+                      <p className="text-slate-500 mt-2 max-w-xs mx-auto text-sm font-medium">Tap the heart on products to save them for later.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                      {wishlistItems.map((item) => {
+                        const prod = item.products;
+                        if (!prod) return null;
+                        const fallbackUrl = 'https://images.unsplash.com/photo-1610348725531-843dff563e2c?w=400&auto=format&fit=crop';
+                        return (
+                          <div key={item.id} className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all flex flex-col group relative">
+                            {/* Remove button */}
+                            <button
+                              onClick={() => toggleWishlist(item.product_id)}
+                              className="absolute top-4 right-4 p-2 bg-white/80 hover:bg-white text-red-500 hover:scale-110 active:scale-95 rounded-full shadow-md z-10 transition-all border border-slate-100"
+                            >
+                              <Heart size={18} className="fill-current text-red-500" />
+                            </button>
+
+                            {/* Product Image */}
+                            <div className="relative aspect-square overflow-hidden bg-slate-50 border-b border-slate-100 flex-shrink-0">
+                              <img
+                                src={prod.image_url || fallbackUrl}
+                                alt={prod.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                onError={(e) => { (e.target as HTMLImageElement).src = fallbackUrl; }}
+                              />
+                            </div>
+
+                            {/* Product Info */}
+                            <div className="p-5 flex-1 flex flex-col justify-between">
+                              <div>
+                                <span className="text-[9px] font-black uppercase tracking-widest text-primary bg-primary/5 px-2 py-0.5 rounded-md">{prod.category || 'Harvest'}</span>
+                                <h4 className="font-black text-slate-800 text-lg mt-2 group-hover:text-primary transition-colors line-clamp-1">{prod.name}</h4>
+                                <p className="text-xs text-slate-400 font-bold mt-1">Unit: {prod.unit || '1 kg'}</p>
+                              </div>
+
+                              <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-50">
+                                <div>
+                                  <span className="text-xs text-slate-400 font-bold block mb-0.5">Price</span>
+                                  <span className="font-black text-primary text-xl">₹{prod.price}</span>
+                                </div>
+                                
+                                <Link
+                                  href={`/products/${prod.id}`}
+                                  className="px-4 py-2 bg-primary text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-primary-dark transition-colors shadow-md shadow-primary/20"
+                                >
+                                  View Item
+                                </Link>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </motion.div>
               )}
 

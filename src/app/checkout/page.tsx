@@ -240,6 +240,39 @@ export default function Checkout() {
         throw new Error(itemsError.message || 'Failed to save order items. Please try again.');
       }
 
+      // Decrement product stock in Supabase for each ordered item
+      for (const item of cartItems) {
+        try {
+          const { data: prodData } = await supabase
+            .from('products')
+            .select('stock, name')
+            .eq('id', item.product_id)
+            .single();
+
+          if (prodData) {
+            const currentStock = prodData.stock ?? 200;
+            const newStock = Math.max(0, currentStock - item.quantity);
+            
+            await supabase
+              .from('products')
+              .update({ stock: newStock })
+              .eq('id', item.product_id);
+
+            // Trigger low-stock alerts / notifications in public.notifications
+            if (newStock < 20) {
+              await supabase.from('notifications').insert({
+                title: '⚠️ Low Stock Alert!',
+                message: `Stock level for ${prodData.name} is extremely low (${newStock} kg remaining!). Please restock immediately.`,
+                type: 'system',
+                link: `/admin/inventory?search=${prodData.name}`
+              });
+            }
+          }
+        } catch (e) {
+          console.error('[Checkout] Stock decrement failed for item:', item.product_id, e);
+        }
+      }
+
       // Clear cart
       if (user) {
         await supabase.from('cart').delete().eq('user_id', user.id);
