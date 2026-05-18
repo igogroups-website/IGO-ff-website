@@ -148,15 +148,47 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
         const newQuantity = existing ? existing.quantity + quantity : quantity;
 
-        const { error } = await supabase
+        // ── Optimistic UI Update ──
+        const existingIndex = cartItems.findIndex(item => item.product_id === productId);
+        let optimisticCart = [...cartItems];
+        const normalizedProduct = productData ? {
+          ...productData,
+          image_url: productData.image_url || (Array.isArray(productData.image_urls) ? productData.image_urls[0] : null) || ''
+        } : null;
+
+        if (existingIndex > -1) {
+          optimisticCart[existingIndex] = {
+            ...optimisticCart[existingIndex],
+            quantity: newQuantity
+          };
+        } else if (normalizedProduct) {
+          optimisticCart.push({
+            id: existing ? existing.id : Math.random().toString(36).substring(7),
+            product_id: productId,
+            quantity: newQuantity,
+            products: normalizedProduct as any
+          });
+        }
+        
+        setCartItems(optimisticCart);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('cart-updated'));
+        }
+
+        // ── Database Sync ──
+        const { error, data: upsertedData } = await supabase
           .from('cart')
           .upsert(
             { user_id: user.id, product_id: productId, quantity: newQuantity },
             { onConflict: 'user_id,product_id' }
-          );
+          )
+          .select()
+          .single();
 
         if (error) {
           console.error('[Cart] Upsert error:', error);
+          // Revert optimistic update on failure
+          fetchCart();
           if (error.code === '42501' || error.message?.includes('policy')) {
             toast.error('Basket access denied. Please logout and login again.', { duration: 5000 });
           } else {
@@ -165,7 +197,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           throw error;
         }
 
-        await fetchCart();
+        // Run fetchCart in background to ensure full sync of joined product data
+        fetchCart();
       } else {
         // Handle Guest Cart
         const existingIndex = cartItems.findIndex(item => item.product_id === productId);

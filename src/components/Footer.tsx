@@ -51,6 +51,7 @@ export default function Footer() {
 
         <div className="flex flex-wrap justify-center gap-x-12 gap-y-4 text-sm font-bold text-muted-foreground uppercase tracking-widest">
           <Link href="/products" className="text-muted-foreground hover:text-primary transition-colors text-xs font-bold uppercase tracking-widest">Shop All</Link>
+          <Link href="/cart" className="text-muted-foreground hover:text-primary transition-colors text-xs font-bold uppercase tracking-widest">View Basket</Link>
           <Link href="/streams" className="text-muted-foreground hover:text-primary transition-colors text-xs font-bold uppercase tracking-widest">Live Farm Streams</Link>
           <Link href="/products?category=Vegetables" className="text-muted-foreground hover:text-primary transition-colors text-xs font-bold uppercase tracking-widest">Fresh Vegetables</Link>
           <Link href="/delivery" className="hover:text-primary transition-colors">Delivery Info</Link>
