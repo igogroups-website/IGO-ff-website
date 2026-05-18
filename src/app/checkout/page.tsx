@@ -151,27 +151,23 @@ export default function Checkout() {
 
       // Create Order
       // 1. Sync user to public.users table to satisfy the database foreign key constraint
-      try {
-        const syncRes = await fetch('/api/sync-user', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            id: user.id,
-            email: user.email,
-            name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Customer'
-          })
-        });
-        if (!syncRes.ok) {
-          const syncErrData = await syncRes.json().catch(() => ({}));
-          console.error('[Checkout] User sync failed:', syncErrData);
-        } else {
-          console.log('[Checkout] User synced successfully to public.users');
-        }
-      } catch (err) {
-        console.error('[Checkout] Error syncing user:', err);
+      const syncRes = await fetch('/api/sync-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          id: user.id,
+          email: user.email,
+          name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Customer'
+        })
+      });
+      if (!syncRes.ok) {
+        const syncErrData = await syncRes.json().catch(() => ({}));
+        console.error('[Checkout] User sync failed:', syncErrData);
+        throw new Error(syncErrData.error || 'Failed to synchronize account credentials. Please refresh and try again.');
       }
+      console.log('[Checkout] User synced successfully to public.users');
 
       // Create Order with uppercase 'PLACED' status matching database constraint
       const { data: order, error: orderError } = await supabase
