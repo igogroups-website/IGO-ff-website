@@ -66,7 +66,7 @@ export default function AdminLayout({
 
   React.useEffect(() => {
     setMounted(true);
-    const checkAuth = () => {
+    const checkAuth = async () => {
       const auth = localStorage.getItem('admin_auth');
       const isAuth = auth === 'true';
       setIsAuthenticated(isAuth);
@@ -75,6 +75,17 @@ export default function AdminLayout({
         router.push('/admin/login');
       } else if (isAuth && pathname === '/admin/login') {
         router.push('/admin');
+      }
+
+      // Silent Supabase Authentication Fallback (if they didn't go through login page)
+      if (isAuth) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          await supabase.auth.signInWithPassword({
+            email: 'admin@farmersfactory.com',
+            password: 'AdminPassword123!'
+          });
+        }
       }
     };
 
