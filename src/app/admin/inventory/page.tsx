@@ -307,7 +307,7 @@ export default function AdminInventory() {
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-xl bg-slate-50 overflow-hidden border border-slate-100 flex-shrink-0 relative">
                           <img 
-                            src={p.image_url || 'https://images.unsplash.com/photo-1610348725531-843dff563e2c'} 
+                            src={(p.image_urls && p.image_urls[0]) || p.image_url || 'https://images.unsplash.com/photo-1610348725531-843dff563e2c'} 
                             alt="" 
                             className="w-full h-full object-cover" 
                             onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1610348725531-843dff563e2c'; }}

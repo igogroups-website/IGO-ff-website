@@ -259,7 +259,7 @@ export default function Checkout() {
         try {
           const { data: prodData } = await supabase
             .from('products')
-            .select('stock, name')
+            .select('stock, name, unit')
             .eq('id', item.product_id)
             .single();
 
@@ -274,9 +274,10 @@ export default function Checkout() {
 
             // Trigger low-stock alerts / notifications in public.notifications
             if (newStock < 20) {
+              const productUnit = prodData.unit || 'kg';
               await supabase.from('notifications').insert({
                 title: '⚠️ Low Stock Alert!',
-                message: `Stock level for ${prodData.name} is extremely low (${newStock} kg remaining!). Please restock immediately.`,
+                message: `Stock level for ${prodData.name} is extremely low (${newStock} ${productUnit} remaining!). Please restock immediately.`,
                 type: 'system',
                 link: `/admin/inventory?search=${prodData.name}`
               });
