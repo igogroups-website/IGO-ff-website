@@ -16,7 +16,7 @@ export default function GlobalUI() {
   const { cartCount, cartTotal } = useCart();
   const pathname = usePathname();
 
-  if (pathname?.startsWith('/admin')) return null;
+  if (pathname?.startsWith('/admin') || pathname === '/cart' || pathname === '/checkout') return null;
 
   return (
     <>
