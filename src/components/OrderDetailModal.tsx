@@ -132,10 +132,11 @@ export default function OrderDetailModal({ order, isOpen, onClose }: OrderDetail
 
   if (!order) return null;
 
-  const currentStep = getStepIndex(order.status);
+  const normalizedStatus = order.status?.toLowerCase() === 'placed' ? 'pending' : (order.status?.toLowerCase() || 'pending');
+  const currentStep = getStepIndex(normalizedStatus);
   const subtotal = orderItems.reduce((acc, item) => acc + item.price_at_purchase * item.quantity, 0);
   const deliveryFee = 0;
-  const deliveredDate = getDeliveredDate(order);
+  const deliveredDate = getDeliveredDate({ ...order, status: normalizedStatus });
 
   const statusColor = {
     pending:    'bg-slate-100 text-slate-600',
@@ -144,7 +145,7 @@ export default function OrderDetailModal({ order, isOpen, onClose }: OrderDetail
     shipped:    'bg-indigo-100 text-indigo-600',
     delivered:  'bg-emerald-100 text-emerald-600',
     cancelled:  'bg-red-100 text-red-600',
-  }[order.status.toLowerCase()] || 'bg-slate-100 text-slate-600';
+  }[normalizedStatus] || 'bg-slate-100 text-slate-600';
 
   return (
     <AnimatePresence>

@@ -22,7 +22,13 @@ export default function Orders() {
         .eq('user_id', session.user.id)
         .order('created_at', { ascending: false });
 
-      if (data) setOrders(data);
+      if (data) {
+        const normalized = data.map((order: any) => ({
+          ...order,
+          status: order.status?.toLowerCase() === 'placed' ? 'pending' : (order.status?.toLowerCase() || 'pending')
+        }));
+        setOrders(normalized);
+      }
       setLoading(false);
     }
     fetchOrders();

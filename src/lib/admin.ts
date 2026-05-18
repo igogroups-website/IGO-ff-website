@@ -35,9 +35,14 @@ export async function updateAdminPassword(newPassword: string) {
 
 export async function getAdminStats() {
   try {
-    const { data: orders, error: ordersError } = await supabase
+    const { data: rawOrders, error: ordersError } = await supabase
       .from('orders')
       .select('total_amount, status');
+
+    const orders = (rawOrders || []).map((o: any) => ({
+      ...o,
+      status: o.status?.toLowerCase() === 'placed' ? 'pending' : (o.status?.toLowerCase() || 'pending')
+    }));
 
     const { count: productCount, error: productsError } = await supabase
       .from('products')
@@ -107,6 +112,7 @@ export async function getAllOrders() {
 
     return orders.map(order => ({
       ...order,
+      status: order.status?.toLowerCase() === 'placed' ? 'pending' : (order.status?.toLowerCase() || 'pending'),
       customer: profiles?.find(p => p.id === order.user_id) || { full_name: 'Unknown Customer' }
     }));
   } catch (err) {
@@ -136,9 +142,17 @@ export async function updateOrderStatus(orderId: string, status: string) {
     .eq('id', orderId)
     .single();
 
+  // Convert incoming lowercase status to valid database uppercase constraints
+  let dbStatus = status.toUpperCase();
+  if (dbStatus === 'PENDING') dbStatus = 'PLACED';
+  if (['PROCESSING', 'PACKED', 'SHIPPED'].includes(dbStatus)) {
+    dbStatus = 'CONFIRMED';
+  }
+  if (dbStatus === 'REJECTED') dbStatus = 'CANCELLED';
+
   const { error } = await supabase
     .from('orders')
-    .update({ status })
+    .update({ status: dbStatus })
     .eq('id', orderId);
 
   // Award Points on Delivery

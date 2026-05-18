@@ -150,6 +150,30 @@ export default function Checkout() {
       const orderNumber = 'FF-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 
       // Create Order
+      // 1. Sync user to public.users table to satisfy the database foreign key constraint
+      try {
+        const syncRes = await fetch('/api/sync-user', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            id: user.id,
+            email: user.email,
+            name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Customer'
+          })
+        });
+        if (!syncRes.ok) {
+          const syncErrData = await syncRes.json().catch(() => ({}));
+          console.error('[Checkout] User sync failed:', syncErrData);
+        } else {
+          console.log('[Checkout] User synced successfully to public.users');
+        }
+      } catch (err) {
+        console.error('[Checkout] Error syncing user:', err);
+      }
+
+      // Create Order with uppercase 'PLACED' status matching database constraint
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -160,7 +184,7 @@ export default function Checkout() {
           total_amount: total,
           delivery_address: `${address.name}, ${address.street}, ${address.city} - ${address.zip}`,
           payment_method: paymentMethod,
-          status: 'pending'
+          status: 'PLACED'
           // Note: coupon_id column not yet in schema — applied discount already reflected in total_amount
         })
         .select()

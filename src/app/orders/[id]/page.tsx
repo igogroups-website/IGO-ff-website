@@ -51,7 +51,11 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
       try {
         const { data: ord } = await supabase.from('orders').select('*').eq('id', id).single();
         if (ord) {
-          setOrder(ord);
+          const normalizedOrd = {
+            ...ord,
+            status: ord.status?.toLowerCase() === 'placed' ? 'pending' : (ord.status?.toLowerCase() || 'pending')
+          };
+          setOrder(normalizedOrd);
           const { data: its } = await supabase.from('order_items').select('*, products(*)').eq('order_id', id);
           if (its) setItems(its as OrderItem[]);
         }
