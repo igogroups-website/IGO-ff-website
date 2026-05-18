@@ -146,11 +146,15 @@ export default function Checkout() {
 
     setLoading(true);
     try {
+      // Generate professional order number
+      const orderNumber = 'FF-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+
       // Create Order
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
           user_id: user.id,
+          order_number: orderNumber,
           total_amount: total,
           delivery_address: `${address.name}, ${address.street}, ${address.city} - ${address.zip}`,
           payment_method: paymentMethod,
@@ -200,7 +204,7 @@ export default function Checkout() {
       await supabase.from('notifications').insert({
         user_id: user.id,
         title: 'Order Confirmed! 🌿',
-        message: `Your order #${order.id.slice(0, 8)} has been successfully placed and is being prepared.`,
+        message: `Your order #${order.order_number || String(order.id).slice(0, 8)} has been successfully placed and is being prepared.`,
         type: 'order_status',
         link: '/profile?tab=orders'
       });

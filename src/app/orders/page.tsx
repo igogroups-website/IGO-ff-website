@@ -81,7 +81,7 @@ export default function Orders() {
                       </div>
                       <div>
                         <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Order ID</p>
-                        <p className="font-bold">#{order.id.slice(0, 8)}</p>
+                        <p className="font-bold">#{order.order_number || String(order.id).slice(0, 8)}</p>
                       </div>
                     </div>
 

@@ -38,7 +38,7 @@ function OrderCard({ order, onViewDetails }: { order: any, onViewDetails: (order
             <ShoppingBag size={24} />
           </div>
           <div>
-            <h4 className="font-bold text-slate-900">Order #FF-{order.id.slice(0, 8).toUpperCase()}</h4>
+            <h4 className="font-bold text-slate-900">Order #{ (order.order_number || String(order.id).slice(0, 8)).toUpperCase() }</h4>
             <p className="text-sm text-slate-500 font-medium">{new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
           </div>
         </div>

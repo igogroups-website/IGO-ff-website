@@ -108,7 +108,7 @@ function OrdersContent() {
           sendCXNotification({
             userId: order.user_id,
             title: `Order Update: ${newStatus.toUpperCase()}`,
-            message: `Your order #${order.id.slice(0, 8)} status has been updated to ${newStatus}.`,
+            message: `Your order #${order.order_number || String(order.id).slice(0, 8)} status has been updated to ${newStatus}.`,
             type: 'order_status',
             link: `/profile`,
             emailTemplate: `order_${newStatus}` as any,
@@ -171,7 +171,7 @@ function OrdersContent() {
 
   const exportToExcel = () => {
     const data = filteredOrders.map(o => ({
-      ID: o.id.slice(0, 8),
+      ID: o.order_number || String(o.id).slice(0, 8),
       Customer: o.customer?.full_name || 'Guest',
       Email: o.customer?.email || 'N/A',
       Amount: o.total_amount,
@@ -189,7 +189,7 @@ function OrdersContent() {
     const doc = new jsPDF() as any;
     doc.text("Farmer Factory - Order Manifest", 14, 15);
     const tableData = filteredOrders.map(o => [
-      o.id.slice(0, 8),
+      o.order_number || String(o.id).slice(0, 8),
       o.customer?.full_name || 'Guest',
       `INR ${o.total_amount}`,
       o.status.toUpperCase(),
@@ -320,7 +320,7 @@ function OrdersContent() {
                   >
                     <td className="px-8 py-6">
                       <div className="flex flex-col">
-                        <span className="font-black text-foreground">#{order.id.slice(0, 8)}</span>
+                        <span className="font-black text-foreground">#{order.order_number || String(order.id).slice(0, 8)}</span>
                         <span className="text-[10px] text-muted-foreground uppercase font-bold">{order.payment_method}</span>
                       </div>
                     </td>
@@ -474,7 +474,7 @@ function OrdersContent() {
                         {customerStats.orders.map((o: any) => (
                           <div key={o.id} className="flex items-center justify-between p-4 rounded-2xl border border-border hover:bg-muted/30 transition-all">
                             <div>
-                              <p className="font-black">#{o.id.slice(0, 8)}</p>
+                              <p className="font-black">#{o.order_number || String(o.id).slice(0, 8)}</p>
                               <p className="text-xs text-muted-foreground font-bold">{new Date(o.created_at).toLocaleDateString()}</p>
                             </div>
                             <div className="text-right">
@@ -520,7 +520,7 @@ function OrdersContent() {
               <div className="p-8 border-b border-border flex items-center justify-between bg-muted/30">
                 <div>
                   <h2 className="text-2xl font-black uppercase tracking-tight">Order Summary</h2>
-                  <p className="text-sm text-muted-foreground font-bold">#{selectedOrder?.id.slice(0, 8)} • {new Date(selectedOrder?.created_at).toLocaleString()}</p>
+                  <p className="text-sm text-muted-foreground font-bold">#{selectedOrder?.order_number || String(selectedOrder?.id).slice(0, 8)} • {new Date(selectedOrder?.created_at).toLocaleString()}</p>
                 </div>
                 <button onClick={() => setIsOrderModalOpen(false)} className="p-2 hover:bg-muted rounded-full transition-all">
                   <X size={24} />

@@ -67,10 +67,10 @@ export default function AdminLayout({
           { 
             id: Date.now(), 
             title: 'New Order Received', 
-            message: `Order #${newOrder.id.slice(0, 8)} for ₹${newOrder.total_amount}`, 
+            message: `Order #${newOrder.order_number || String(newOrder.id).slice(0, 8)} for ₹${newOrder.total_amount}`, 
             time: 'Just now', 
             type: 'order', 
-            href: `/admin/orders?search=${newOrder.id}` 
+            href: `/admin/orders?search=${newOrder.order_number || newOrder.id}` 
           },
           ...prev.slice(0, 4)
         ]);
