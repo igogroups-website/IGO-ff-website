@@ -60,13 +60,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         if (savedGuest) {
           const guestItems = JSON.parse(savedGuest);
           if (guestItems.length > 0) {
-            // Migrate each guest item to DB
+            // Migrate each guest item to DB using upsert to avoid duplicate key errors
             for (const item of guestItems) {
-              await supabase.from('cart').insert({
-                user_id: user.id,
-                product_id: item.product_id,
-                quantity: item.quantity
-              });
+              await supabase.from('cart').upsert(
+                { user_id: user.id, product_id: item.product_id, quantity: item.quantity },
+                { onConflict: 'user_id,product_id' }
+              );
             }
             localStorage.removeItem('farmers_factory_guest_cart');
             // Refetch to get newly migrated items
@@ -132,36 +131,40 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const addToCart = async (productId: string, quantity = 1, productData?: any): Promise<boolean> => {
     try {
       if (user) {
-        const existing = cartItems.find(item => item.product_id === productId);
-        if (existing) {
-          const { error } = await supabase
-            .from('cart')
-            .update({ quantity: existing.quantity + quantity })
-            .eq('id', existing.id);
-          if (error) {
-            console.error('[Cart] Update error:', error);
-            // RLS policy violation — most common cause on live deployment
-            if (error.code === '42501' || error.message?.includes('policy')) {
-              toast.error('Basket access denied. Please logout and login again.', { duration: 5000 });
-            } else {
-              toast.error(`Basket error: ${error.message}`, { duration: 5000 });
-            }
-            throw error;
-          }
-        } else {
-          const { error } = await supabase
-            .from('cart')
-            .insert({ user_id: user.id, product_id: productId, quantity });
-          if (error) {
-            console.error('[Cart] Insert error:', error);
-            if (error.code === '42501' || error.message?.includes('policy')) {
-              toast.error('Basket access denied. Please logout and login again.', { duration: 5000 });
-            } else {
-              toast.error(`Basket error: ${error.message}`, { duration: 5000 });
-            }
-            throw error;
-          }
+        // ── Atomic upsert: works whether product is new OR already in cart ──
+        // First, fetch the current quantity from DB directly (avoids stale state race condition)
+        const { data: existing, error: fetchError } = await supabase
+          .from('cart')
+          .select('id, quantity')
+          .eq('user_id', user.id)
+          .eq('product_id', productId)
+          .maybeSingle();
+
+        if (fetchError) {
+          console.error('[Cart] Fetch-before-upsert error:', fetchError);
+          toast.error(`Basket error: ${fetchError.message}`, { duration: 5000 });
+          throw fetchError;
         }
+
+        const newQuantity = existing ? existing.quantity + quantity : quantity;
+
+        const { error } = await supabase
+          .from('cart')
+          .upsert(
+            { user_id: user.id, product_id: productId, quantity: newQuantity },
+            { onConflict: 'user_id,product_id' }
+          );
+
+        if (error) {
+          console.error('[Cart] Upsert error:', error);
+          if (error.code === '42501' || error.message?.includes('policy')) {
+            toast.error('Basket access denied. Please logout and login again.', { duration: 5000 });
+          } else {
+            toast.error(`Basket error: ${error.message}`, { duration: 5000 });
+          }
+          throw error;
+        }
+
         await fetchCart();
       } else {
         // Handle Guest Cart
