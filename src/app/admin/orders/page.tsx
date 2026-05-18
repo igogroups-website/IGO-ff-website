@@ -110,7 +110,7 @@ function OrdersContent() {
             title: `Order Update: ${newStatus.toUpperCase()} #${order.order_number || String(order.id).slice(0, 8)}`,
             message: `Your order #${order.order_number || String(order.id).slice(0, 8)} status has been updated to ${newStatus}.`,
             type: 'order_status',
-            link: `/profile`,
+            link: `/profile?tab=orders&order=${order.order_number || String(order.id).slice(0, 8)}`,
             emailTemplate: `order_${newStatus}` as any,
             emailData: { orderId: order.id, status: newStatus, orderNumber: order.order_number }
           });

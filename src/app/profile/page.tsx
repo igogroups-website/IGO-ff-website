@@ -89,6 +89,50 @@ export default function ProfilePage() {
     }
   }, []);
 
+  // Auto-open order details modal if parsed in URL query params
+  useEffect(() => {
+    if (orders.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const orderNum = params.get('order');
+    if (orderNum) {
+      const order = orders.find(o => 
+        (o.order_number || '').toUpperCase() === orderNum.toUpperCase() || 
+        String(o.id).slice(0, 8).toUpperCase() === orderNum.toUpperCase()
+      );
+      if (order) {
+        setSelectedOrder(order);
+        setIsOrderModalOpen(true);
+      }
+    }
+  }, [orders]);
+
+  const handleNotificationClick = async (notif: any) => {
+    // 1. Mark as read in local state
+    setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, is_read: true } : n));
+    // 2. Mark as read in Database
+    await supabase.from('notifications').update({ is_read: true }).eq('id', notif.id);
+
+    // 3. Try to parse order number from title or message
+    const match = notif.message?.match(/#([A-Za-z0-9-]+)/) || notif.title?.match(/#([A-Za-z0-9-]+)/);
+    if (match) {
+      const orderNum = match[1];
+      const order = orders.find(o => 
+        (o.order_number || '').toUpperCase() === orderNum.toUpperCase() || 
+        String(o.id).slice(0, 8).toUpperCase() === orderNum.toUpperCase()
+      );
+      if (order) {
+        setSelectedOrder(order);
+        setIsOrderModalOpen(true);
+        return;
+      }
+    }
+
+    // 4. Fallback: navigate to link if present
+    if (notif.link) {
+      window.location.href = notif.link;
+    }
+  };
+
   useEffect(() => {
     if (authLoading) return;
     
@@ -238,12 +282,16 @@ export default function ProfilePage() {
                   {notifications.length > 0 ? (
                     <div className="space-y-4">
                       {notifications.map(notif => (
-                        <div key={notif.id} className={`bg-white border p-6 rounded-2xl transition-all ${notif.is_read ? 'border-slate-100' : 'border-primary/30 shadow-md shadow-primary/5'}`}>
+                        <div 
+                          key={notif.id} 
+                          onClick={() => handleNotificationClick(notif)}
+                          className={`bg-white border p-6 rounded-2xl transition-all cursor-pointer hover:shadow-xl hover:shadow-primary/5 hover:border-primary/20 ${notif.is_read ? 'border-slate-100 opacity-80' : 'border-primary/30 shadow-md shadow-primary/5'}`}
+                        >
                           <div className="flex gap-4">
                             <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${notif.is_read ? 'bg-slate-50 text-slate-400' : 'bg-primary/10 text-primary'}`}>
                               <Bell size={24} />
                             </div>
-                            <div>
+                            <div className="flex-grow">
                               <div className="flex items-center justify-between mb-1">
                                 <h4 className="font-bold text-slate-900">{notif.title}</h4>
                                 <span className="text-xs text-slate-400 font-medium">{new Date(notif.created_at).toLocaleDateString()}</span>

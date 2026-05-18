@@ -260,7 +260,7 @@ export default function Checkout() {
         title: 'Order Confirmed! 🌿',
         message: `Your order #${order.order_number || String(order.id).slice(0, 8)} has been successfully placed and is being prepared.`,
         type: 'order_status',
-        link: '/profile?tab=orders'
+        link: `/profile?tab=orders&order=${order.order_number || String(order.id).slice(0, 8)}`
       });
 
       // Send Order Confirmation Email

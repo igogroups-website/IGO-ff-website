@@ -287,20 +287,33 @@ function NotificationsDrawer({ isOpen, onClose }: { isOpen: boolean, onClose: ()
               <p className="text-xs text-muted-foreground/60 mt-2 italic">You're all caught up with the farm!</p>
             </div>
           ) : (
-            notifications.map((notif) => (
-              <Link 
-                key={notif.id} 
-                href={notif.link || '/products'} 
-                onClick={onClose} 
-                className={`block p-5 rounded-2xl border transition-all group bg-white ${notif.is_read ? 'border-border opacity-70' : 'border-primary/20 shadow-lg shadow-primary/5'}`}
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-base font-black text-foreground group-hover:text-primary transition-colors pr-4">{notif.title}</h3>
-                  <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 bg-muted/30 px-2 py-0.5 rounded-full whitespace-nowrap">{getTimeAgo(notif.created_at)}</span>
-                </div>
-                <p className="text-sm text-muted-foreground font-medium leading-relaxed">{notif.message}</p>
-              </Link>
-            ))
+            notifications.map((notif) => {
+              let targetLink = notif.link || '/profile?tab=orders';
+              const match = notif.message?.match(/#([A-Za-z0-9-]+)/) || notif.title?.match(/#([A-Za-z0-9-]+)/);
+              if (match && (!notif.link || !notif.link.includes('order='))) {
+                targetLink = `/profile?tab=orders&order=${match[1]}`;
+              }
+              
+              return (
+                <Link 
+                  key={notif.id} 
+                  href={targetLink} 
+                  onClick={async () => {
+                    // Mark as read locally and in DB
+                    setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, is_read: true } : n));
+                    await supabase.from('notifications').update({ is_read: true }).eq('id', notif.id);
+                    onClose();
+                  }} 
+                  className={`block p-5 rounded-2xl border transition-all group bg-white ${notif.is_read ? 'border-border opacity-70' : 'border-primary/20 shadow-lg shadow-primary/5'}`}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-base font-black text-foreground group-hover:text-primary transition-colors pr-4">{notif.title}</h3>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 bg-muted/30 px-2 py-0.5 rounded-full whitespace-nowrap">{getTimeAgo(notif.created_at)}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground font-medium leading-relaxed">{notif.message}</p>
+                </Link>
+              );
+            })
           )}
         </div>
       </div>
