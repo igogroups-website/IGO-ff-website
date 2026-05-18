@@ -175,7 +175,7 @@ function ProductsContent() {
     const { data, error } = await getAllProducts();
     if (error) {
       console.error('Error fetching products:', error);
-      toast.error('Could not load products. Check database connection.');
+      toast.error(`Could not load products: ${error.message || JSON.stringify(error)}`);
     } else {
       setProducts(data || []);
     }
