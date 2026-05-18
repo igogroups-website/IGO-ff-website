@@ -197,7 +197,7 @@ export default function Checkout() {
         order_id: order.id,
         product_id: item.product_id,
         quantity: item.quantity,
-        price_at_purchase: item.products.price
+        unit_price: item.products.price
       }));
 
       const { error: itemsError } = await supabase.from('order_items').insert(orderItems);

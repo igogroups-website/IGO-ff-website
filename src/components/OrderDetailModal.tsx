@@ -118,8 +118,13 @@ export default function OrderDetailModal({ order, isOpen, onClose }: OrderDetail
     const { data } = await supabase
       .from('order_items')
       .select('*, products(*)')
-      .eq('order_id', order.id);
-    if (data) setOrderItems(data as OrderItem[]);
+    if (data) {
+      const normalized = data.map((item: any) => ({
+        ...item,
+        price_at_purchase: item.price_at_purchase ?? item.unit_price ?? 0
+      }));
+      setOrderItems(normalized as OrderItem[]);
+    }
     setLoading(false);
   }
 

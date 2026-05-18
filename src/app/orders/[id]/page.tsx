@@ -57,7 +57,13 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
           };
           setOrder(normalizedOrd);
           const { data: its } = await supabase.from('order_items').select('*, products(*)').eq('order_id', id);
-          if (its) setItems(its as OrderItem[]);
+          if (its) {
+            const normalized = its.map((item: any) => ({
+              ...item,
+              price_at_purchase: item.price_at_purchase ?? item.unit_price ?? 0
+            }));
+            setItems(normalized as OrderItem[]);
+          }
         }
       } catch (err) {
         console.error(err);

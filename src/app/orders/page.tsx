@@ -25,7 +25,11 @@ export default function Orders() {
       if (data) {
         const normalized = data.map((order: any) => ({
           ...order,
-          status: order.status?.toLowerCase() === 'placed' ? 'pending' : (order.status?.toLowerCase() || 'pending')
+          status: order.status?.toLowerCase() === 'placed' ? 'pending' : (order.status?.toLowerCase() || 'pending'),
+          order_items: (order.order_items || []).map((item: any) => ({
+            ...item,
+            price_at_purchase: item.price_at_purchase ?? item.unit_price ?? 0
+          }))
         }));
         setOrders(normalized);
       }

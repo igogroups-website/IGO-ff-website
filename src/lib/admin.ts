@@ -132,7 +132,10 @@ export async function getOrderDetails(orderId: string) {
     return [];
   }
 
-  return items;
+  return (items || []).map((item: any) => ({
+    ...item,
+    price_at_purchase: item.price_at_purchase ?? item.unit_price ?? 0
+  }));
 }
 
 export async function updateOrderStatus(orderId: string, status: string) {
@@ -429,13 +432,14 @@ export async function getCRMAnalytics() {
     const categoryRevenue: Record<string, number> = {};
     let totalRev = 0;
     
-    (orders || []).forEach(order => {
-      totalRev += Number(order.total_amount);
-      order.order_items?.forEach((item: any) => {
-        const cat = item.products?.category || 'Other';
-        categoryRevenue[cat] = (categoryRevenue[cat] || 0) + (item.price_at_purchase * item.quantity);
+      (orders || []).forEach(order => {
+        totalRev += Number(order.total_amount);
+        order.order_items?.forEach((item: any) => {
+          const cat = item.products?.category || 'Other';
+          const price = item.price_at_purchase ?? item.unit_price ?? 0;
+          categoryRevenue[cat] = (categoryRevenue[cat] || 0) + (price * item.quantity);
+        });
       });
-    });
 
     const categories = Object.entries(categoryRevenue).map(([name, rev]) => ({
       name,
