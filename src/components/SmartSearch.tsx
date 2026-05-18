@@ -37,28 +37,38 @@ export default function SmartSearch({ isSolid = false }: { isSolid?: boolean }) 
       recognitionRef.current.continuous = false;
       recognitionRef.current.interimResults = false;
       recognitionRef.current.lang = 'en-IN'; // Better for Indian accents (includes Tamil/Hindi context)
-
       recognitionRef.current.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         setQuery(transcript);
         setIsListening(false);
-        toast.success(`Searching for "${transcript}"`, { id: 'voice-search' });
+        toast.dismiss('voice-search');
+        toast.success(`Searching for "${transcript}"`, { id: 'voice-search-success' });
+        
+        // Let's not auto-push to products page if they just wanted to type, but since it's voice, it's fine.
+        // Actually, since they might just be exploring the dropdown, let's keep it simple.
       };
 
       recognitionRef.current.onerror = (event: any) => {
         console.warn('Speech recognition error:', event.error);
         setIsListening(false);
+        toast.dismiss('voice-search');
+        
         if (event.error === 'not-allowed') {
-          toast.error('Microphone access denied. Please enable it in browser settings.', { id: 'voice-search' });
+          toast.error('Microphone blocked. Click lock icon in URL bar and set Microphone to ALLOW.', { id: 'voice-search-error' });
         } else if (event.error === 'network') {
-          toast.error('Network error. Check your connection.', { id: 'voice-search' });
+          toast.error('Network error. Check your connection.', { id: 'voice-search-error' });
+        } else if (event.error === 'no-speech') {
+          toast.error('No speech detected. Please try again.', { id: 'voice-search-error' });
+        } else if (event.error === 'aborted') {
+          // Ignore aborted errors (happens when user manually stops)
         } else {
-          toast.error('Voice search failed. Please try again.', { id: 'voice-search' });
+          toast.error(`Voice search failed (${event.error}). Please try again.`, { id: 'voice-search-error' });
         }
       };
 
       recognitionRef.current.onend = () => {
         setIsListening(false);
+        toast.dismiss('voice-search');
       };
     }
 
@@ -113,20 +123,16 @@ export default function SmartSearch({ isSolid = false }: { isSolid?: boolean }) 
   };
 
   const handleVoiceSearch = () => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    
-    if (!SpeechRecognition) {
+    if (!recognitionRef.current) {
       toast.error('Voice search is not supported in this browser. Please try Google Chrome or Edge.', { id: 'voice-search' });
       return;
     }
 
     if (isListening) {
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-        } catch (e) {
-          console.warn(e);
-        }
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {
+        console.warn('Error stopping recognition:', e);
       }
       setIsListening(false);
       toast.dismiss('voice-search');
@@ -134,48 +140,12 @@ export default function SmartSearch({ isSolid = false }: { isSolid?: boolean }) 
     }
 
     try {
-      const recognition = new SpeechRecognition();
-      recognition.lang = 'en-IN'; // Optimized for Indian accents, supporting mixed English/Tamil/Hindi search
-      recognition.continuous = false;
-      recognition.interimResults = false;
-
-      recognition.onstart = () => {
-        setIsListening(true);
-        toast.loading('🎙️ Voice active. Speak now...', { id: 'voice-search' });
-      };
-
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setQuery(transcript);
-        setIsListening(false);
-        toast.dismiss('voice-search');
-        toast.success(`Searching for: "${transcript}"`, { id: 'voice-search-success' });
-        
-        // Push search query to the products listing page immediately
-        router.push(`/products?search=${encodeURIComponent(transcript)}`);
-      };
-
-      recognition.onerror = (event: any) => {
-        console.warn('Speech recognition error:', event.error);
-        setIsListening(false);
-        toast.dismiss('voice-search');
-        if (event.error === 'not-allowed') {
-          toast.error('Microphone blocked. Click lock icon in URL bar and set Microphone to ALLOW.', { id: 'voice-search-error' });
-        } else {
-          toast.error('Voice search failed. Please try again.', { id: 'voice-search-error' });
-        }
-      };
-
-      recognition.onend = () => {
-        setIsListening(false);
-      };
-
-      recognitionRef.current = recognition;
-      recognition.start();
+      recognitionRef.current.start();
+      setIsListening(true);
+      toast.loading('🎙️ Voice active. Speak now...', { id: 'voice-search' });
     } catch (err) {
-      console.error('Speech initialization error:', err);
-      setIsListening(false);
-      toast.error('Could not start voice search.');
+      console.error('Speech start error:', err);
+      // If it's already started, just ignore
     }
   };
 
