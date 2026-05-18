@@ -321,6 +321,33 @@ CREATE POLICY "reviews_all_admin"
 
 
 -- ─────────────────────────────────────────────────────────────
+-- STEP 15: STORAGE RLS POLICIES FOR "products" BUCKET
+-- Allow both authenticated and anonymous public users to upload/manage objects in the "products" bucket
+-- ─────────────────────────────────────────────────────────────
+
+-- 1. Ensure the bucket exists
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('products', 'products', true) 
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+-- 2. Drop existing policies to prevent conflicts
+DROP POLICY IF EXISTS "Public Access" ON storage.objects;
+DROP POLICY IF EXISTS "Public Uploads" ON storage.objects;
+DROP POLICY IF EXISTS "Public Updates" ON storage.objects;
+DROP POLICY IF EXISTS "Public Deletes" ON storage.objects;
+
+-- 3. Allow public SELECT access to anyone
+CREATE POLICY "Public Access" ON storage.objects FOR SELECT USING (bucket_id = 'products');
+
+-- 4. Allow uploads to the "products" bucket
+CREATE POLICY "Public Uploads" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'products');
+
+-- 5. Allow updates/deletes to objects in the "products" bucket
+CREATE POLICY "Public Updates" ON storage.objects FOR UPDATE USING (bucket_id = 'products');
+CREATE POLICY "Public Deletes" ON storage.objects FOR DELETE USING (bucket_id = 'products');
+
+
+-- ─────────────────────────────────────────────────────────────
 -- ALL DONE. If you see 0 errors above, the site will work.
--- ✅ Add to Basket  ✅ Place Order  ✅ Wishlist  ✅ Admin
+-- ✅ Add to Basket  ✅ Place Order  ✅ Wishlist  ✅ Admin  ✅ Storage
 -- ─────────────────────────────────────────────────────────────

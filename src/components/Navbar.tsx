@@ -92,7 +92,7 @@ export default function Navbar() {
                 FARMERS FACTORY
               </span>
               <span className={`text-[8px] font-black uppercase tracking-[0.3em] mt-1 ${isSolid ? 'text-primary/60' : 'text-white/60'}`}>
-                Purely Organic
+                {t('nav.tagline')}
               </span>
             </div>
           </Link>
@@ -177,12 +177,12 @@ export default function Navbar() {
                     {user.email?.[0].toUpperCase() || 'U'}
                   </div>
                   <div className="text-left hidden sm:block">
-                    <p className={`text-[9px] font-black uppercase tracking-widest leading-none mb-1 opacity-60`}>My Profile</p>
+                    <p className={`text-[9px] font-black uppercase tracking-widest leading-none mb-1 opacity-60`}>{t('nav.profile')}</p>
                     <p className={`text-xs font-bold leading-none truncate max-w-[80px]`}>{user.email?.split('@')[0]}</p>
                   </div>
                   <ChevronDown size={12} className="opacity-40 group-hover:opacity-100 transition-opacity ml-1" />
                 </button>
-
+ 
                 <div className="absolute right-0 mt-3 w-64 bg-white rounded-[2rem] shadow-2xl border border-border p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform origin-top-right scale-95 group-hover:scale-100 z-50">
                   <div className="flex flex-col gap-1">
                     <Link 
@@ -190,21 +190,21 @@ export default function Navbar() {
                       className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-primary/5 text-slate-700 hover:text-primary transition-all text-sm font-bold"
                     >
                       <Package size={18} className="text-primary/60" />
-                      My Orders
+                      {t('nav.orders')}
                     </Link>
                     <Link 
                       href="/profile?tab=addresses" 
                       className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-primary/5 text-slate-700 hover:text-primary transition-all text-sm font-bold"
                     >
                       <MapPin size={18} className="text-primary/60" />
-                      Saved Addresses
+                      {t('nav.addresses')}
                     </Link>
                     <Link 
                       href="/profile?tab=wallet" 
                       className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-primary/5 text-slate-700 hover:text-primary transition-all text-sm font-bold"
                     >
                       <Wallet size={18} className="text-primary/60" />
-                      FF Wallet
+                      {t('nav.wallet')}
                     </Link>
                     
                     <div className="h-[1px] bg-slate-100 my-2 mx-2" />
@@ -212,13 +212,13 @@ export default function Navbar() {
                     {user.email?.includes('admin') && (
                       <Link href="/admin" className="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/5 text-primary hover:bg-primary/10 transition-colors text-sm font-black uppercase tracking-wider mb-1">
                         <LayoutDashboard size={18} />
-                        Admin Dashboard
+                        {t('nav.admin')}
                       </Link>
                     )}
                     
                     <Link href="/profile?tab=settings" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-muted transition-colors text-sm font-bold text-slate-600">
                       <Settings size={18} />
-                      Settings
+                      {t('nav.settings')}
                     </Link>
                     
                     <button
@@ -226,7 +226,7 @@ export default function Navbar() {
                       className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-50 transition-colors text-sm font-bold text-red-500 mt-1"
                     >
                       <LogOut size={18} />
-                      Sign Out
+                      {t('nav.signout')}
                     </button>
                   </div>
                 </div>
@@ -236,7 +236,7 @@ export default function Navbar() {
                 href="/auth"
                 className="px-6 py-2.5 rounded-full bg-primary text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 font-black text-xs uppercase tracking-widest active:scale-95"
               >
-                Login
+                {t('nav.login')}
               </Link>
             )}
           </div>

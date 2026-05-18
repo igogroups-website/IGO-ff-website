@@ -113,60 +113,69 @@ export default function SmartSearch({ isSolid = false }: { isSolid?: boolean }) 
   };
 
   const handleVoiceSearch = () => {
-    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     
     if (!SpeechRecognition) {
-      toast.error('Voice search is not supported in this browser.', { id: 'voice-search' });
+      toast.error('Voice search is not supported in this browser. Please try Google Chrome or Edge.', { id: 'voice-search' });
       return;
     }
 
     if (isListening) {
-      if (recognitionRef.current) recognitionRef.current.stop();
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          console.warn(e);
+        }
+      }
       setIsListening(false);
+      toast.dismiss('voice-search');
       return;
     }
 
     try {
       const recognition = new SpeechRecognition();
-      recognition.lang = 'en-IN';
+      recognition.lang = 'en-IN'; // Optimized for Indian accents, supporting mixed English/Tamil/Hindi search
       recognition.continuous = false;
       recognition.interimResults = false;
 
       recognition.onstart = () => {
         setIsListening(true);
-        toast.loading('Voice active. Say a product...', { id: 'voice-search' });
+        toast.loading('🎙️ Voice active. Speak now...', { id: 'voice-search' });
       };
 
       recognition.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         setQuery(transcript);
-        
-        // Finalize search instantly
-        recognition.stop();
         setIsListening(false);
-        setIsOpen(true);
-        toast.dismiss('voice-search'); // Clear the loading toast immediately
-        toast.success(`Found: "${transcript}"`, { id: 'voice-search-success' });
+        toast.dismiss('voice-search');
+        toast.success(`Searching for: "${transcript}"`, { id: 'voice-search-success' });
+        
+        // Push search query to the products listing page immediately
+        router.push(`/products?search=${encodeURIComponent(transcript)}`);
       };
 
       recognition.onerror = (event: any) => {
+        console.warn('Speech recognition error:', event.error);
         setIsListening(false);
-        toast.dismiss('voice-search'); // Clear the loading toast on error
+        toast.dismiss('voice-search');
         if (event.error === 'not-allowed') {
-          toast.error('Mic blocked. Click Lock in URL bar to ALLOW.', { id: 'voice-search-error' });
+          toast.error('Microphone blocked. Click lock icon in URL bar and set Microphone to ALLOW.', { id: 'voice-search-error' });
+        } else {
+          toast.error('Voice search failed. Please try again.', { id: 'voice-search-error' });
         }
       };
 
       recognition.onend = () => {
         setIsListening(false);
-        recognitionRef.current = null;
       };
 
       recognitionRef.current = recognition;
       recognition.start();
     } catch (err) {
-      console.error('Voice error:', err);
+      console.error('Speech initialization error:', err);
       setIsListening(false);
+      toast.error('Could not start voice search.');
     }
   };
 

@@ -10,12 +10,14 @@ import { toast } from 'react-hot-toast';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense } from 'react';
+import { useTranslation } from '@/context/TranslationContext';
 
 import { VERIFIED_INVENTORY } from '@/lib/constants';
 import Footer from '@/components/Footer';
 import ThreeHero from '@/components/ThreeHero';
 
 function ProductsContent() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const [products, setProducts] = useState<any[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
@@ -25,6 +27,15 @@ function ProductsContent() {
   const [priceRange, setPriceRange] = useState(2000);
 
   const categories = ['All', 'Seasonal', 'Fruits', 'Vegetables', 'Valluvam Products'];
+
+  const getCategoryTranslation = (cat: string) => {
+    if (cat === 'All') return t('products.all');
+    if (cat === 'Seasonal') return t('products.categories.seasonal');
+    if (cat === 'Fruits') return t('products.fruits');
+    if (cat === 'Vegetables') return t('products.vegetables');
+    if (cat === 'Valluvam Products') return t('products.categories.valluvam');
+    return cat;
+  };
 
   // Sync category and search state with URL params
   useEffect(() => {
@@ -166,15 +177,15 @@ function ProductsContent() {
             <div className="max-w-2xl">
               <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full font-black text-[10px] mb-6 uppercase tracking-[0.3em] backdrop-blur-md border border-primary/20">
                 <Leaf size={14} />
-                <span>Premium Harvest Catalog</span>
+                <span>{t('products.hero.badge')}</span>
               </div>
               <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter uppercase leading-[0.9]">
-                Purely <br/>
-                <span className="text-primary italic font-serif lowercase">Organic</span> <br/>
-                <span className="text-slate-800">Harvest</span>
+                {t('products.hero.title1')} <br/>
+                <span className="text-primary italic font-serif lowercase">{t('products.hero.title2')}</span> <br/>
+                <span className="text-slate-800">{t('products.hero.title3')}</span>
               </h1>
               <p className="text-slate-600 font-medium mt-8 text-lg md:text-xl max-w-md leading-relaxed">
-                Experience the true taste of nature with our {products.length}+ live products, harvested directly from our farms to your door.
+                {t('products.hero.desc').replace('products', `${products.length}+`)}
               </p>
             </div>
             
@@ -185,8 +196,8 @@ function ProductsContent() {
                     <Star size={24} className="fill-white" />
                   </div>
                   <div>
-                    <h4 className="font-black text-slate-900 uppercase tracking-tighter">Certified Quality</h4>
-                    <p className="text-xs font-bold text-slate-500">100% Pesticide Free</p>
+                    <h4 className="font-black text-slate-900 uppercase tracking-tighter">{t('products.certified.title')}</h4>
+                    <p className="text-xs font-bold text-slate-500">{t('products.certified.sub')}</p>
                   </div>
                 </div>
                 <div className="h-px bg-slate-200/50 my-6" />
@@ -195,8 +206,8 @@ function ProductsContent() {
                     <Leaf size={24} />
                   </div>
                   <div>
-                    <h4 className="font-black text-slate-900 uppercase tracking-tighter">Eco Friendly</h4>
-                    <p className="text-xs font-bold text-slate-500">Zero Waste Packaging</p>
+                    <h4 className="font-black text-slate-900 uppercase tracking-tighter">{t('products.eco.title')}</h4>
+                    <p className="text-xs font-bold text-slate-500">{t('products.eco.sub')}</p>
                   </div>
                 </div>
               </div>
@@ -214,7 +225,7 @@ function ProductsContent() {
                     : 'bg-white/60 text-slate-500 border border-slate-200/50 hover:bg-white hover:text-primary hover:border-primary/30'
                 }`}
               >
-                {cat}
+                {getCategoryTranslation(cat)}
               </button>
             ))}
           </div>
@@ -225,17 +236,17 @@ function ProductsContent() {
         <div className="flex flex-col lg:flex-row gap-12 lg:gap-16">
           <aside className="w-full lg:w-72 space-y-12 h-fit lg:sticky lg:top-32">
             <div>
-              <div className="flex items-center gap-3 mb-8"><div className="w-8 h-8 bg-primary/10 text-primary rounded-lg flex items-center justify-center"><Filter size={18} /></div><h3 className="text-xl font-black tracking-tight">Categories</h3></div>
+              <div className="flex items-center gap-3 mb-8"><div className="w-8 h-8 bg-primary/10 text-primary rounded-lg flex items-center justify-center"><Filter size={18} /></div><h3 className="text-xl font-black tracking-tight">{t('products.categories')}</h3></div>
               <div className="space-y-1">
                 {categories.map((cat) => (
                   <button key={cat} onClick={() => setCategory(cat)} className={`w-full text-left px-5 py-3.5 rounded-2xl transition-all duration-300 font-bold flex items-center justify-between group ${category === cat ? 'bg-primary text-white shadow-xl' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'}`}>
-                    <div className="flex items-center gap-3">{cat === 'Seasonal' && <Star size={16} className={category === 'Seasonal' ? 'text-white' : 'text-accent'} />}{cat}</div>
+                    <div className="flex items-center gap-3">{cat === 'Seasonal' && <Star size={16} className={category === 'Seasonal' ? 'text-white' : 'text-accent'} />}{getCategoryTranslation(cat)}</div>
                   </button>
                 ))}
               </div>
             </div>
             <div className="bg-white p-8 rounded-[2rem] border border-border shadow-sm">
-              <h3 className="text-lg font-black mb-6">Price Range</h3>
+              <h3 className="text-lg font-black mb-6">{t('products.sidebar.price')}</h3>
               <input type="range" min="0" max="2000" step="10" value={priceRange} onChange={(e) => setPriceRange(parseInt(e.target.value))} className="w-full accent-primary h-1.5 bg-muted rounded-full appearance-none cursor-pointer mb-4" />
               <div className="flex justify-between text-xs font-black text-muted-foreground uppercase tracking-widest"><span>₹0</span><span className="text-primary">Up to ₹{priceRange}</span></div>
             </div>
@@ -245,7 +256,7 @@ function ProductsContent() {
             <div className="flex flex-col md:flex-row gap-6 items-center mb-12">
               <div className="relative flex-1 w-full">
                 <div className="absolute left-6 top-1/2 -translate-y-1/2 text-muted-foreground/60"><Search size={22} /></div>
-                <input type="text" placeholder="Search fresh products..." className="w-full bg-white border border-border/60 rounded-[1.5rem] py-5 pl-16 pr-16 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all text-lg shadow-sm" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                <input type="text" placeholder={t('products.search.placeholder')} className="w-full bg-white border border-border/60 rounded-[1.5rem] py-5 pl-16 pr-16 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all text-lg shadow-sm" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                 {searchQuery && (
                   <button 
                     onClick={() => setSearchQuery('')}
