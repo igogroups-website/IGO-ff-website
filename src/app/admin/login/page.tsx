@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Leaf, Lock, User, ArrowRight, Loader2, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getAdminPassword } from '@/lib/admin';
+import { supabase } from '@/lib/supabase';
 
 export default function AdminLogin() {
   const [password, setPassword] = useState('');
@@ -23,14 +24,25 @@ export default function AdminLogin() {
 
     const correctPassword = await getAdminPassword();
     if (password === correctPassword) {
-      // Set session in both cookie (for middleware) and localStorage (for UI)
+      // 1. Authenticate with Supabase Auth for RLS policies!
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: 'admin@farmersfactory.com',
+        password: 'AdminPassword123!',
+      });
+
+      if (authError) {
+        console.error('Supabase Auth failed:', authError);
+        toast.error('System synchronization failed. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+      // 2. Set legacy UI sessions
       document.cookie = "admin_auth=true; path=/; max-age=86400; SameSite=Strict";
       localStorage.setItem('admin_auth', 'true');
       
       toast.success('Access Granted. Welcome back, Admin.');
       
-      // Use window.location for a more robust redirection that ensures 
-      // the layout picks up the fresh localStorage state
       setTimeout(() => {
         window.location.href = '/admin';
       }, 500);

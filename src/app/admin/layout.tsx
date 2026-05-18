@@ -110,7 +110,14 @@ export default function AdminLayout({
     );
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Clear Supabase session
+    try {
+      const { supabase } = await import('@/lib/supabase');
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error('Supabase sign out error', e);
+    }
     // Clear both cookie and localStorage
     document.cookie = "admin_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Strict";
     localStorage.removeItem('admin_auth');
@@ -199,11 +206,7 @@ export default function AdminLayout({
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3">
               <button 
-                onClick={() => {
-                  localStorage.removeItem('admin_auth');
-                  document.cookie = "admin_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-                  window.location.href = '/admin/login';
-                }}
+                onClick={handleLogout}
                 className="p-3 bg-muted/50 text-muted-foreground hover:bg-red-500 hover:text-white rounded-2xl transition-all group"
                 title="Lock Dashboard"
               >
