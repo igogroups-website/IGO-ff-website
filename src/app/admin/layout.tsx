@@ -135,6 +135,7 @@ export default function AdminLayout({
     { name: 'Dashboard', icon: <LayoutDashboard size={20} />, href: '/admin' },
     { name: 'Orders', icon: <ShoppingBag size={20} />, href: '/admin/orders' },
     { name: 'Products', icon: <Package size={20} />, href: '/admin/products' },
+    { name: 'Customers', icon: <Users size={20} />, href: '/admin/customers' },
     { name: 'Inventory', icon: <Zap size={20} />, href: '/admin/inventory' },
     { name: 'Banners', icon: <ImageIcon size={20} />, href: '/admin/banners' },
     { name: 'Live Streams', icon: <Video size={20} />, href: '/admin/streams' },
@@ -142,7 +143,6 @@ export default function AdminLayout({
     { name: 'Coupons', icon: <Ticket size={20} />, href: '/admin/coupons' },
     { name: 'Farmers', icon: <User size={20} />, href: '/admin/farmers' },
     { name: 'Reviews', icon: <MessageSquare size={20} />, href: '/admin/reviews' },
-    { name: 'Customers', icon: <Users size={20} />, href: '/admin/customers' },
     { name: 'Settings', icon: <Settings size={20} />, href: '/admin/settings' },
     { name: 'Back to Store', icon: <Leaf size={20} />, href: '/' },
   ];

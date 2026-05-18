@@ -30,26 +30,25 @@ export default function AdminCustomersPage() {
   const fetchCustomers = async () => {
     try {
       setLoading(true);
-      // Fetch profiles with a count of their orders
-      const { data, error } = await supabase
-        .from('profiles')
-        .select(`
-          *,
-          orders (
-            id,
-            total_amount
-          )
-        `)
-        .order('created_at', { ascending: false });
+      // Fetch profiles and orders separately to avoid relation mapping issues in Supabase
+      const [profilesRes, ordersRes] = await Promise.all([
+        supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+        supabase.from('orders').select('id, user_id, total_amount')
+      ]);
       
-      if (error) throw error;
+      if (profilesRes.error) throw profilesRes.error;
+      if (ordersRes.error) throw ordersRes.error;
       
+      const profiles = profilesRes.data || [];
+      const orders = ordersRes.data || [];
+
       // Process data for CRM
-      const processed = (data || []).map(c => {
-        const userOrders = c.orders || [];
+      const processed = profiles.map(c => {
+        const userOrders = orders.filter(o => String(o.user_id) === String(c.id));
         const totalSpend = userOrders.reduce((acc: number, o: any) => acc + (Number(o.total_amount) || 0), 0);
         return {
           ...c,
+          orders: userOrders,
           order_count: userOrders.length,
           ltv: totalSpend,
           impact: userOrders.length * 1.5 // Mock impact based on real order count (1.5kg per order)

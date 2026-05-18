@@ -40,174 +40,176 @@ export default function Navbar() {
   const isSolid = scrolled || !isHomePage;
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out ${
-      isSolid 
-        ? 'bg-white/95 backdrop-blur-2xl border-b border-slate-100 shadow-xl py-3 text-foreground' 
-        : 'bg-transparent py-6 text-white'
-    }`}>
-      <div className="container mx-auto px-6 lg:px-12 flex items-center justify-between">
-        {/* Brand Logo & Name */}
-        <Link href="/" className="flex items-center gap-3 group">
-          <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 group-hover:scale-110 shadow-xl overflow-hidden border ${isSolid ? 'bg-[#1a4d36] border-primary/10' : 'bg-[#1a4d36] border-white/20'}`}>
-            <img src="/logo.png" alt="Logo" className="w-[220%] h-[220%] max-w-none object-contain -mb-6" />
-          </div>
-          <div className="flex flex-col">
-            <span className={`text-xl font-black tracking-tighter uppercase leading-none ${isSolid ? 'text-primary' : 'text-white'}`}>
-              FARMERS FACTORY
-            </span>
-            <span className={`text-[8px] font-black uppercase tracking-[0.3em] mt-1 ${isSolid ? 'text-primary/60' : 'text-white/60'}`}>
-              Purely Organic
-            </span>
-          </div>
-        </Link>
+    <>
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out ${
+        isSolid 
+          ? 'bg-white/95 backdrop-blur-2xl border-b border-slate-100 shadow-xl py-3 text-foreground' 
+          : 'bg-transparent py-6 text-white'
+      }`}>
+        <div className="container mx-auto px-6 lg:px-12 flex items-center justify-between">
+          {/* Brand Logo & Name */}
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 group-hover:scale-110 shadow-xl overflow-hidden border ${isSolid ? 'bg-[#1a4d36] border-primary/10' : 'bg-[#1a4d36] border-white/20'}`}>
+              <img src="/logo.png" alt="Logo" className="w-[220%] h-[220%] max-w-none object-contain -mb-6" />
+            </div>
+            <div className="flex flex-col">
+              <span className={`text-xl font-black tracking-tighter uppercase leading-none ${isSolid ? 'text-primary' : 'text-white'}`}>
+                FARMERS FACTORY
+              </span>
+              <span className={`text-[8px] font-black uppercase tracking-[0.3em] mt-1 ${isSolid ? 'text-primary/60' : 'text-white/60'}`}>
+                Purely Organic
+              </span>
+            </div>
+          </Link>
 
-        {/* Integrated Smart Search */}
-        <div className="hidden lg:flex flex-1 max-w-xl mx-16">
-          <SmartSearch isSolid={isSolid} />
-        </div>
-
-        {/* Actions Section */}
-        <div className="flex items-center gap-2 sm:gap-6">
-          {/* Language Switcher - Minimalist */}
-          <div className="relative">
-            <button
-              onClick={() => setIsLangOpen(!isLangOpen)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all font-black text-xs uppercase tracking-widest ${isSolid ? 'hover:bg-primary/5 text-foreground/80' : 'hover:bg-white/10 text-white'}`}
-            >
-              <Globe size={18} strokeWidth={1.5} />
-              <span className="hidden md:inline">{languages.find(l => l.code === language)?.native}</span>
-            </button>
-
-            <AnimatePresence>
-              {isLangOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute right-0 mt-3 w-40 bg-white rounded-2xl shadow-2xl border border-border p-2 z-50"
-                >
-                  {languages.map((lang) => (
-                    <button
-                      key={lang.code}
-                      onClick={() => {
-                        setLanguage(lang.code as any);
-                        setIsLangOpen(false);
-                      }}
-                      className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl transition-all ${
-                        language === lang.code ? 'bg-primary text-white font-black' : 'hover:bg-muted font-bold text-muted-foreground'
-                      }`}
-                    >
-                      <span className="text-xs">{lang.name}</span>
-                      <span className="text-[10px] opacity-60 uppercase">{lang.code}</span>
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
+          {/* Integrated Smart Search */}
+          <div className="hidden lg:flex flex-1 max-w-xl mx-16">
+            <SmartSearch isSolid={isSolid} />
           </div>
 
-          {/* Action Icons */}
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setIsNotificationsOpen(true)}
-              className={`p-2.5 rounded-xl transition-all relative group ${isSolid ? 'hover:bg-primary/5 text-foreground' : 'hover:bg-white/10 text-white'}`}
-            >
-              <Bell size={22} strokeWidth={1.5} />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white animate-pulse" />
-            </button>
-
-            <Link
-              href="/cart"
-              className={`p-2.5 rounded-xl transition-all relative group ${isSolid ? 'hover:bg-primary/5 text-foreground' : 'hover:bg-white/10 text-white'}`}
-            >
-              <ShoppingCart size={22} strokeWidth={1.5} />
-              {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-primary text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-lg px-1">
-                  {cartCount}
-                </span>
-              )}
-            </Link>
-          </div>
-
-          {/* Profile Section */}
-          <div className="h-8 w-[1px] bg-border/20 hidden sm:block mx-2" />
-
-          {user ? (
-            <div className="relative group">
-              <button className={`flex items-center gap-2 p-1 pr-4 rounded-full border transition-all duration-300 ${isSolid ? 'bg-white border-slate-100 hover:shadow-md' : 'bg-white/10 border-white/20 text-white hover:bg-white/20'}`}>
-                <div className="w-9 h-9 bg-primary/10 text-primary rounded-full flex items-center justify-center overflow-hidden border border-primary/20">
-                  {user.email?.[0].toUpperCase() || 'U'}
-                </div>
-                <div className="text-left hidden sm:block">
-                  <p className={`text-[9px] font-black uppercase tracking-widest leading-none mb-1 opacity-60`}>My Profile</p>
-                  <p className={`text-xs font-bold leading-none truncate max-w-[80px]`}>{user.email?.split('@')[0]}</p>
-                </div>
-                <ChevronDown size={12} className="opacity-40 group-hover:opacity-100 transition-opacity ml-1" />
+          {/* Actions Section */}
+          <div className="flex items-center gap-2 sm:gap-6">
+            {/* Language Switcher - Minimalist */}
+            <div className="relative">
+              <button
+                onClick={() => setIsLangOpen(!isLangOpen)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all font-black text-xs uppercase tracking-widest ${isSolid ? 'hover:bg-primary/5 text-foreground/80' : 'hover:bg-white/10 text-white'}`}
+              >
+                <Globe size={18} strokeWidth={1.5} />
+                <span className="hidden md:inline">{languages.find(l => l.code === language)?.native}</span>
               </button>
 
-              <div className="absolute right-0 mt-3 w-64 bg-white rounded-[2rem] shadow-2xl border border-border p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform origin-top-right scale-95 group-hover:scale-100 z-50">
-                <div className="flex flex-col gap-1">
-                  <Link 
-                    href="/profile?tab=orders" 
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-primary/5 text-slate-700 hover:text-primary transition-all text-sm font-bold"
+              <AnimatePresence>
+                {isLangOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute right-0 mt-3 w-40 bg-white rounded-2xl shadow-2xl border border-border p-2 z-50"
                   >
-                    <Package size={18} className="text-primary/60" />
-                    My Orders
-                  </Link>
-                  <Link 
-                    href="/profile?tab=addresses" 
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-primary/5 text-slate-700 hover:text-primary transition-all text-sm font-bold"
-                  >
-                    <MapPin size={18} className="text-primary/60" />
-                    Saved Addresses
-                  </Link>
-                  <Link 
-                    href="/profile?tab=wallet" 
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-primary/5 text-slate-700 hover:text-primary transition-all text-sm font-bold"
-                  >
-                    <Wallet size={18} className="text-primary/60" />
-                    FF Wallet
-                  </Link>
-                  
-                  <div className="h-[1px] bg-slate-100 my-2 mx-2" />
-                  
-                  {user.email?.includes('admin') && (
-                    <Link href="/admin" className="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/5 text-primary hover:bg-primary/10 transition-colors text-sm font-black uppercase tracking-wider mb-1">
-                      <LayoutDashboard size={18} />
-                      Admin Dashboard
+                    {languages.map((lang) => (
+                      <button
+                        key={lang.code}
+                        onClick={() => {
+                          setLanguage(lang.code as any);
+                          setIsLangOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl transition-all ${
+                          language === lang.code ? 'bg-primary text-white font-black' : 'hover:bg-muted font-bold text-muted-foreground'
+                        }`}
+                      >
+                        <span className="text-xs">{lang.name}</span>
+                        <span className="text-[10px] opacity-60 uppercase">{lang.code}</span>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Action Icons */}
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setIsNotificationsOpen(true)}
+                className={`p-2.5 rounded-xl transition-all relative group ${isSolid ? 'hover:bg-primary/5 text-foreground' : 'hover:bg-white/10 text-white'}`}
+              >
+                <Bell size={22} strokeWidth={1.5} />
+                <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white animate-pulse" />
+              </button>
+
+              <Link
+                href="/cart"
+                className={`p-2.5 rounded-xl transition-all relative group ${isSolid ? 'hover:bg-primary/5 text-foreground' : 'hover:bg-white/10 text-white'}`}
+              >
+                <ShoppingCart size={22} strokeWidth={1.5} />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-primary text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-lg px-1">
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
+            </div>
+
+            {/* Profile Section */}
+            <div className="h-8 w-[1px] bg-border/20 hidden sm:block mx-2" />
+
+            {user ? (
+              <div className="relative group">
+                <button className={`flex items-center gap-2 p-1 pr-4 rounded-full border transition-all duration-300 ${isSolid ? 'bg-white border-slate-100 hover:shadow-md' : 'bg-white/10 border-white/20 text-white hover:bg-white/20'}`}>
+                  <div className="w-9 h-9 bg-primary/10 text-primary rounded-full flex items-center justify-center overflow-hidden border border-primary/20">
+                    {user.email?.[0].toUpperCase() || 'U'}
+                  </div>
+                  <div className="text-left hidden sm:block">
+                    <p className={`text-[9px] font-black uppercase tracking-widest leading-none mb-1 opacity-60`}>My Profile</p>
+                    <p className={`text-xs font-bold leading-none truncate max-w-[80px]`}>{user.email?.split('@')[0]}</p>
+                  </div>
+                  <ChevronDown size={12} className="opacity-40 group-hover:opacity-100 transition-opacity ml-1" />
+                </button>
+
+                <div className="absolute right-0 mt-3 w-64 bg-white rounded-[2rem] shadow-2xl border border-border p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform origin-top-right scale-95 group-hover:scale-100 z-50">
+                  <div className="flex flex-col gap-1">
+                    <Link 
+                      href="/profile?tab=orders" 
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-primary/5 text-slate-700 hover:text-primary transition-all text-sm font-bold"
+                    >
+                      <Package size={18} className="text-primary/60" />
+                      My Orders
                     </Link>
-                  )}
-                  
-                  <Link href="/profile?tab=settings" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-muted transition-colors text-sm font-bold text-slate-600">
-                    <Settings size={18} />
-                    Settings
-                  </Link>
-                  
-                  <button
-                    onClick={signOut}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-50 transition-colors text-sm font-bold text-red-500 mt-1"
-                  >
-                    <LogOut size={18} />
-                    Sign Out
-                  </button>
+                    <Link 
+                      href="/profile?tab=addresses" 
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-primary/5 text-slate-700 hover:text-primary transition-all text-sm font-bold"
+                    >
+                      <MapPin size={18} className="text-primary/60" />
+                      Saved Addresses
+                    </Link>
+                    <Link 
+                      href="/profile?tab=wallet" 
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-primary/5 text-slate-700 hover:text-primary transition-all text-sm font-bold"
+                    >
+                      <Wallet size={18} className="text-primary/60" />
+                      FF Wallet
+                    </Link>
+                    
+                    <div className="h-[1px] bg-slate-100 my-2 mx-2" />
+                    
+                    {user.email?.includes('admin') && (
+                      <Link href="/admin" className="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/5 text-primary hover:bg-primary/10 transition-colors text-sm font-black uppercase tracking-wider mb-1">
+                        <LayoutDashboard size={18} />
+                        Admin Dashboard
+                      </Link>
+                    )}
+                    
+                    <Link href="/profile?tab=settings" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-muted transition-colors text-sm font-bold text-slate-600">
+                      <Settings size={18} />
+                      Settings
+                    </Link>
+                    
+                    <button
+                      onClick={signOut}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-50 transition-colors text-sm font-bold text-red-500 mt-1"
+                    >
+                      <LogOut size={18} />
+                      Sign Out
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ) : (
-            <Link
-              href="/auth"
-              className="px-6 py-2.5 rounded-full bg-primary text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 font-black text-xs uppercase tracking-widest active:scale-95"
-            >
-              Login
-            </Link>
-          )}
+            ) : (
+              <Link
+                href="/auth"
+                className="px-6 py-2.5 rounded-full bg-primary text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 font-black text-xs uppercase tracking-widest active:scale-95"
+              >
+                Login
+              </Link>
+            )}
+          </div>
         </div>
-      </div>
+      </nav>
 
       <CartDrawer isOpen={isCartOpen} onClose={closeCart} />
       <WishlistDrawer />
       <NotificationsDrawer isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} />
-    </nav>
+    </>
   );
 }
 
