@@ -36,6 +36,7 @@ export default function AdminLayout({
   const [mounted, setMounted] = React.useState(false);
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
   const [isSessionReady, setIsSessionReady] = React.useState(false);
+  const [isAuthChecked, setIsAuthChecked] = React.useState(false);
   const [showNotifications, setShowNotifications] = React.useState(false);
   const [notifications, setNotifications] = React.useState<any[]>([]);
 
@@ -81,7 +82,10 @@ export default function AdminLayout({
       // Silent Supabase Authentication Fallback (if they didn't go through login page)
       if (isAuth) {
         const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
+        if (!session || session.user.email !== 'admin@farmersfactory.com') {
+          if (session) {
+            await supabase.auth.signOut();
+          }
           await supabase.auth.signInWithPassword({
             email: 'admin@farmersfactory.com',
             password: 'AdminPassword123!'
@@ -91,6 +95,8 @@ export default function AdminLayout({
       } else {
         setIsSessionReady(true);
       }
+      
+      setIsAuthChecked(true);
     };
 
     checkAuth();
@@ -117,8 +123,8 @@ export default function AdminLayout({
   }, [pathname, router, fetchNotifications]);
 
   // Prevent hydration mismatch by returning a simple loader until mounted
-  // Also wait for the secure database session to be ready before rendering child pages to prevent RLS errors!
-  if (!mounted || (isAuthenticated && !isSessionReady)) {
+  // Also wait for the secure database session to be completely checked before rendering child pages to prevent RLS errors!
+  if (!mounted || !isAuthChecked || (isAuthenticated && !isSessionReady)) {
     return (
       <div className="min-h-screen bg-muted/20 flex flex-col gap-4 items-center justify-center">
         <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
