@@ -111,7 +111,7 @@ function buildHtml(template: string, data: any): string {
         <h2 style="color:#E75129;margin-top:0;">Order Confirmed! ✅</h2>
         <p style="color:#555;">Thank you for your order. Our farmers are preparing your fresh harvest right now.</p>
         <div style="background:#f9f9f9;padding:20px;border-radius:8px;margin:20px 0;">
-          <p style="margin:8px 0;"><strong>Order ID:</strong> #${data.orderId?.slice(0, 8) || 'N/A'}</p>
+          <p style="margin:8px 0;"><strong>Order Number:</strong> #${data.orderNumber || data.orderId?.slice(0, 8) || 'N/A'}</p>
           <p style="margin:8px 0;"><strong>Total:</strong> ₹${data.total}</p>
           <p style="margin:8px 0;"><strong>Date:</strong> ${data.date || new Date().toLocaleDateString()}</p>
           <p style="margin:8px 0;"><strong>Delivery:</strong> Within 24 hours</p>
@@ -135,7 +135,7 @@ function buildHtml(template: string, data: any): string {
         <h2 style="color:#E75129;margin-top:0;">Order Update ${emoji}</h2>
         <p style="color:#555;">Your order status has been updated.</p>
         <div style="background:#f9f9f9;padding:20px;border-radius:8px;margin:20px 0;">
-          <p style="margin:8px 0;"><strong>Order ID:</strong> #${data.orderId?.slice(0, 8) || 'N/A'}</p>
+          <p style="margin:8px 0;"><strong>Order Number:</strong> #${data.orderNumber || data.orderId?.slice(0, 8) || 'N/A'}</p>
           <p style="margin:8px 0;"><strong>New Status:</strong>
             <span style="color:#E75129;font-weight:bold;">${statusTitle}</span>
           </p>

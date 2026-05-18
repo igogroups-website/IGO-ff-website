@@ -178,7 +178,7 @@ export default function Checkout() {
       }
 
       // Generate professional order number
-      const orderNumber = 'FF-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+      const orderNumber = 'FF-' + Math.floor(100000 + Math.random() * 900000).toString();
 
       // Create Order
       // 1. Sync user to public.users table to satisfy the database foreign key constraint
@@ -265,7 +265,7 @@ export default function Checkout() {
 
       // Send Order Confirmation Email
       import('@/lib/email').then(({ sendOrderConfirmation }) => {
-        sendOrderConfirmation(user.email || address.name, order.id, total);
+        sendOrderConfirmation(user.email || address.name, order.id, total, order.order_number);
       });
 
       router.push(`/checkout/success?id=${order.id}`);

@@ -58,12 +58,12 @@ export const sendLiveEmail = async ({ to, subject, template, data }: EmailData) 
 
 // ─── Helper Functions ─────────────────────────────────────────
 
-export const sendOrderConfirmation = (email: string, orderId: string, total: number) =>
+export const sendOrderConfirmation = (email: string, orderId: string, total: number, orderNumber?: string) =>
   sendLiveEmail({
     to: email,
-    subject: `Order Confirmed ✅ #${orderId.slice(0, 8)} — Farmers Factory`,
+    subject: `Order Confirmed ✅ #${orderNumber || orderId.slice(0, 8)} — Farmers Factory`,
     template: 'order_confirmation',
-    data: { orderId, total, date: new Date().toLocaleDateString('en-IN') },
+    data: { orderId, orderNumber: orderNumber || orderId.slice(0, 8), total, date: new Date().toLocaleDateString('en-IN') },
   });
 
 export const sendWelcomeEmail = (email: string, name: string) =>
@@ -82,10 +82,10 @@ export const sendOTPEmail = (email: string, code: string) =>
     data: { code },
   });
 
-export const sendOrderStatusEmail = (email: string, orderId: string, status: string) =>
+export const sendOrderStatusEmail = (email: string, orderId: string, status: string, orderNumber?: string) =>
   sendLiveEmail({
     to: email,
-    subject: `Order Update: ${status.toUpperCase()} — Farmers Factory`,
+    subject: `Order Update: ${status.toUpperCase()} #${orderNumber || orderId.slice(0, 8)} — Farmers Factory`,
     template: `order_${status}` as any,
-    data: { orderId, status },
+    data: { orderId, orderNumber: orderNumber || orderId.slice(0, 8), status },
   });

@@ -61,6 +61,16 @@ function OrderCard({ order, onViewDetails }: { order: any, onViewDetails: (order
 }
 
 export default function ProfilePage() {
+  const tabs = [
+    { id: 'orders', label: 'Orders', icon: Package },
+    { id: 'inbox', label: 'Inbox', icon: Bell },
+    { id: 'wallet', label: 'FF Wallet', icon: Wallet },
+    { id: 'addresses', label: 'Addresses', icon: MapPin },
+    { id: 'favorites', label: 'Favorites', icon: Heart },
+    { id: 'help', label: 'Help & Support', icon: HelpCircle },
+    { id: 'settings', label: 'Settings', icon: Settings },
+  ];
+
   const { user, loading: authLoading, signOut } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [orders, setOrders] = useState<any[]>([]);
@@ -105,8 +115,12 @@ export default function ProfilePage() {
           console.warn('Profile fetch notice:', profileRes.error.message);
         }
         
+        const normalizedOrders = (ordersRes.data || []).map((order: any) => ({
+          ...order,
+          status: order.status?.toLowerCase() === 'placed' ? 'pending' : (order.status?.toLowerCase() || 'pending')
+        }));
         setProfile(profileRes.data || null);
-        setOrders(ordersRes.data || []);
+        setOrders(normalizedOrders);
         setNotifications(notifRes.data || []);
       } catch (err) {
         console.error('Data sync error:', err);
@@ -120,15 +134,7 @@ export default function ProfilePage() {
 
   if (authLoading || loading) return <div className="min-h-screen flex items-center justify-center bg-white"><div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" /></div>;
 
-  const tabs = [
-    { id: 'orders', label: 'Orders', icon: Package },
-    { id: 'inbox', label: 'Inbox', icon: Bell },
-    { id: 'wallet', label: 'FF Wallet', icon: Wallet },
-    { id: 'addresses', label: 'Addresses', icon: MapPin },
-    { id: 'favorites', label: 'Favorites', icon: Heart },
-    { id: 'help', label: 'Help & Support', icon: HelpCircle },
-    { id: 'settings', label: 'Settings', icon: Settings },
-  ];
+
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900 selection:bg-primary/20 selection:text-primary pb-20">

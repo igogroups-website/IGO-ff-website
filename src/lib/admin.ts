@@ -99,22 +99,29 @@ export async function getAllOrders() {
 
     if (!orders || orders.length === 0) return [];
 
-    // Fetch profiles for these orders
+    // Fetch profiles and users concurrently for these orders
     const userIds = [...new Set(orders.map(o => o.user_id))];
-    const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id, full_name, avatar_url, email') 
-      .in('id', userIds);
+    const [profilesRes, usersRes] = await Promise.all([
+      supabase.from('profiles').select('id, full_name, avatar_url, email').in('id', userIds),
+      supabase.from('users').select('id, name, email').in('id', userIds)
+    ]);
 
-    if (profilesError) {
-      console.error('Error fetching profiles:', profilesError);
-    }
+    const profiles = profilesRes.data || [];
+    const users = usersRes.data || [];
 
-    return orders.map(order => ({
-      ...order,
-      status: order.status?.toLowerCase() === 'placed' ? 'pending' : (order.status?.toLowerCase() || 'pending'),
-      customer: profiles?.find(p => p.id === order.user_id) || { full_name: 'Unknown Customer' }
-    }));
+    return orders.map(order => {
+      const prof = profiles.find(p => p.id === order.user_id);
+      const usr = users.find(u => u.id === order.user_id);
+      return {
+        ...order,
+        status: order.status?.toLowerCase() === 'placed' ? 'pending' : (order.status?.toLowerCase() || 'pending'),
+        customer: {
+          full_name: prof?.full_name || usr?.name || 'Customer (' + (prof?.email || usr?.email || 'Unknown') + ')',
+          avatar_url: prof?.avatar_url || '',
+          email: prof?.email || usr?.email || ''
+        }
+      };
+    });
   } catch (err) {
     console.error('Fatal error in getAllOrders:', err);
     return [];
