@@ -26,6 +26,7 @@ export default function Checkout() {
     city: '',
     zip: ''
   });
+  const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
   const [isLocating, setIsLocating] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'COD' | 'CARD'>('COD');
   const [cardDetails, setCardDetails] = useState({
@@ -54,6 +55,19 @@ export default function Checkout() {
     }
 
     if (user) {
+      const fetchSavedAddresses = async () => {
+        try {
+          const { data } = await supabase
+            .from('user_addresses')
+            .select('*')
+            .eq('user_id', user.id);
+          if (data) setSavedAddresses(data);
+        } catch (e) {
+          console.error('[Checkout] Error loading saved locations:', e);
+        }
+      };
+      fetchSavedAddresses();
+
       const fetchProfile = async () => {
         const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single();
         if (prof) {
@@ -273,6 +287,30 @@ export default function Checkout() {
         }
       }
 
+      // Auto-save checkout address to user_addresses if it's not already saved
+      if (user) {
+        try {
+          const combinedAddress = `${address.street}, ${address.city}, ${address.zip}`;
+          const { data: existingAddr } = await supabase
+            .from('user_addresses')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('full_address', combinedAddress)
+            .maybeSingle();
+
+          if (!existingAddr) {
+            await supabase.from('user_addresses').insert({
+              user_id: user.id,
+              label: 'Other',
+              full_address: combinedAddress,
+              is_default: false
+            });
+          }
+        } catch (e) {
+          console.error('[Checkout] Auto-saving address failed:', e);
+        }
+      }
+
       // Clear cart
       if (user) {
         await supabase.from('cart').delete().eq('user_id', user.id);
@@ -341,6 +379,39 @@ export default function Checkout() {
                   {isLocating ? 'Locating...' : 'Use Live Location'}
                 </button>
               </div>
+
+              {savedAddresses.length > 0 && (
+                <div className="mb-8 bg-slate-50 border border-slate-100 p-5 rounded-2xl">
+                  <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">
+                    📍 Choose a Saved Delivery Location
+                  </label>
+                  <select
+                    onChange={(e) => {
+                      const selectedId = e.target.value;
+                      const selectedAddr = savedAddresses.find(a => a.id === selectedId);
+                      if (selectedAddr) {
+                        const parts = selectedAddr.full_address.split(',').map((p: string) => p.trim());
+                        setAddress(prev => ({
+                          ...prev,
+                          street: parts[0] || selectedAddr.full_address,
+                          city: parts[1] || '',
+                          zip: parts[2] || ''
+                        }));
+                        toast.success(`Populated address using saved location: ${selectedAddr.label}`);
+                      }
+                    }}
+                    className="w-full bg-white border border-border rounded-xl px-4 py-3 font-bold text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-sm"
+                    defaultValue=""
+                  >
+                    <option value="" disabled>-- Select a Saved Location to Auto-fill --</option>
+                    {savedAddresses.map(addr => (
+                      <option key={addr.id} value={addr.id}>
+                        {addr.label} ({addr.full_address})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">

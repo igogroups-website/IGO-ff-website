@@ -8,11 +8,13 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getCRMAnalytics, getAdminStats } from '@/lib/admin';
+import { useRouter } from 'next/navigation';
 
 export default function AdminAnalytics() {
   const [analytics, setAnalytics] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     async function loadRealData() {
@@ -42,10 +44,10 @@ export default function AdminAnalytics() {
   }
 
   const KPI_CARDS = [
-    { label: 'Total Revenue', value: stats?.totalRevenue || '₹0', trend: '+12.5%', isUp: true, icon: DollarSign, color: 'text-green-600', bg: 'bg-green-100' },
-    { label: 'Active Orders', value: stats?.totalOrders || '0', trend: '+5.2%', isUp: true, icon: ShoppingCart, color: 'text-primary', bg: 'bg-primary/10' },
-    { label: 'Total Customers', value: stats?.totalCustomers || '0', trend: '+18.1%', isUp: true, icon: Users, color: 'text-blue-600', bg: 'bg-blue-100' },
-    { label: 'Stock Alerts', value: stats?.outOfStockCount || '0', trend: 'Critical', isUp: false, icon: Package, color: 'text-amber-600', bg: 'bg-amber-100' },
+    { label: 'Total Revenue', value: stats?.totalRevenue || '₹0', trend: '+12.5%', isUp: true, icon: DollarSign, color: 'text-green-600', bg: 'bg-green-100', link: '/admin/orders' },
+    { label: 'Active Orders', value: stats?.totalOrders || '0', trend: '+5.2%', isUp: true, icon: ShoppingCart, color: 'text-primary', bg: 'bg-primary/10', link: '/admin/orders' },
+    { label: 'Total Customers', value: stats?.totalCustomers || '0', trend: '+18.1%', isUp: true, icon: Users, color: 'text-blue-600', bg: 'bg-blue-100', link: '/admin/customers' },
+    { label: 'Stock Alerts', value: stats?.outOfStockCount || '0', trend: 'Critical', isUp: false, icon: Package, color: 'text-amber-600', bg: 'bg-amber-100', link: '/admin/inventory?filter=lowstock' },
   ];
 
   return (
@@ -70,10 +72,11 @@ export default function AdminAnalytics() {
         {KPI_CARDS.map((stat, i) => (
           <motion.div
             key={i}
+            onClick={() => router.push(stat.link)}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
-            className="bg-white p-6 rounded-[2rem] border border-border shadow-sm hover:shadow-md transition-all group"
+            className="bg-white p-6 rounded-[2rem] border border-border shadow-sm hover:shadow-md transition-all group cursor-pointer hover:border-primary/30 active:scale-95 duration-200"
           >
             <div className="flex items-center justify-between mb-4">
               <div className={`p-3 rounded-2xl ${stat.bg} ${stat.color}`}>

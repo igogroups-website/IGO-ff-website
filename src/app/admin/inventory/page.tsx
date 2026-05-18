@@ -31,6 +31,17 @@ export default function AdminInventory() {
 
   useEffect(() => {
     fetchInventory();
+
+    // Auto-parse URL search query params on mount for interactive KPI redirects
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const filterParam = params.get('filter');
+      const searchParam = params.get('search');
+      if (filterParam) setFilter(filterParam);
+      if (searchParam) setSearch(searchParam);
+    } catch (e) {
+      console.warn('URL parsing fallback:', e);
+    }
   }, []);
 
   async function fetchInventory() {
