@@ -41,20 +41,26 @@ export async function sendCXNotification({
 
     if (notifyError) console.error('Failed to create in-app notification:', notifyError);
 
-    // 2. Check User Email Preferences
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('email, email_notifications_enabled')
-      .eq('id', userId)
-      .single();
+    // 2. Check User Email Preferences & Fallback to public.users for email
+    const [profileRes, userRes] = await Promise.all([
+      supabase.from('profiles').select('email, email_notifications_enabled').eq('id', userId).single(),
+      supabase.from('users').select('email').eq('id', userId).single()
+    ]);
 
-    // 3. Send Email if enabled and template provided
-    if (profile?.email_notifications_enabled !== false && emailTemplate && profile?.email) {
+    const profile = profileRes.data;
+    const userRow = userRes.data;
+    const recipientEmail = profile?.email || userRow?.email;
+
+    // 3. Send Email if template provided
+    if (recipientEmail && emailTemplate) {
       await sendLiveEmail({
-        to: profile.email,
+        to: recipientEmail,
         subject: title,
-        template: emailTemplate,
-        data: emailData || { message }
+        template: emailTemplate as any,
+        data: {
+          ...emailData,
+          message
+        }
       });
     }
 

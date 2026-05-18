@@ -107,12 +107,12 @@ function OrdersContent() {
         import('@/lib/notifications').then(({ sendCXNotification }) => {
           sendCXNotification({
             userId: order.user_id,
-            title: `Order Update: ${newStatus.toUpperCase()}`,
+            title: `Order Update: ${newStatus.toUpperCase()} #${order.order_number || String(order.id).slice(0, 8)}`,
             message: `Your order #${order.order_number || String(order.id).slice(0, 8)} status has been updated to ${newStatus}.`,
             type: 'order_status',
             link: `/profile`,
             emailTemplate: `order_${newStatus}` as any,
-            emailData: { orderId: order.id, status: newStatus }
+            emailData: { orderId: order.id, status: newStatus, orderNumber: order.order_number }
           });
         });
       }
@@ -527,58 +527,119 @@ function OrdersContent() {
                 </button>
               </div>
 
-              <div className="p-8">
+              <div className="p-8 max-h-[70vh] overflow-y-auto">
                 {orderDetails.length > 0 ? (
                   <div className="space-y-6">
-                    <div className="divide-y divide-border">
-                      {orderDetails.map((item, idx) => (
-                        <div key={idx} className="py-4 flex items-center justify-between group">
-                          <div className="flex items-center gap-4">
-                            <div className="w-16 h-16 bg-muted rounded-2xl overflow-hidden border border-border">
-                              {item.products?.image_url ? (
-                                <img src={item.products.image_url} alt="" className="w-full h-full object-cover" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                                  <ShoppingBag size={24} />
-                                </div>
-                              )}
+                    {/* Items Section */}
+                    <div>
+                      <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-3">Ordered Items</h4>
+                      <div className="divide-y divide-border border border-border rounded-3xl p-6 bg-slate-50/50">
+                        {orderDetails.map((item, idx) => (
+                          <div key={idx} className="py-4 flex items-center justify-between group first:pt-0 last:pb-0">
+                            <div className="flex items-center gap-4">
+                              <div className="w-16 h-16 bg-white rounded-2xl overflow-hidden border border-border flex-shrink-0">
+                                {item.products?.image_url ? (
+                                  <img src={item.products.image_url} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                                    <ShoppingBag size={24} />
+                                  </div>
+                                )}
+                              </div>
+                              <div>
+                                <h4 className="font-black text-sm text-foreground">{item.products?.name || 'Unknown Product'}</h4>
+                                <p className="text-xs text-muted-foreground font-bold">
+                                  {item.quantity} {item.products?.unit || 'unit'}(s) × ₹{item.price_at_purchase}
+                                </p>
+                              </div>
                             </div>
-                            <div>
-                              <h4 className="font-black text-lg">{item.products?.name || 'Unknown Product'}</h4>
-                              <p className="text-sm text-muted-foreground font-bold">
-                                {item.quantity} {item.products?.unit || 'unit'}(s) × ₹{item.price_at_purchase}
+                            <div className="text-right">
+                              <p className="font-black text-base text-primary">₹{(item.quantity * item.price_at_purchase).toLocaleString()}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Dual-Column Info Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Customer Details */}
+                      <div className="border border-border rounded-3xl p-6 bg-white shadow-sm flex flex-col justify-between">
+                        <div>
+                          <h5 className="text-[10px] font-black uppercase tracking-widest text-primary mb-3">Customer Information</h5>
+                          {(() => {
+                            const addressLines = selectedOrder?.delivery_address?.split('\n') || [];
+                            const customerName = addressLines[0] || selectedOrder?.customer?.full_name || 'N/A';
+                            const customerPhone = addressLines[1] || 'N/A';
+                            return (
+                              <div className="space-y-2">
+                                <p className="text-sm font-black text-slate-800">{customerName}</p>
+                                <p className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
+                                  <Mail size={12} className="text-primary" /> {selectedOrder?.customer?.email || 'No email provided'}
+                                </p>
+                                <p className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
+                                  <Phone size={12} className="text-primary" /> {customerPhone}
+                                </p>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      </div>
+
+                      {/* Payment & Status */}
+                      <div className="border border-border rounded-3xl p-6 bg-white shadow-sm flex flex-col justify-between">
+                        <div>
+                          <h5 className="text-[10px] font-black uppercase tracking-widest text-primary mb-3">Payment Details</h5>
+                          <div className="space-y-2">
+                            <p className="text-sm font-bold flex items-center gap-2">
+                              <span>Method:</span>
+                              <span className="px-2 py-0.5 bg-primary/10 text-primary rounded-lg text-xs font-black uppercase tracking-widest">{selectedOrder?.payment_method}</span>
+                            </p>
+                            <p className="text-xs font-bold text-slate-500">
+                              Status: <span className="capitalize">{selectedOrder?.payment_status || 'Pending'}</span>
+                            </p>
+                            {selectedOrder?.razorpay_order_id && (
+                              <p className="text-[10px] font-mono text-muted-foreground line-clamp-1">
+                                Razorpay ID: {selectedOrder.razorpay_order_id}
                               </p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-black text-xl text-primary">₹{(item.quantity * item.price_at_purchase).toLocaleString()}</p>
+                            )}
                           </div>
                         </div>
-                      ))}
-                    </div>
-
-                    <div className="pt-6 border-t border-border space-y-4">
-                      <div className="flex justify-between text-muted-foreground font-bold">
-                        <span>Delivery Fee</span>
-                        <span>₹0.00</span>
                       </div>
-                      <div className="flex justify-between items-end">
-                        <span className="text-lg font-black uppercase tracking-widest">Total Amount</span>
-                        <span className="text-3xl font-black text-primary">₹{Number(selectedOrder?.total_amount).toLocaleString()}</span>
-                      </div>
-                    </div>
 
-                    <div className="bg-primary/5 rounded-3xl p-6 border border-primary/10">
-                      <h5 className="text-[10px] font-black uppercase tracking-widest text-primary mb-3">Delivery Information</h5>
-                      <div className="space-y-3">
+                      {/* Delivery Address */}
+                      <div className="border border-border rounded-3xl p-6 bg-white shadow-sm md:col-span-2">
+                        <h5 className="text-[10px] font-black uppercase tracking-widest text-primary mb-3">Delivery Location</h5>
                         <div className="flex items-start gap-3">
-                          <MapPin size={16} className="text-primary mt-1" />
-                          <p className="text-sm font-bold leading-relaxed">{selectedOrder?.delivery_address}</p>
+                          <MapPin size={16} className="text-primary mt-0.5 flex-shrink-0" />
+                          <p className="text-sm font-bold leading-relaxed text-slate-700 whitespace-pre-line">
+                            {(selectedOrder?.delivery_address?.split('\n') || []).slice(2).join('\n') || selectedOrder?.delivery_address || 'N/A'}
+                          </p>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <History size={16} className="text-primary" />
-                          <p className="text-sm font-bold">Payment via <span className="uppercase">{selectedOrder?.payment_method}</span></p>
+                      </div>
+                    </div>
+
+                    {/* Summary / Price Breakdown */}
+                    <div className="border border-border rounded-3xl p-6 bg-slate-50 space-y-3">
+                      <div className="flex justify-between text-sm text-muted-foreground font-bold">
+                        <span>Subtotal</span>
+                        <span>₹{Number(selectedOrder?.subtotal || selectedOrder?.total_amount || 0).toLocaleString()}</span>
+                      </div>
+                      {Number(selectedOrder?.delivery_fee) > 0 && (
+                        <div className="flex justify-between text-sm text-muted-foreground font-bold">
+                          <span>Delivery Fee</span>
+                          <span>₹{Number(selectedOrder?.delivery_fee).toLocaleString()}</span>
                         </div>
+                      )}
+                      {Number(selectedOrder?.discount) > 0 && (
+                        <div className="flex justify-between text-sm text-red-500 font-bold">
+                          <span>Coupon Discount</span>
+                          <span>-₹{Number(selectedOrder?.discount).toLocaleString()}</span>
+                        </div>
+                      )}
+                      <div className="pt-3 border-t border-border flex justify-between items-end">
+                        <span className="text-base font-black uppercase tracking-widest">Total Amount</span>
+                        <span className="text-3xl font-black text-primary">₹{Number(selectedOrder?.total_amount).toLocaleString()}</span>
                       </div>
                     </div>
                   </div>

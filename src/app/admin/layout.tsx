@@ -133,6 +133,7 @@ export default function AdminLayout({
 
   const navItems = [
     { name: 'Dashboard', icon: <LayoutDashboard size={20} />, href: '/admin' },
+    { name: 'Orders', icon: <ShoppingBag size={20} />, href: '/admin/orders' },
     { name: 'Products', icon: <Package size={20} />, href: '/admin/products' },
     { name: 'Inventory', icon: <Zap size={20} />, href: '/admin/inventory' },
     { name: 'Banners', icon: <ImageIcon size={20} />, href: '/admin/banners' },
@@ -140,7 +141,6 @@ export default function AdminLayout({
     { name: 'Farm Stories', icon: <Sparkles size={20} />, href: '/admin/stories' },
     { name: 'Coupons', icon: <Ticket size={20} />, href: '/admin/coupons' },
     { name: 'Farmers', icon: <User size={20} />, href: '/admin/farmers' },
-    { name: 'Orders', icon: <ShoppingBag size={20} />, href: '/admin/orders' },
     { name: 'Reviews', icon: <MessageSquare size={20} />, href: '/admin/reviews' },
     { name: 'Customers', icon: <Users size={20} />, href: '/admin/customers' },
     { name: 'Settings', icon: <Settings size={20} />, href: '/admin/settings' },
