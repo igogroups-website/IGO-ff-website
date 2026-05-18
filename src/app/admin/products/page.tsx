@@ -412,7 +412,6 @@ function ProductsContent() {
         order_index: editFormData.order_index,
         slug: editFormData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
         category_slug,
-        image_url: editFormData.image_urls[0] || editFormData.image_url, 
         image_urls: editFormData.image_urls.filter(url => url.trim() !== ''),
         updated_at: new Date().toISOString()
       };
@@ -474,7 +473,6 @@ function ProductsContent() {
         slug: newProduct.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
         category_id,
         category_slug,
-        image_url: newProduct.image_urls[0] || '',
         image_urls: newProduct.image_urls.filter(url => url.trim() !== ''),
         in_stock: true,
         is_active: true,
