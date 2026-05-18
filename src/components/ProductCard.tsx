@@ -112,19 +112,27 @@ export default function ProductCard({ product }: ProductCardProps) {
             </div>
           )}
 
-          {product.is_seasonal && (
-            <div className="absolute top-4 left-4 bg-accent text-accent-foreground px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg z-10">
-              Seasonal
-            </div>
-          )}
+          <div className="absolute top-4 left-4 flex flex-col gap-2 z-10 items-start">
+            {product.is_seasonal && (
+              <div className="bg-accent text-accent-foreground px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg">
+                Seasonal
+              </div>
+            )}
 
-          {/* Customer Favorite Badge */}
-          {['Small Onion', 'Tomato - Hybrid', 'Carrot', 'Ghee', 'Mangoes'].includes(product.name) && (
-            <div className="absolute top-16 left-4 bg-primary text-white px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg z-10 flex items-center gap-1.5">
-              <Star size={10} className="fill-white" />
-              Customer Favorite
-            </div>
-          )}
+            {(product.stock !== undefined && product.stock > 0 && product.stock < 20) && (
+              <div className="bg-orange-500 text-white px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg animate-pulse">
+                Low Stock
+              </div>
+            )}
+
+            {/* Customer Favorite Badge */}
+            {['Small Onion', 'Tomato - Hybrid', 'Carrot', 'Ghee', 'Mangoes'].includes(product.name) && (
+              <div className="bg-primary text-white px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center gap-1.5">
+                <Star size={10} className="fill-white" />
+                Favorite
+              </div>
+            )}
+          </div>
 
           <button
             onClick={(e) => {

@@ -112,10 +112,16 @@ export default function AdminStreams() {
       };
 
       if (isEditing === 'new') {
+        // The user only wants ONE active video at a time. Delete all previous streams to replace them.
+        if (streams.length > 0) {
+          const ids = streams.map(s => s.id);
+          await supabase.from('farm_streams').delete().in('id', ids);
+        }
+        
         const { data, error } = await supabase.from('farm_streams').insert([streamData]).select();
         if (error) throw error;
-        setStreams([...streams, data[0]]);
-        toast.success('Live stream added successfully');
+        setStreams([data[0]]);
+        toast.success('Live stream replaced successfully');
       } else {
         const { error } = await supabase.from('farm_streams').update(streamData).eq('id', isEditing);
         if (error) throw error;

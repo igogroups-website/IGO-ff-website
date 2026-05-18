@@ -257,32 +257,10 @@ export default function Checkout() {
       // Decrement product stock in Supabase for each ordered item
       for (const item of cartItems) {
         try {
-          const { data: prodData } = await supabase
-            .from('products')
-            .select('stock, name, unit')
-            .eq('id', item.product_id)
-            .single();
-
-          if (prodData) {
-            const currentStock = prodData.stock ?? 200;
-            const newStock = Math.max(0, currentStock - item.quantity);
-            
-            await supabase
-              .from('products')
-              .update({ stock: newStock })
-              .eq('id', item.product_id);
-
-            // Trigger low-stock alerts / notifications in public.notifications
-            if (newStock < 20) {
-              const productUnit = prodData.unit || 'kg';
-              await supabase.from('notifications').insert({
-                title: '⚠️ Low Stock Alert!',
-                message: `Stock level for ${prodData.name} is extremely low (${newStock} ${productUnit} remaining!). Please restock immediately.`,
-                type: 'system',
-                link: `/admin/inventory?search=${prodData.name}`
-              });
-            }
-          }
+          await supabase.rpc('decrement_stock', {
+            product_id: item.product_id,
+            quantity: item.quantity
+          });
         } catch (e) {
           console.error('[Checkout] Stock decrement failed for item:', item.product_id, e);
         }

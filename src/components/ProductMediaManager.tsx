@@ -29,7 +29,7 @@ export default function ProductMediaManager({ product, onUpdate }: ProductMediaM
     try {
       const { error } = await supabase
         .from('products')
-        .update({ image_url: imageUrl })
+        .update({ image_urls: [imageUrl] })
         .eq('id', product.id);
 
       if (error) throw error;

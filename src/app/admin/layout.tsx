@@ -35,6 +35,7 @@ export default function AdminLayout({
   const router = useRouter();
   const [mounted, setMounted] = React.useState(false);
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+  const [isSessionReady, setIsSessionReady] = React.useState(false);
   const [showNotifications, setShowNotifications] = React.useState(false);
   const [notifications, setNotifications] = React.useState<any[]>([]);
 
@@ -86,6 +87,9 @@ export default function AdminLayout({
             password: 'AdminPassword123!'
           });
         }
+        setIsSessionReady(true);
+      } else {
+        setIsSessionReady(true);
       }
     };
 
@@ -113,10 +117,12 @@ export default function AdminLayout({
   }, [pathname, router, fetchNotifications]);
 
   // Prevent hydration mismatch by returning a simple loader until mounted
-  if (!mounted) {
+  // Also wait for the secure database session to be ready before rendering child pages to prevent RLS errors!
+  if (!mounted || (isAuthenticated && !isSessionReady)) {
     return (
-      <div className="min-h-screen bg-muted/20 flex items-center justify-center">
+      <div className="min-h-screen bg-muted/20 flex flex-col gap-4 items-center justify-center">
         <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <p className="text-primary font-black uppercase tracking-[0.2em] text-xs">Authenticating Database...</p>
       </div>
     );
   }
