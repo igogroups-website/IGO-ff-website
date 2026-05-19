@@ -42,22 +42,23 @@ export default function AdminLayout({
 
   const fetchNotifications = React.useCallback(async () => {
     try {
+      // Admin notifications = Pending / Placed orders that need attention
       const { data, error } = await supabase
-        .from('notifications')
+        .from('orders')
         .select('*')
-        .eq('is_read', false)
+        .in('status', ['PENDING', 'PLACED', 'pending', 'placed'])
         .order('created_at', { ascending: false })
         .limit(10);
       
       if (!error && data) {
-        const formatted = data.map(n => ({
-          id: n.id,
-          title: n.title,
-          message: n.message,
-          time: new Date(n.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-          type: n.type || 'order',
-          href: n.link || '/admin/orders',
-          is_read: n.is_read
+        const formatted = data.map(o => ({
+          id: o.id,
+          title: `New Order Received`,
+          message: `Order #${o.order_number || String(o.id).slice(0, 8)} for ₹${o.total_amount}`,
+          time: new Date(o.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+          type: 'order',
+          href: '/admin/orders',
+          is_read: false
         }));
         setNotifications(formatted);
       }
@@ -271,26 +272,7 @@ export default function AdminLayout({
                         className="absolute right-0 mt-2 w-80 bg-white rounded-3xl border border-border shadow-2xl z-50 overflow-hidden"
                       >
                         <div className="p-5 border-b border-border flex items-center justify-between">
-                          <h3 className="font-black uppercase tracking-widest text-xs">Notifications</h3>
-                          <button 
-                            onClick={async () => {
-                              try {
-                                const { error } = await supabase
-                                  .from('notifications')
-                                  .update({ is_read: true })
-                                  .eq('is_read', false);
-                                if (!error) {
-                                  setNotifications([]);
-                                  toast.success('All notifications marked as read!');
-                                }
-                              } catch (e) {
-                                console.error('Error marking all as read:', e);
-                              }
-                            }}
-                            className="text-[10px] font-black text-primary hover:underline"
-                          >
-                            Mark all read
-                          </button>
+                          <h3 className="font-black uppercase tracking-widest text-xs">Pending Orders</h3>
                         </div>
                         <div className="max-h-[400px] overflow-y-auto">
                           {notifications.length === 0 ? (
@@ -302,18 +284,7 @@ export default function AdminLayout({
                               <Link 
                                 key={n.id} 
                                 href={n.href}
-                                onClick={async () => {
-                                  setShowNotifications(false);
-                                  try {
-                                    await supabase
-                                      .from('notifications')
-                                      .update({ is_read: true })
-                                      .eq('id', n.id);
-                                    fetchNotifications();
-                                  } catch (e) {
-                                    console.error('Error marking unread item clicked:', e);
-                                  }
-                                }}
+                                onClick={() => setShowNotifications(false)}
                                 className="block p-4 border-b border-border last:border-0 hover:bg-muted/30 transition-all cursor-pointer"
                               >
                                 <p className="font-bold text-sm mb-1">{n.title}</p>
