@@ -254,6 +254,7 @@ function NotificationsDrawer({ isOpen, onClose }: { isOpen: boolean, onClose: ()
   const [notifications, setNotifications] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   const fetchNotifications = async () => {
     try {
@@ -295,11 +296,11 @@ function NotificationsDrawer({ isOpen, onClose }: { isOpen: boolean, onClose: ()
 
   const getTimeAgo = (date: string) => {
     const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
-    if (seconds < 60) return 'Just now';
+    if (seconds < 60) return t('notification.just_now');
     const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
+    if (minutes < 60) return t('notification.m_ago').replace('{minutes}', minutes.toString());
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
+    if (hours < 24) return t('notification.h_ago').replace('{hours}', hours.toString());
     return new Date(date).toLocaleDateString();
   };
 
@@ -309,8 +310,8 @@ function NotificationsDrawer({ isOpen, onClose }: { isOpen: boolean, onClose: ()
       <div className={`absolute right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl transition-transform duration-500 transform ${isOpen ? 'translate-x-0' : 'translate-x-full'} flex flex-col`}>
         <div className="p-6 border-b border-border flex items-center justify-between bg-primary/5">
           <div>
-            <h2 className="text-2xl font-black text-foreground">Notifications</h2>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-primary mt-1">Real-time Updates</p>
+            <h2 className="text-2xl font-black text-foreground">{t('notification.title')}</h2>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-primary mt-1">{t('notification.realtime')}</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-white rounded-full transition-colors shadow-sm">
             <X size={24} />
@@ -318,12 +319,12 @@ function NotificationsDrawer({ isOpen, onClose }: { isOpen: boolean, onClose: ()
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {loading ? (
-            <div className="flex items-center justify-center py-20 text-muted-foreground font-bold italic text-sm">Synchronizing alerts...</div>
+            <div className="flex items-center justify-center py-20 text-muted-foreground font-bold italic text-sm">{t('notification.syncing')}</div>
           ) : notifications.length === 0 ? (
             <div className="text-center py-20 px-10">
               <div className="w-16 h-16 bg-muted/20 rounded-full flex items-center justify-center mx-auto mb-4 text-muted-foreground/30"><Bell size={32} /></div>
-              <p className="text-muted-foreground font-bold text-sm">No new notifications</p>
-              <p className="text-xs text-muted-foreground/60 mt-2 italic">You're all caught up with the farm!</p>
+              <p className="text-muted-foreground font-bold text-sm">{t('notification.empty_title')}</p>
+              <p className="text-xs text-muted-foreground/60 mt-2 italic">{t('notification.empty_desc')}</p>
             </div>
           ) : (
             notifications.map((notif) => {

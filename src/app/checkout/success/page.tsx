@@ -6,10 +6,12 @@ import { motion } from 'framer-motion';
 import { CheckCircle2, ArrowRight, Package, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useTranslation } from '@/context/TranslationContext';
 
 function SuccessContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('id');
+  const { t } = useTranslation();
 
   return (
     <main className="min-h-screen bg-background">
@@ -30,18 +32,18 @@ function SuccessContent() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <h1 className="text-5xl font-black mb-4">Order Placed!</h1>
+          <h1 className="text-5xl font-black mb-4">{t('success.title')}</h1>
           
           {orderId && (
             <div className="bg-primary/5 border border-primary/10 px-6 py-3 rounded-2xl inline-flex items-center gap-3 mb-8">
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Order ID:</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('success.order_id')}</span>
               <span className="text-lg font-black text-primary font-mono">{orderId}</span>
             </div>
           )}
 
           <p className="text-xl text-muted-foreground mb-12 max-w-lg mx-auto">
-            Thank you for choosing Farmers Factory. Your fresh farm products will be delivered 
-            <span className="text-primary font-bold"> within 24 hours</span>.
+            {t('success.thank_you')}
+            <span className="text-primary font-bold">{t('success.within_24h')}</span>.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -50,14 +52,14 @@ function SuccessContent() {
               className="bg-primary text-white px-10 py-4 rounded-full font-bold flex items-center justify-center gap-2 hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
             >
               <Package size={20} />
-              Track Your Order
+              {t('success.track_order')}
             </Link>
             <Link 
               href="/products" 
               className="bg-white border border-border text-foreground px-10 py-4 rounded-full font-bold flex items-center justify-center gap-2 hover:bg-muted/50 transition-all"
             >
               <ShoppingBag size={20} />
-              Continue Shopping
+              {t('success.continue_shopping')}
             </Link>
           </div>
         </motion.div>

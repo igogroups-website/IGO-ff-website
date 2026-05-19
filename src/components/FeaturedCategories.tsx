@@ -9,19 +9,19 @@ export default function FeaturedCategories() {
 
   const CATEGORIES = [
     {
-      name: t('products.vegetables'),
+      name: 'Vegetables',
       image: '/category_vegetables.png',
       count: t('categories.veg_count'),
       color: 'bg-green-50'
     },
     {
-      name: t('products.fruits'),
+      name: 'Fruits',
       image: '/category_fruits.png',
       count: t('categories.fruit_count'),
       color: 'bg-orange-50'
     },
     {
-      name: t('products.categories.valluvam'),
+      name: 'Valluvam Products',
       image: '/category_valluvam.png',
       count: t('categories.val_count'),
       color: 'bg-yellow-50'

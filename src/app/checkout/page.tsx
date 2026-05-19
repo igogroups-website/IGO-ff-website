@@ -9,8 +9,10 @@ import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
+import { useTranslation } from '@/context/TranslationContext';
 
 export default function Checkout() {
+  const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
   const { 
     cartItems, cartTotal, loading: cartLoading,
@@ -35,8 +37,6 @@ export default function Checkout() {
     cvv: ''
   });
 
-  // Local states removed in favor of global cart context for coupons
-
   useEffect(() => {
     if (!authLoading && !user) {
       toast.error('Please login to checkout');
@@ -44,7 +44,6 @@ export default function Checkout() {
       return;
     }
 
-    // Try loading saved address from localStorage first for premium UX auto-fill
     try {
       const saved = localStorage.getItem('farmers_factory_saved_address');
       if (saved) {
@@ -98,7 +97,6 @@ export default function Checkout() {
       async (position) => {
         const { latitude, longitude } = position.coords;
         try {
-          // Use Nominatim (OpenStreetMap) for free reverse geocoding
           const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`);
           const data = await response.json();
           
@@ -130,8 +128,6 @@ export default function Checkout() {
     );
   };
 
-  // handleApplyCoupon is now handled globally in CartContext
-
   const subtotal = cartTotal;
   const total = Math.max(0, subtotal - discount);
 
@@ -157,7 +153,6 @@ export default function Checkout() {
       }
     }
 
-    // Business Rule: Onion Order Constraint
     const onionItems = cartItems.filter(item => item.products.name.toLowerCase().includes('onion'));
     if (onionItems.length > 0) {
       const totalOnionKg = onionItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -173,12 +168,10 @@ export default function Checkout() {
 
     setLoading(true);
     try {
-      // Save address details to localStorage for premium UX auto-fill
       try {
         localStorage.setItem('farmers_factory_saved_address', JSON.stringify(address));
       } catch (e) {}
 
-      // Update their profiles table in the background
       if (user) {
         supabase.from('profiles').update({
           full_name: address.name,
@@ -191,11 +184,8 @@ export default function Checkout() {
         });
       }
 
-      // Generate professional order number
       const orderNumber = 'FF-' + Math.floor(100000 + Math.random() * 900000).toString();
 
-      // Create Order
-      // 1. Sync user to public.users table to satisfy the database foreign key constraint
       const syncRes = await fetch('/api/sync-user', {
         method: 'POST',
         headers: {
@@ -212,9 +202,7 @@ export default function Checkout() {
         console.error('[Checkout] User sync failed:', syncErrData);
         throw new Error(syncErrData.error || 'Failed to synchronize account credentials. Please refresh and try again.');
       }
-      console.log('[Checkout] User synced successfully to public.users');
 
-      // Create Order with uppercase 'PLACED' status matching database constraint
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -226,7 +214,6 @@ export default function Checkout() {
           delivery_address: `${address.name}, ${address.street}, ${address.city} - ${address.zip}`,
           payment_method: paymentMethod,
           status: 'PLACED'
-          // Note: coupon_id column not yet in schema — applied discount already reflected in total_amount
         })
         .select()
         .single();
@@ -237,7 +224,6 @@ export default function Checkout() {
       }
       if (!order) throw new Error('Failed to create order record');
 
-      // Add order items
       const orderItems = cartItems.map(item => ({
         order_id: order.id,
         product_id: item.product_id,
@@ -249,12 +235,10 @@ export default function Checkout() {
       const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
       if (itemsError) {
         console.error('[Checkout] Order items insert error:', itemsError);
-        // Still delete the orphaned order if items insert fails
         await supabase.from('orders').delete().eq('id', order.id);
         throw new Error(itemsError.message || 'Failed to save order items. Please try again.');
       }
 
-      // Decrement product stock in Supabase for each ordered item
       for (const item of cartItems) {
         try {
           await supabase.rpc('decrement_stock', {
@@ -266,7 +250,6 @@ export default function Checkout() {
         }
       }
 
-      // Auto-save checkout address to user_addresses if it's not already saved
       if (user) {
         try {
           const combinedAddress = `${address.street}, ${address.city}, ${address.zip}`;
@@ -290,7 +273,6 @@ export default function Checkout() {
         }
       }
 
-      // Clear cart
       if (user) {
         await supabase.from('cart').delete().eq('user_id', user.id);
       } else {
@@ -299,12 +281,10 @@ export default function Checkout() {
 
       toast.success('Order placed successfully!');
       
-      // Dispatch event to clear global UI (Navbar, Sticky Footer)
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('cart-updated'));
       }
 
-      // Add to notifications inbox
       await supabase.from('notifications').insert({
         user_id: user.id,
         title: 'Order Confirmed! 🌿',
@@ -313,7 +293,6 @@ export default function Checkout() {
         link: `/profile?tab=orders&order=${order.order_number || String(order.id).slice(0, 8)}`
       });
 
-      // Send Order Confirmation Email
       import('@/lib/email').then(({ sendOrderConfirmation }) => {
         sendOrderConfirmation(user.email || address.name, order.id, total, order.order_number);
       });
@@ -334,7 +313,7 @@ export default function Checkout() {
       <Navbar />
       
       <div className="container mx-auto px-4 pt-32">
-        <h1 className="text-4xl font-bold mb-10">Checkout</h1>
+        <h1 className="text-4xl font-bold mb-10">{t('checkout.title')}</h1>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
@@ -348,21 +327,21 @@ export default function Checkout() {
                 <div className="w-10 h-10 bg-primary/10 text-primary rounded-xl flex items-center justify-center">
                   <MapPin size={20} />
                 </div>
-                <h2 className="text-xl font-bold">Delivery Address</h2>
+                <h2 className="text-xl font-bold">{t('checkout.delivery_address')}</h2>
                 <button 
                   onClick={handleGetLocation}
                   disabled={isLocating}
                   className="ml-auto flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary/20 transition-all border border-primary/10"
                 >
                   {isLocating ? <Loader2 size={14} className="animate-spin" /> : <Crosshair size={14} />}
-                  {isLocating ? 'Locating...' : 'Use Live Location'}
+                  {isLocating ? t('checkout.locating') : t('checkout.use_live')}
                 </button>
               </div>
 
               {savedAddresses.length > 0 && (
                 <div className="mb-8 bg-slate-50 border border-slate-100 p-5 rounded-2xl">
                   <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">
-                    📍 Choose a Saved Delivery Location
+                    {t('checkout.choose_saved')}
                   </label>
                   <select
                     onChange={(e) => {
@@ -382,7 +361,7 @@ export default function Checkout() {
                     className="w-full bg-white border border-border rounded-xl px-4 py-3 font-bold text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-sm"
                     defaultValue=""
                   >
-                    <option value="" disabled>-- Select a Saved Location to Auto-fill --</option>
+                    <option value="" disabled>{t('checkout.select_saved_placeholder')}</option>
                     {savedAddresses.map(addr => (
                       <option key={addr.id} value={addr.id}>
                         {addr.label} ({addr.full_address})
@@ -394,7 +373,7 @@ export default function Checkout() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-muted-foreground ml-1">Full Name</label>
+                  <label className="text-sm font-bold text-muted-foreground ml-1">{t('checkout.fullname')}</label>
                   <div className="relative">
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                     <input 
@@ -407,7 +386,7 @@ export default function Checkout() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-muted-foreground ml-1">Phone Number</label>
+                  <label className="text-sm font-bold text-muted-foreground ml-1">{t('checkout.phone')}</label>
                   <div className="relative">
                     <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                     <input 
@@ -420,7 +399,7 @@ export default function Checkout() {
                   </div>
                 </div>
                 <div className="md:col-span-2 space-y-2">
-                  <label className="text-sm font-bold text-muted-foreground ml-1">Street Address</label>
+                  <label className="text-sm font-bold text-muted-foreground ml-1">{t('checkout.street')}</label>
                   <input 
                     type="text" 
                     placeholder="House No, Street Name"
@@ -430,7 +409,7 @@ export default function Checkout() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-muted-foreground ml-1">City</label>
+                  <label className="text-sm font-bold text-muted-foreground ml-1">{t('checkout.city')}</label>
                   <input 
                     type="text" 
                     placeholder="Chennai"
@@ -440,7 +419,7 @@ export default function Checkout() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-muted-foreground ml-1">Zip Code</label>
+                  <label className="text-sm font-bold text-muted-foreground ml-1">{t('checkout.zip')}</label>
                   <input 
                     type="text" 
                     placeholder="600001"
@@ -463,7 +442,7 @@ export default function Checkout() {
                 <div className="w-10 h-10 bg-primary/10 text-primary rounded-xl flex items-center justify-center">
                   <CreditCard size={20} />
                 </div>
-                <h2 className="text-xl font-bold">Payment Method</h2>
+                <h2 className="text-xl font-bold">{t('checkout.payment_method')}</h2>
               </div>
 
               <div className="space-y-4">
@@ -480,8 +459,8 @@ export default function Checkout() {
                       paymentMethod === 'COD' ? 'border-primary' : 'border-muted'
                     }`} />
                     <div>
-                      <p className="font-bold">Cash on Delivery (COD)</p>
-                      <p className="text-sm text-muted-foreground">Pay when your farm goods arrive</p>
+                      <p className="font-bold">{t('checkout.cod')}</p>
+                      <p className="text-sm text-muted-foreground">{t('checkout.cod_desc')}</p>
                     </div>
                   </div>
                 </div>
@@ -493,10 +472,10 @@ export default function Checkout() {
                     <div className="w-6 h-6 border-4 rounded-full bg-white border-muted" />
                     <div>
                       <p className="font-bold text-muted-foreground flex items-center gap-2">
-                        Credit / Debit Card
-                        <span className="text-[10px] font-black uppercase tracking-widest bg-slate-200 text-slate-500 px-2 py-0.5 rounded-full">Coming Soon</span>
+                        {t('checkout.card')}
+                        <span className="text-[10px] font-black uppercase tracking-widest bg-slate-200 text-slate-500 px-2 py-0.5 rounded-full">{t('checkout.coming_soon')}</span>
                       </p>
-                      <p className="text-sm text-muted-foreground">Card payments will be available soon</p>
+                      <p className="text-sm text-muted-foreground">{t('checkout.card_desc')}</p>
                     </div>
                   </div>
                 </div>
@@ -510,7 +489,7 @@ export default function Checkout() {
                   >
                     <div className="p-8 bg-muted/20 rounded-[2rem] border border-border mt-4 space-y-6">
                       <div className="space-y-2">
-                        <label className="text-xs font-black text-muted-foreground uppercase tracking-widest ml-1">Card Number</label>
+                        <label className="text-xs font-black text-muted-foreground uppercase tracking-widest ml-1">{t('checkout.card_number')}</label>
                         <input 
                           type="text" 
                           placeholder="0000 0000 0000 0000"
@@ -522,7 +501,7 @@ export default function Checkout() {
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <label className="text-xs font-black text-muted-foreground uppercase tracking-widest ml-1">Expiry Date</label>
+                          <label className="text-xs font-black text-muted-foreground uppercase tracking-widest ml-1">{t('checkout.expiry')}</label>
                           <input 
                             type="text" 
                             placeholder="MM/YY"
@@ -533,7 +512,7 @@ export default function Checkout() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-xs font-black text-muted-foreground uppercase tracking-widest ml-1">CVV</label>
+                          <label className="text-xs font-black text-muted-foreground uppercase tracking-widest ml-1">{t('checkout.cvv')}</label>
                           <input 
                             type="password" 
                             placeholder="***"
@@ -557,7 +536,7 @@ export default function Checkout() {
               animate={{ opacity: 1, x: 0 }}
               className="bg-white rounded-[2rem] p-8 border border-border sticky top-32"
             >
-              <h3 className="text-xl font-bold mb-6">Order Summary</h3>
+              <h3 className="text-xl font-bold mb-6">{t('checkout.summary')}</h3>
               
               <div className="space-y-4 mb-8 max-h-[300px] overflow-y-auto pr-2">
                 {cartItems.map((item) => (
@@ -576,15 +555,15 @@ export default function Checkout() {
 
               {/* Coupon Field */}
               <div className="mb-8 p-6 bg-primary/5 rounded-3xl border border-primary/10">
-                <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-3">Promotional Code</p>
+                <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-3">{t('checkout.promo')}</p>
                 <div className="flex gap-2">
                   <input 
                     type="text" 
-                    placeholder="ENTER CODE"
+                    placeholder={t('checkout.enter_code')}
                     className="flex-1 bg-white border border-border rounded-xl px-4 py-2 text-sm font-black uppercase tracking-widest focus:ring-2 focus:ring-primary/20 outline-none"
                     value={couponCode}
                     onChange={e => setCouponCode(e.target.value)}
-                    disabled={appliedCoupon}
+                    disabled={!!appliedCoupon}
                   />
                   <button 
                     onClick={appliedCoupon ? removeCoupon : applyCoupon}
@@ -595,28 +574,28 @@ export default function Checkout() {
                         : 'bg-primary text-white hover:bg-primary/90'
                     }`}
                   >
-                    {isValidatingCoupon ? <Loader2 size={14} className="animate-spin" /> : (appliedCoupon ? 'REMOVE' : 'APPLY')}
+                    {isValidatingCoupon ? <Loader2 size={14} className="animate-spin" /> : (appliedCoupon ? t('checkout.remove') : t('checkout.apply'))}
                   </button>
                 </div>
               </div>
 
               <div className="space-y-3 border-t border-border pt-6 mb-8">
                 <div className="flex justify-between text-muted-foreground">
-                  <span>Subtotal</span>
+                  <span>{t('checkout.subtotal')}</span>
                   <span>₹{subtotal}</span>
                 </div>
                 {discount > 0 && (
                   <div className="flex justify-between text-emerald-600 font-bold">
-                    <span>Discount</span>
+                    <span>{t('checkout.discount')}</span>
                     <span>-₹{discount}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-muted-foreground">
-                  <span>Delivery</span>
-                  <span className="text-primary font-bold">FREE</span>
+                  <span>{t('checkout.delivery')}</span>
+                  <span className="text-primary font-bold">{t('checkout.free')}</span>
                 </div>
                 <div className="flex justify-between text-xl font-black pt-4">
-                  <span>Total</span>
+                  <span>{t('checkout.total')}</span>
                   <span className="text-primary">₹{total}</span>
                 </div>
               </div>
@@ -624,8 +603,8 @@ export default function Checkout() {
               <div className="bg-muted/50 rounded-2xl p-4 mb-8 flex items-center gap-3">
                 <Truck className="text-primary" size={20} />
                 <div>
-                  <p className="text-xs font-bold text-primary uppercase tracking-wider">Fast Delivery</p>
-                  <p className="text-xs text-muted-foreground">Within 24 hours guaranteed</p>
+                  <p className="text-xs font-bold text-primary uppercase tracking-wider">{t('checkout.fast_delivery')}</p>
+                  <p className="text-xs text-muted-foreground">{t('checkout.fast_delivery_desc')}</p>
                 </div>
               </div>
 
@@ -634,13 +613,13 @@ export default function Checkout() {
                 disabled={loading}
                 className="w-full bg-primary text-white py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-primary/90 transition-all transform active:scale-[0.98] disabled:opacity-50"
               >
-                {loading ? 'Processing...' : 'Place Order'}
+                {loading ? t('checkout.processing') : t('checkout.place_order')}
                 {!loading && <ArrowRight size={20} />}
               </button>
 
               <div className="flex items-center justify-center gap-2 mt-6 text-xs text-muted-foreground">
                 <ShieldCheck size={14} className="text-primary" />
-                <span>Secure Checkout with Farmers Factory</span>
+                <span>{t('checkout.secure')}</span>
               </div>
             </motion.div>
           </div>

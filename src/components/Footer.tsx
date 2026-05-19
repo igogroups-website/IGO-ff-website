@@ -63,8 +63,8 @@ export default function Footer() {
           <Link href="/products?category=Vegetables" className="text-muted-foreground hover:text-primary transition-colors text-xs font-bold uppercase tracking-widest">{t('products.vegetables')}</Link>
           <Link href="/delivery" className="hover:text-primary transition-colors">{t('nav.about')}</Link>
           <Link href="/contact" className="hover:text-primary transition-colors">{t('nav.contact')}</Link>
-          <Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link>
-          <Link href="/terms" className="hover:text-primary transition-colors">Terms</Link>
+          <Link href="/privacy" className="hover:text-primary transition-colors">{t('privacy.title')}</Link>
+          <Link href="/terms" className="hover:text-primary transition-colors">{t('terms.title')}</Link>
         </div>
 
         <div className="mt-16 pt-8 border-t border-muted/30">

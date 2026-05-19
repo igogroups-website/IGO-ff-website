@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { toast, Toaster } from 'react-hot-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslation } from '@/context/TranslationContext';
 
 // --- Components ---
 
@@ -64,6 +65,7 @@ const SegmentedOTP = ({ value, onChange, length = 6, disabled = false }: { value
 // --- Main Content ---
 
 function AuthContent() {
+  const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialMode = searchParams.get('mode') === 'signup' ? 'signup' : 'login';
@@ -237,17 +239,17 @@ function AuthContent() {
   const renderInitial = () => (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
       <div className="space-y-2">
-        <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Email Address</label>
+        <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">{t('auth.email_address')}</label>
         <div className="relative group">
           <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors" size={18} />
-          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm font-bold placeholder:text-white/20 text-white" />
+          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('auth.email_placeholder')} className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm font-bold placeholder:text-white/20 text-white" />
         </div>
       </div>
       {mode === 'login' && (
         <div className="space-y-2">
           <div className="flex justify-between items-center px-1">
-            <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Password</label>
-            <Link href="/auth/reset-password" className="text-[10px] font-black uppercase tracking-widest text-primary hover:text-primary/80 transition-colors">Forgot?</Link>
+            <label className="text-[10px] font-black uppercase tracking-widest text-white/40">{t('auth.password')}</label>
+            <Link href="/auth/reset-password" className="text-[10px] font-black uppercase tracking-widest text-primary hover:text-primary/80 transition-colors">{t('auth.forgot')}</Link>
           </div>
           <div className="relative group">
             <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors" size={18} />
@@ -259,7 +261,7 @@ function AuthContent() {
         </div>
       )}
       <button onClick={mode === 'login' ? handleLogin : handleSendOTP} disabled={loading} className="w-full bg-primary text-white py-6 rounded-2xl font-black text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-primary/90 transition-all transform active:scale-[0.98] disabled:opacity-50 shadow-2xl shadow-primary/20 group">
-        {loading ? 'Processing...' : (mode === 'login' ? 'Sign In' : 'Send Security Code')}
+        {loading ? t('auth.processing') : (mode === 'login' ? t('auth.sign_in') : t('auth.send_code'))}
         {!loading && <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />}
       </button>
     </motion.div>
@@ -269,15 +271,15 @@ function AuthContent() {
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
       <div className="text-center space-y-2">
         <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 text-primary animate-pulse"><Mail size={32} /></div>
-        <h3 className="text-xl font-bold">Verify your email</h3>
-        <p className="text-white/40 text-sm">We've sent a 6-digit code to <span className="text-white font-bold">{email}</span></p>
+        <h3 className="text-xl font-bold">{t('auth.verify_email')}</h3>
+        <p className="text-white/40 text-sm">{t('auth.sent_code_desc')} <span className="text-white font-bold">{email}</span></p>
       </div>
       <SegmentedOTP value={otp} onChange={setOtp} disabled={loading} />
       <button onClick={() => handleVerifyOTP()} disabled={loading || otp.length < 6} className="w-full bg-primary text-white py-6 rounded-2xl font-black text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-primary/90 transition-all transform active:scale-[0.98] disabled:opacity-50 shadow-2xl shadow-primary/20">
-        {loading ? 'Verifying...' : 'Verify Code'}
+        {loading ? t('auth.verifying') : t('auth.verify_btn')}
       </button>
       <button onClick={() => { setStep('initial'); setOtp(''); }} className="w-full text-[10px] font-black text-white/20 hover:text-white/60 uppercase tracking-widest transition-colors flex items-center justify-center gap-2">
-        <ArrowLeft size={12} /> Use different email
+        <ArrowLeft size={12} /> {t('auth.different_email')}
       </button>
     </motion.div>
   );
@@ -286,19 +288,19 @@ function AuthContent() {
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
       <div className="text-center space-y-2 mb-8">
         <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-green-500"><CheckCircle2 size={32} /></div>
-        <h3 className="text-xl font-bold">Verification Successful</h3>
-        <p className="text-white/40 text-sm">Now, let's set up your profile.</p>
+        <h3 className="text-xl font-bold">{t('auth.success')}</h3>
+        <p className="text-white/40 text-sm">{t('auth.setup_profile')}</p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
-          <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Full Name</label>
+          <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">{t('auth.fullname')}</label>
           <div className="relative group">
             <User className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors" size={18} />
             <input type="text" required value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="John Doe" className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm font-bold placeholder:text-white/20 text-white" />
           </div>
         </div>
         <div className="space-y-2">
-          <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Phone</label>
+          <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">{t('auth.phone')}</label>
           <div className="relative group">
             <Phone className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors" size={18} />
             <input type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="9876543210" className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm font-bold placeholder:text-white/20 text-white" />
@@ -306,17 +308,17 @@ function AuthContent() {
         </div>
       </div>
       <div className="space-y-2">
-        <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Create Password</label>
+        <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">{t('auth.create_password')}</label>
         <div className="relative group">
           <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors" size={18} />
-          <input type={showPassword ? 'text' : 'password'} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 6 characters" className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-14 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm font-bold placeholder:text-white/20 text-white" />
+          <input type={showPassword ? 'text' : 'password'} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t('auth.pwd_placeholder')} className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-14 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm font-bold placeholder:text-white/20 text-white" />
           <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-5 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/60 transition-colors">
             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
       </div>
       <button onClick={handleCompleteSignup} disabled={loading} className="w-full bg-[#E75129] text-white py-6 rounded-2xl font-black text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-[#ff613b] transition-all transform active:scale-[0.98] disabled:opacity-50 shadow-2xl shadow-orange-500/20 mt-4 group">
-        {loading ? 'Creating Account...' : 'Complete Registration'}
+        {loading ? t('auth.creating_acc') : t('auth.complete_reg')}
         {!loading && <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />}
       </button>
     </motion.div>
@@ -329,20 +331,20 @@ function AuthContent() {
         <div className="absolute inset-0 bg-black/60 backdrop-blur-[8px]" />
       </div>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 w-full max-w-2xl">
-        <Link href="/" className="inline-flex items-center gap-2 text-white/40 hover:text-white transition-all mb-8 font-black uppercase tracking-widest text-[10px] group"><ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />Back to Store</Link>
+        <Link href="/" className="inline-flex items-center gap-2 text-white/40 hover:text-white transition-all mb-8 font-black uppercase tracking-widest text-[10px] group"><ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />{t('auth.back_to_store')}</Link>
         <div className="bg-white/5 border border-white/10 backdrop-blur-2xl rounded-[2.5rem] p-8 md:p-12 text-white shadow-2xl overflow-hidden relative group">
           <div className="flex items-center gap-4 mb-12">
             <div className="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-primary/40 rotate-3 group-hover:rotate-0 transition-transform duration-500"><Leaf size={32} /></div>
             <div><span className="text-2xl font-black tracking-tighter text-white block leading-none">FARMERS FACTORY</span><span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30">Premium Organics</span></div>
           </div>
           <div className="mb-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-4 border border-white/10"><Sparkles size={12} className="text-orange-500" />{step === 'initial' ? 'Identity Verification' : step === 'otp' ? 'Security Check' : 'Profile Completion'}</div>
-            <h1 className="text-4xl md:text-5xl font-black mb-4 uppercase tracking-tighter leading-none text-white">{mode === 'login' ? 'Welcome Back' : 'Create Account'}</h1>
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-4 border border-white/10"><Sparkles size={12} className="text-orange-500" />{step === 'initial' ? t('auth.identity_verification') : step === 'otp' ? t('auth.security_check') : t('auth.profile_completion')}</div>
+            <h1 className="text-4xl md:text-5xl font-black mb-4 uppercase tracking-tighter leading-none text-white">{mode === 'login' ? t('auth.welcome_back') : t('auth.create_account')}</h1>
           </div>
           {step === 'initial' && (
             <div className="flex p-1 bg-white/5 rounded-2xl mb-10 border border-white/5">
-              <button onClick={() => setMode('login')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'login' ? 'bg-white/10 text-white shadow-xl' : 'text-white/30 hover:text-white/60'}`}>Login</button>
-              <button onClick={() => setMode('signup')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'signup' ? 'bg-white/10 text-white shadow-xl' : 'text-white/30 hover:text-white/60'}`}>Join</button>
+              <button onClick={() => setMode('login')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'login' ? 'bg-white/10 text-white shadow-xl' : 'text-white/30 hover:text-white/60'}`}>{t('auth.login_tab')}</button>
+              <button onClick={() => setMode('signup')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'signup' ? 'bg-white/10 text-white shadow-xl' : 'text-white/30 hover:text-white/60'}`}>{t('auth.join_tab')}</button>
             </div>
           )}
           <AnimatePresence mode="wait">

@@ -154,7 +154,7 @@ export default function LiveFarmStream() {
               <div className="absolute top-10 left-10 flex flex-col gap-4">
                 <div className="flex items-center gap-3 bg-red-600 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl">
                    <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                   LIVE: {activeStream.name}
+                   LIVE: {t(activeStream.name)}
                 </div>
                 <div className="flex items-center gap-3 bg-black/60 backdrop-blur-xl px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10">
                    <Users size={14} className="text-primary" />
@@ -164,7 +164,7 @@ export default function LiveFarmStream() {
 
               <div className="absolute top-10 right-10 flex items-center gap-3 bg-black/60 backdrop-blur-xl px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10">
                  <MapPin size={14} className="text-primary" />
-                 {activeStream.location || 'NORTH FIELD'}
+                 {t(activeStream.location) || t('NORTH FIELD')}
               </div>
 
               <div className="absolute bottom-10 left-10 right-10 flex flex-wrap items-end justify-between gap-6">
@@ -216,8 +216,8 @@ export default function LiveFarmStream() {
                 )}
                 <div className="absolute inset-0 bg-black/60 group-hover:bg-black/40 transition-colors" />
                 <div className="relative p-6 flex flex-col justify-end h-full">
-                  <h4 className="text-lg font-black uppercase tracking-tight text-left">{stream.name}</h4>
-                  <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] text-left">{stream.location}</p>
+                  <h4 className="text-lg font-black uppercase tracking-tight text-left">{t(stream.name)}</h4>
+                  <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] text-left">{t(stream.location)}</p>
                 </div>
               </button>
             ))}

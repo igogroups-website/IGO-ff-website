@@ -7,10 +7,9 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  User, Package, MapPin, Shield, Bell, LogOut, 
-  ChevronRight, Truck, Mail, Phone, CreditCard, 
-  Settings, Inbox, Search, Sparkles, Eye, Leaf, Users, Zap, ShoppingBag, Heart,
-  Trophy, Share2, ExternalLink, Clock, CheckCircle2, AlertCircle, HelpCircle, Wallet
+  User, Package, MapPin, Bell, LogOut, 
+  ChevronRight, Truck, Mail, Phone,
+  Settings, Inbox, Heart, HelpCircle, Wallet, ShoppingBag
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import OrderDetailModal from '@/components/OrderDetailModal';
@@ -18,6 +17,7 @@ import LoyaltyWallet from '@/components/profile/LoyaltyWallet';
 import AddressManager from '@/components/profile/AddressManager';
 import { useWishlist } from '@/context/WishlistContext';
 import Footer from '@/components/Footer';
+import { useTranslation } from '@/context/TranslationContext';
 
 function OrderCard({ order, onViewDetails }: { order: any, onViewDetails: (order: any) => void }) {
   const getStatusColor = (status: string) => {
@@ -63,14 +63,16 @@ function OrderCard({ order, onViewDetails }: { order: any, onViewDetails: (order
 }
 
 export default function ProfilePage() {
+  const { t } = useTranslation();
+  
   const tabs = [
-    { id: 'orders', label: 'Orders', icon: Package },
-    { id: 'inbox', label: 'Inbox', icon: Bell },
-    { id: 'wallet', label: 'FF Wallet', icon: Wallet },
-    { id: 'addresses', label: 'Addresses', icon: MapPin },
-    { id: 'favorites', label: 'Favorites', icon: Heart },
-    { id: 'help', label: 'Help & Support', icon: HelpCircle },
-    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'orders', label: t('profile.tab.orders'), icon: Package },
+    { id: 'inbox', label: t('profile.tab.inbox'), icon: Bell },
+    { id: 'wallet', label: t('profile.tab.wallet'), icon: Wallet },
+    { id: 'addresses', label: t('profile.tab.addresses'), icon: MapPin },
+    { id: 'favorites', label: t('profile.tab.favorites'), icon: Heart },
+    { id: 'help', label: t('profile.tab.help'), icon: HelpCircle },
+    { id: 'settings', label: t('profile.tab.settings'), icon: Settings },
   ];
 
   const { user, loading: authLoading, signOut } = useAuth();
@@ -110,12 +112,9 @@ export default function ProfilePage() {
   }, [orders]);
 
   const handleNotificationClick = async (notif: any) => {
-    // 1. Mark as read in local state
     setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, is_read: true } : n));
-    // 2. Mark as read in Database
     await supabase.from('notifications').update({ is_read: true }).eq('id', notif.id);
 
-    // 3. Try to parse order number from title or message
     const match = notif.message?.match(/#([A-Za-z0-9-]+)/) || notif.title?.match(/#([A-Za-z0-9-]+)/);
     if (match) {
       const orderNum = match[1];
@@ -130,7 +129,6 @@ export default function ProfilePage() {
       }
     }
 
-    // 4. Fallback: navigate to link if present
     if (notif.link) {
       window.location.href = notif.link;
     }
@@ -139,7 +137,6 @@ export default function ProfilePage() {
   useEffect(() => {
     if (authLoading) return;
     
-    // Safety check: Redirect if no user
     if (!user) {
       const timer = setTimeout(() => {
         if (!user) window.location.href = '/auth';
@@ -151,7 +148,6 @@ export default function ProfilePage() {
       try {
         setLoading(true);
         
-        // Parallel fetch for speed
         const [profileRes, ordersRes, notifRes] = await Promise.all([
           supabase.from('profiles').select('*').eq('id', user?.id).single(),
           supabase.from('orders').select('*').eq('user_id', user?.id).order('created_at', { ascending: false }),
@@ -181,13 +177,11 @@ export default function ProfilePage() {
 
   if (authLoading || loading) return <div className="min-h-screen flex items-center justify-center bg-white"><div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" /></div>;
 
-
-
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900 selection:bg-primary/20 selection:text-primary pb-20">
       <Navbar />
       
-      {/* Header Section - Blinkit Style */}
+      {/* Header Section */}
       <div className="bg-white border-b border-slate-200 pt-32 pb-12">
         <div className="container mx-auto px-6 lg:px-20">
           <div className="flex flex-col md:flex-row items-center gap-8">
@@ -207,7 +201,7 @@ export default function ProfilePage() {
               className="px-6 py-2.5 rounded-xl border border-slate-200 font-bold text-sm text-slate-600 hover:bg-slate-50 transition-all flex items-center gap-2"
             >
               <Settings size={18} />
-              Edit Profile
+              {t('profile.edit_profile')}
             </button>
           </div>
         </div>
@@ -240,7 +234,7 @@ export default function ProfilePage() {
                 className="w-full flex items-center gap-4 px-8 py-5 text-sm font-bold text-red-500 hover:bg-red-50 transition-all border-l-4 border-transparent"
               >
                 <LogOut size={20} strokeWidth={1.5} />
-                Logout
+                {t('profile.logout')}
               </button>
             </nav>
           </aside>
@@ -253,8 +247,8 @@ export default function ProfilePage() {
               {activeTab === 'orders' && (
                 <motion.div key="orders" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
                   <div className="mb-8">
-                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">Your Orders</h2>
-                    <p className="text-slate-500 text-sm font-medium">Manage your recent farm-fresh deliveries</p>
+                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">{t('profile.your_orders')}</h2>
+                    <p className="text-slate-500 text-sm font-medium">{t('profile.manage_recent')}</p>
                   </div>
                   
                   {orders.length > 0 ? (
@@ -266,9 +260,11 @@ export default function ProfilePage() {
                       <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-200">
                         <ShoppingBag size={40} />
                       </div>
-                      <h3 className="text-xl font-black text-slate-800">No orders yet</h3>
-                      <p className="text-slate-500 mt-2 max-w-xs mx-auto text-sm font-medium">When you shop from our farm, your orders will appear here.</p>
-                      <button className="mt-8 px-8 py-3 bg-primary text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg shadow-primary/20">Start Shopping</button>
+                      <h3 className="text-xl font-black text-slate-800">{t('profile.no_orders')}</h3>
+                      <p className="text-slate-500 mt-2 max-w-xs mx-auto text-sm font-medium">{t('profile.when_shop')}</p>
+                      <Link href="/products" className="mt-8 inline-block px-8 py-3 bg-primary text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg shadow-primary/20">
+                        {t('profile.start_shopping')}
+                      </Link>
                     </div>
                   )}
                 </motion.div>
@@ -278,8 +274,8 @@ export default function ProfilePage() {
               {activeTab === 'inbox' && (
                 <motion.div key="inbox" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
                   <div className="mb-8">
-                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">Your Inbox</h2>
-                    <p className="text-slate-500 text-sm font-medium">Updates, order status, and farm news</p>
+                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">{t('profile.your_inbox')}</h2>
+                    <p className="text-slate-500 text-sm font-medium">{t('profile.updates_news')}</p>
                   </div>
                   
                   {notifications.length > 0 ? (
@@ -310,8 +306,8 @@ export default function ProfilePage() {
                       <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-200">
                         <Inbox size={40} />
                       </div>
-                      <h3 className="text-xl font-black text-slate-800">Inbox is empty</h3>
-                      <p className="text-slate-500 mt-2 max-w-xs mx-auto text-sm font-medium">You will receive order updates and important notifications here.</p>
+                      <h3 className="text-xl font-black text-slate-800">{t('profile.inbox_empty')}</h3>
+                      <p className="text-slate-500 mt-2 max-w-xs mx-auto text-sm font-medium">{t('profile.will_receive')}</p>
                     </div>
                   )}
                 </motion.div>
@@ -321,8 +317,8 @@ export default function ProfilePage() {
               {activeTab === 'wallet' && (
                 <motion.div key="wallet" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
                   <div className="mb-8">
-                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">FF Wallet</h2>
-                    <p className="text-slate-500 text-sm font-medium">Your rewards and loyalty earnings</p>
+                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">{t('profile.wallet')}</h2>
+                    <p className="text-slate-500 text-sm font-medium">{t('profile.rewards_loyalty')}</p>
                   </div>
                   <div className="bg-white rounded-3xl p-2 border border-slate-100 shadow-sm">
                     <LoyaltyWallet coins={profile?.points || 0} referralCode={profile?.referral_code || 'FF-123'} memberStatus="Gold" />
@@ -334,8 +330,8 @@ export default function ProfilePage() {
               {activeTab === 'addresses' && (
                 <motion.div key="addresses" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
                   <div className="mb-8">
-                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">Saved Addresses</h2>
-                    <p className="text-slate-500 text-sm font-medium">Manage your delivery locations</p>
+                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">{t('profile.saved_addresses')}</h2>
+                    <p className="text-slate-500 text-sm font-medium">{t('profile.manage_locations')}</p>
                   </div>
                   <AddressManager />
                 </motion.div>
@@ -346,17 +342,17 @@ export default function ProfilePage() {
                 <motion.div key="favorites" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
                   <div className="mb-8 flex items-center justify-between">
                     <div>
-                      <h2 className="text-2xl font-black text-slate-900 tracking-tight">My Favorites</h2>
-                      <p className="text-slate-500 text-sm font-medium">Your curated list of organic favorites</p>
+                      <h2 className="text-2xl font-black text-slate-900 tracking-tight">{t('profile.favorites')}</h2>
+                      <p className="text-slate-500 text-sm font-medium">{t('profile.curated_list')}</p>
                     </div>
-                    <span className="text-xs bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-full font-black uppercase tracking-widest">{wishlistItems.length} Saved</span>
+                    <span className="text-xs bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-full font-black uppercase tracking-widest">{wishlistItems.length} {t('profile.saved')}</span>
                   </div>
 
                   {wishlistItems.length === 0 ? (
                     <div className="text-center py-32 bg-white rounded-3xl border border-slate-100 shadow-sm">
                       <Heart size={48} className="mx-auto mb-6 text-slate-200" />
-                      <h3 className="text-xl font-black text-slate-800">No favorites found</h3>
-                      <p className="text-slate-500 mt-2 max-w-xs mx-auto text-sm font-medium">Tap the heart on products to save them for later.</p>
+                      <h3 className="text-xl font-black text-slate-800">{t('profile.no_favorites')}</h3>
+                      <p className="text-slate-500 mt-2 max-w-xs mx-auto text-sm font-medium">{t('profile.tap_heart')}</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
@@ -389,12 +385,12 @@ export default function ProfilePage() {
                               <div>
                                 <span className="text-[9px] font-black uppercase tracking-widest text-primary bg-primary/5 px-2 py-0.5 rounded-md">{prod.category || 'Harvest'}</span>
                                 <h4 className="font-black text-slate-800 text-lg mt-2 group-hover:text-primary transition-colors line-clamp-1">{prod.name}</h4>
-                                <p className="text-xs text-slate-400 font-bold mt-1">Unit: {prod.unit || '1 kg'}</p>
+                                <p className="text-xs text-slate-400 font-bold mt-1">{t('profile.unit')}: {prod.unit || '1 kg'}</p>
                               </div>
 
                               <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-50">
                                 <div>
-                                  <span className="text-xs text-slate-400 font-bold block mb-0.5">Price</span>
+                                  <span className="text-xs text-slate-400 font-bold block mb-0.5">{t('profile.price')}</span>
                                   <span className="font-black text-primary text-xl">₹{prod.price}</span>
                                 </div>
                                 
@@ -402,7 +398,7 @@ export default function ProfilePage() {
                                   href={`/products/${prod.id}`}
                                   className="px-4 py-2 bg-primary text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-primary-dark transition-colors shadow-md shadow-primary/20"
                                 >
-                                  View Item
+                                  {t('profile.view_item')}
                                 </Link>
                               </div>
                             </div>
@@ -418,21 +414,21 @@ export default function ProfilePage() {
               {activeTab === 'help' && (
                 <motion.div key="help" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6">
                   <div className="mb-4">
-                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">Help & Support</h2>
-                    <p className="text-slate-500 text-sm font-medium">We're here to help you 24/7</p>
+                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">{t('profile.help_support')}</h2>
+                    <p className="text-slate-500 text-sm font-medium">{t('profile.online_help')}</p>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center text-center">
                       <div className="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center text-green-600 mb-6"><Inbox size={28} /></div>
-                      <h4 className="font-bold text-lg mb-2">Chat with us</h4>
-                      <p className="text-slate-500 text-sm mb-6">Our farm experts are online to help you.</p>
-                      <button className="w-full py-3 bg-primary/10 text-primary rounded-xl font-bold text-sm hover:bg-primary/20 transition-all">Start Chat</button>
+                      <h4 className="font-bold text-lg mb-2">{t('profile.chat_with_us')}</h4>
+                      <p className="text-slate-500 text-sm mb-6">{t('profile.chat_desc')}</p>
+                      <button className="w-full py-3 bg-primary/10 text-primary rounded-xl font-bold text-sm hover:bg-primary/20 transition-all">{t('profile.start_chat')}</button>
                     </div>
                     <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center text-center">
                       <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mb-6"><Phone size={28} /></div>
-                      <h4 className="font-bold text-lg mb-2">Call Support</h4>
-                      <p className="text-slate-500 text-sm mb-6">Give us a call for urgent issues.</p>
-                      <button className="w-full py-3 bg-primary/10 text-primary rounded-xl font-bold text-sm hover:bg-primary/20 transition-all">Request Call</button>
+                      <h4 className="font-bold text-lg mb-2">{t('profile.call_support')}</h4>
+                      <p className="text-slate-500 text-sm mb-6">{t('profile.call_desc')}</p>
+                      <button className="w-full py-3 bg-primary/10 text-primary rounded-xl font-bold text-sm hover:bg-primary/20 transition-all">{t('profile.request_call')}</button>
                     </div>
                   </div>
                 </motion.div>
@@ -442,25 +438,25 @@ export default function ProfilePage() {
               {activeTab === 'settings' && (
                 <motion.div key="settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
                   <div className="mb-8">
-                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">Profile Settings</h2>
-                    <p className="text-slate-500 text-sm font-medium">Update your identity and preferences</p>
+                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">{t('profile.settings')}</h2>
+                    <p className="text-slate-500 text-sm font-medium">{t('profile.update_identity')}</p>
                   </div>
                   <div className="bg-white rounded-3xl p-10 border border-slate-100 shadow-sm space-y-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
+                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">{t('profile.fullname')}</label>
                         <input type="text" defaultValue={profile?.full_name} className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-6 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none" />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Phone Number</label>
+                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">{t('profile.phone')}</label>
                         <input type="tel" defaultValue={profile?.phone} className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-6 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none" />
                       </div>
                       <div className="space-y-2 md:col-span-2">
-                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
+                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">{t('profile.email')}</label>
                         <input type="email" value={user?.email} disabled className="w-full bg-slate-100 border border-slate-100 rounded-xl py-3 px-6 text-sm font-bold text-slate-400 cursor-not-allowed" />
                       </div>
                     </div>
-                    <button className="bg-primary text-white px-10 py-3.5 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 transition-all active:scale-95">Save Changes</button>
+                    <button className="bg-primary text-white px-10 py-3.5 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 transition-all active:scale-95">{t('profile.save_changes')}</button>
                   </div>
                 </motion.div>
               )}

@@ -278,7 +278,7 @@ function ProductsContent() {
                   ))}
                 </AnimatePresence>
               </div>
-            ) : <div className="text-center py-20 bg-muted/10 rounded-[3rem] border-2 border-dashed border-border/50"><h3 className="text-2xl font-black mb-2">No matching products</h3><button onClick={() => { setCategory('All'); setSearchQuery(''); }} className="mt-6 bg-primary text-white px-10 py-4 rounded-full font-black uppercase text-xs">Show All</button></div>}
+            ) : <div className="text-center py-20 bg-muted/10 rounded-[3rem] border-2 border-dashed border-border/50"><h3 className="text-2xl font-black mb-2">{t('products.no_matching')}</h3><button onClick={() => { setCategory('All'); setSearchQuery(''); }} className="mt-6 bg-primary text-white px-10 py-4 rounded-full font-black uppercase text-xs">{t('products.show_all')}</button></div>}
           </div>
         </div>
       </div>

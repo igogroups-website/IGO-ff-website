@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
+import { useTranslation } from '@/context/TranslationContext';
 
 interface CategoryCardProps {
   name: string;
@@ -13,6 +14,8 @@ interface CategoryCardProps {
 }
 
 export default function CategoryCard({ name, image, count, color }: CategoryCardProps) {
+  const { t } = useTranslation();
+
   return (
     <Link 
       href={`/products?category=${name}`}
@@ -35,10 +38,10 @@ export default function CategoryCard({ name, image, count, color }: CategoryCard
         <div className="absolute inset-0 p-8 flex flex-col justify-end">
           <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
             <span className="text-white/60 font-black uppercase tracking-[0.2em] text-[10px] mb-2 block">{count}</span>
-            <h3 className="text-3xl font-black text-white mb-6 uppercase tracking-tighter leading-tight">{name}</h3>
+            <h3 className="text-3xl font-black text-white mb-6 uppercase tracking-tighter leading-tight">{t(name)}</h3>
             
             <div className="flex items-center gap-2 text-white font-black uppercase tracking-widest text-[10px] bg-white/10 backdrop-blur-md px-6 py-3 rounded-full border border-white/10 group-hover:bg-primary group-hover:border-primary transition-all duration-300 w-fit">
-              Explore <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+              {t('categories.explore')} <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
             </div>
           </div>
         </div>

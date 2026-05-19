@@ -10,6 +10,7 @@ import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { AnimatePresence } from 'framer-motion';
 import ProductDetailModal from './ProductDetailModal';
+import { useTranslation } from '@/context/TranslationContext';
 
 interface ProductCardProps {
   product: {
@@ -26,6 +27,7 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const router = useRouter();
@@ -41,10 +43,9 @@ export default function ProductCard({ product }: ProductCardProps) {
     e.stopPropagation();
     if (product.stock === 0 || loading) return;
 
-    // If user is not logged in, prompt login instead of adding to guest cart
     if (!user) {
       openAuthModal();
-      toast.error('Please login to add items to your basket', { icon: '🔐' });
+      toast.error(t('product.login_required'), { icon: '🔐' });
       return;
     }
 
@@ -53,11 +54,9 @@ export default function ProductCard({ product }: ProductCardProps) {
       const success = await addToCart(product.id, 1, product);
       if (success) {
         setShowAddedOverlay(true);
-        // Force immediate sync across components
         window.dispatchEvent(new Event('cart-updated'));
         setTimeout(() => setShowAddedOverlay(false), 3000);
       } else {
-        // addToCart returned false — Supabase RLS or network issue
         toast.error('Could not add to basket. Please refresh and try again.', { duration: 4000 });
       }
     } catch (error: any) {
@@ -77,7 +76,6 @@ export default function ProductCard({ product }: ProductCardProps) {
     } else {
       await updateQuantity(cartItem.id, newQty);
     }
-    // Force explicit UI sync
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event('cart-updated'));
     }
@@ -107,7 +105,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           {product.stock === 0 && (
             <div className="absolute inset-0 z-20 bg-black/40 backdrop-blur-[2px] flex items-center justify-center pointer-events-none">
               <div className="bg-white/95 px-6 py-2 rounded-full shadow-2xl border-2 border-red-500 transform -rotate-12 scale-110">
-                <span className="text-red-600 font-black text-xs uppercase tracking-[0.2em]">Sold Out</span>
+                <span className="text-red-600 font-black text-xs uppercase tracking-[0.2em]">{t('product.sold_out')}</span>
               </div>
             </div>
           )}
@@ -115,13 +113,13 @@ export default function ProductCard({ product }: ProductCardProps) {
           <div className="absolute top-4 left-4 flex flex-col gap-2 z-10 items-start">
             {product.is_seasonal && (
               <div className="bg-accent text-accent-foreground px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg">
-                Seasonal
+                {t('product.seasonal')}
               </div>
             )}
 
             {(product.stock !== undefined && product.stock > 0 && product.stock < 20) && (
               <div className="bg-orange-500 text-white px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg animate-pulse">
-                Low Stock
+                {t('product.low_stock')}
               </div>
             )}
 
@@ -129,7 +127,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             {['Small Onion', 'Tomato - Hybrid', 'Carrot', 'Ghee', 'Mangoes'].includes(product.name) && (
               <div className="bg-primary text-white px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center gap-1.5">
                 <Star size={10} className="fill-white" />
-                Favorite
+                {t('product.favorite')}
               </div>
             )}
           </div>
@@ -152,7 +150,6 @@ export default function ProductCard({ product }: ProductCardProps) {
               <Heart size={20} className={isLiked ? 'fill-white' : ''} />
             </motion.div>
             
-            {/* Heart Burst Effect */}
             <AnimatePresence>
               {isLiked && (
                 <motion.div
@@ -182,14 +179,14 @@ export default function ProductCard({ product }: ProductCardProps) {
                   <div className="w-20 h-20 bg-white text-primary rounded-full flex items-center justify-center mb-4 shadow-2xl">
                     <Check size={40} strokeWidth={4} />
                   </div>
-                  <h4 className="text-2xl font-black mb-1">ADDED!</h4>
-                  <p className="text-xs font-bold opacity-80 uppercase tracking-widest mb-6">to your harvest basket</p>
+                  <h4 className="text-2xl font-black mb-1">{t('product.added')}</h4>
+                  <p className="text-xs font-bold opacity-80 uppercase tracking-widest mb-6">{t('product.added_to_basket')}</p>
                   
                   <button 
                     onClick={(e) => { e.stopPropagation(); router.push('/cart'); }}
                     className="bg-white text-primary px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:scale-105 transition-transform shadow-xl"
                   >
-                    View Cart
+                    {t('product.view_cart')}
                   </button>
                 </motion.div>
               </motion.div>
@@ -200,7 +197,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         <div className="flex flex-col flex-1 px-1">
           <div className="mb-4">
             <p className="text-[10px] uppercase tracking-[0.2em] text-primary font-black mb-2 opacity-70">
-              {product.category || 'Fresh Harvest'}
+              {t(product.category) || t('cart.fresh_produce')}
             </p>
             <div className="flex items-center gap-1 mb-2">
               <div className="flex items-center gap-0.5">
@@ -223,7 +220,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                 <span className="text-[10px] font-bold text-muted-foreground/60 line-through">₹{Math.round(product.price * 1.3)}</span>
               </div>
               <div className="bg-green-100 text-green-700 text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-tighter w-fit">
-                Save ₹{Math.round(product.price * 0.3)}
+                {t('product.save_amount')}{Math.round(product.price * 0.3)}
               </div>
             </div>
 
@@ -260,7 +257,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                   <Loader2 size={20} className="animate-spin relative z-10" />
                 ) : (
                   <span className="text-[10px] font-black uppercase tracking-widest relative z-10">
-                    {product.stock === 0 ? 'Not in Stock' : 'Add to Basket'}
+                    {product.stock === 0 ? t('product.not_in_stock') : t('product.add_to_basket')}
                   </span>
                 )}
               </button>

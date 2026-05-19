@@ -10,8 +10,10 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'react-hot-toast';
 import ProgressiveRewardBar from '@/components/ProgressiveRewardBar';
+import { useTranslation } from '@/context/TranslationContext';
 
 export default function CartPage() {
+  const { t, language } = useTranslation();
   const { 
     cartItems, cartTotal, updateQuantity, removeItem, loading,
     couponCode, setCouponCode, discount, appliedCoupon, isValidatingCoupon, applyCoupon, removeCoupon 
@@ -25,7 +27,7 @@ export default function CartPage() {
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#fdfdfb] gap-6">
         <div className="w-20 h-20 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
         <p className="text-muted-foreground font-black uppercase tracking-widest text-xs animate-pulse">
-          Loading your harvest...
+          {t('cart.loading')}
         </p>
       </div>
     );
@@ -43,10 +45,10 @@ export default function CartPage() {
               <ShoppingBag size={32} />
             </div>
             <div>
-              <h1 className="text-4xl md:text-5xl font-black tracking-tight text-foreground leading-none mb-3">Your Basket</h1>
+              <h1 className="text-4xl md:text-5xl font-black tracking-tight text-foreground leading-none mb-3">{t('cart.title')}</h1>
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-                <p className="text-muted-foreground font-bold">{cartItems.length} items ready for delivery</p>
+                <p className="text-muted-foreground font-bold">{cartItems.length} {t('cart.items_ready')}</p>
               </div>
             </div>
           </div>
@@ -56,7 +58,7 @@ export default function CartPage() {
               href="/products" 
               className="text-primary font-black uppercase tracking-widest text-sm hover:underline flex items-center gap-2 group"
             >
-              Add more items
+              {t('cart.add_more')}
               <Plus size={16} className="group-hover:rotate-90 transition-transform" />
             </Link>
           )}
@@ -90,7 +92,7 @@ export default function CartPage() {
                     {/* Details */}
                     <div className="flex-1 text-center md:text-left">
                       <div className="mb-4">
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-1 opacity-70">Fresh Produce</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-1 opacity-70">{t('cart.fresh_produce')}</p>
                         <h3 className="text-2xl font-black text-foreground mb-1 group-hover:text-primary transition-colors">{item.products.name}</h3>
                         <p className="text-muted-foreground font-bold">1 {item.products.unit}</p>
                       </div>
@@ -118,7 +120,7 @@ export default function CartPage() {
                     {/* Price and Actions */}
                     <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-8 w-full md:w-auto border-t md:border-t-0 pt-6 md:pt-0">
                       <div className="text-right">
-                        <p className="text-xs text-muted-foreground font-black uppercase tracking-widest mb-1 opacity-60">Price</p>
+                        <p className="text-xs text-muted-foreground font-black uppercase tracking-widest mb-1 opacity-60">{t('cart.price')}</p>
                         <p className="text-3xl font-black text-primary">₹{item.products.price * item.quantity}</p>
                       </div>
                       <button
@@ -143,10 +145,8 @@ export default function CartPage() {
                   <Truck size={36} />
                 </div>
                 <div className="relative z-10 text-center md:text-left">
-                  <h4 className="text-2xl font-black text-foreground mb-1">Free Delivery Guaranteed</h4>
-                  <p className="text-muted-foreground font-medium text-lg leading-relaxed">
-                    Your farm-fresh order will arrive within <span className="text-primary font-black">24 hours</span> at no extra cost.
-                  </p>
+                  <h4 className="text-2xl font-black text-foreground mb-1">{t('cart.free_del_guaranteed')}</h4>
+                  <p className="text-muted-foreground font-medium text-lg leading-relaxed">{t('cart.free_del_desc')}</p>
                 </div>
               </motion.div>
             </div>
@@ -155,7 +155,7 @@ export default function CartPage() {
             <div className="lg:col-span-4">
               <div className="bg-white rounded-[3rem] p-10 border border-border/80 shadow-2xl shadow-primary/5 sticky top-32">
                 <h3 className="text-2xl font-black text-foreground mb-10 flex items-center gap-3">
-                  Order Summary
+                  {t('cart.summary')}
                   <div className="flex-1 h-px bg-border/60" />
                 </h3>
 
@@ -165,27 +165,27 @@ export default function CartPage() {
 
                 <div className="space-y-6 mb-12">
                   <div className="flex justify-between items-center">
-                    <span className="text-lg font-bold text-muted-foreground">Subtotal</span>
+                    <span className="text-lg font-bold text-muted-foreground">{t('cart.subtotal')}</span>
                     <span className="text-xl font-black">₹{cartTotal}</span>
                   </div>
                   {discount > 0 && (
                     <div className="flex justify-between items-center">
-                      <span className="text-lg font-bold text-emerald-600">Discount</span>
+                      <span className="text-lg font-bold text-emerald-600">{t('cart.discount')}</span>
                       <span className="text-xl font-black text-emerald-600">-₹{discount}</span>
                     </div>
                   )}
                   <div className="flex justify-between items-center">
-                    <span className="text-lg font-bold text-muted-foreground">Shipping</span>
+                    <span className="text-lg font-bold text-muted-foreground">{t('cart.shipping')}</span>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-black line-through text-muted-foreground/50">₹40</span>
-                      <span className="bg-emerald-500/10 text-emerald-500 px-3 py-1 rounded-lg text-xs font-black uppercase tracking-widest">Free</span>
+                      <span className="bg-emerald-500/10 text-emerald-500 px-3 py-1 rounded-lg text-xs font-black uppercase tracking-widest">{t('cart.free')}</span>
                     </div>
                   </div>
-                  <div className="h-px bg-dashed-border bg-[linear-gradient(to_right,#e5e7eb_50%,transparent_50%)] bg-[length:12px_1px] h-px w-full my-8" />
+                  <div className="h-px bg-dashed-border bg-[linear-gradient(to_right,#e5e7eb_50%,transparent_50%)] bg-[length:12px_1px] w-full my-8" />
                   <div className="flex justify-between items-end">
                     <div>
-                      <span className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-1">Grand Total</span>
-                      <span className="text-[10px] text-primary font-bold">Inclusive of all farm taxes</span>
+                      <span className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-1">{t('cart.grand_total')}</span>
+                      <span className="text-[10px] text-primary font-bold">{t('cart.tax_inclusive')}</span>
                     </div>
                     <span className="text-4xl font-black text-primary leading-none">₹{grandTotal}</span>
                   </div>
@@ -196,7 +196,7 @@ export default function CartPage() {
                     href="/checkout"
                     className="w-full bg-primary text-white py-6 rounded-[1.5rem] font-black text-xl flex items-center justify-center gap-3 hover:bg-primary/90 transition-all shadow-2xl shadow-primary/30 active:scale-[0.98] group"
                   >
-                    Checkout Now
+                    {t('cart.checkout')}
                     <ArrowRight size={24} className="group-hover:translate-x-1 transition-transform" />
                   </Link>
                   
@@ -204,16 +204,16 @@ export default function CartPage() {
                   <div className="mt-6 p-4 bg-muted/20 border border-dashed border-border rounded-[1.5rem]">
                     <div className="flex items-center gap-2 mb-3 px-2">
                       <Tag size={16} className="text-primary" />
-                      <span className="text-xs font-black text-muted-foreground uppercase tracking-widest">Promotional Code</span>
+                      <span className="text-xs font-black text-muted-foreground uppercase tracking-widest">{t('cart.promo')}</span>
                     </div>
                     <div className="flex gap-2">
                       <input 
                         type="text" 
-                        placeholder="ENTER CODE"
+                        placeholder={t('cart.enter_code')}
                         className="flex-1 bg-white border border-border rounded-xl px-4 py-3 text-sm font-black uppercase tracking-widest focus:ring-2 focus:ring-primary/20 outline-none"
                         value={couponCode}
                         onChange={e => setCouponCode(e.target.value)}
-                        disabled={appliedCoupon}
+                        disabled={!!appliedCoupon}
                       />
                       <button 
                         onClick={appliedCoupon ? removeCoupon : applyCoupon}
@@ -224,7 +224,7 @@ export default function CartPage() {
                             : 'bg-primary text-white hover:bg-primary/90'
                         }`}
                       >
-                        {isValidatingCoupon ? '...' : (appliedCoupon ? 'REMOVE' : 'APPLY')}
+                        {isValidatingCoupon ? '...' : (appliedCoupon ? t('cart.remove') : t('cart.apply'))}
                       </button>
                     </div>
                   </div>
@@ -236,14 +236,14 @@ export default function CartPage() {
                       <ShieldCheck size={20} />
                     </div>
                     <div>
-                      <p className="text-xs font-black text-foreground uppercase tracking-widest">Secure Checkout</p>
-                      <p className="text-[10px] text-muted-foreground font-medium">SSL Encrypted Transaction</p>
+                      <p className="text-xs font-black text-foreground uppercase tracking-widest">{t('cart.secure')}</p>
+                      <p className="text-[10px] text-muted-foreground font-medium">{t('cart.ssl')}</p>
                     </div>
                   </div>
                   
                   <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10">
                     <p className="text-[10px] text-primary font-bold leading-relaxed text-center italic">
-                      "By supporting us, you're directly helping local farmers maintain sustainable agriculture."
+                      {t('cart.support_desc')}
                     </p>
                   </div>
                 </div>
@@ -273,9 +273,9 @@ export default function CartPage() {
                   </motion.div>
                 </div>
                 
-                <h2 className="text-4xl md:text-5xl font-black mb-6 text-foreground leading-tight">Your harvest basket <br/>is currently empty</h2>
+                <h2 className="text-4xl md:text-5xl font-black mb-6 text-foreground leading-tight">{t('cart.empty_title')}</h2>
                 <p className="text-muted-foreground text-xl font-medium mb-16 max-w-md mx-auto leading-relaxed">
-                  The fields are full of fresh produce waiting for you! Start shopping our seasonal collection now.
+                  {t('cart.empty_desc')}
                 </p>
                 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
@@ -283,7 +283,7 @@ export default function CartPage() {
                     href="/products"
                     className="group relative inline-flex items-center gap-4 bg-primary text-white px-12 py-6 rounded-[2rem] font-black text-2xl hover:scale-105 transition-all shadow-2xl shadow-primary/30 active:scale-95"
                   >
-                    Start Shopping
+                    {t('cart.start_shopping')}
                     <ArrowRight size={28} className="group-hover:translate-x-2 transition-transform" />
                   </Link>
                   
@@ -291,7 +291,7 @@ export default function CartPage() {
                     href="/"
                     className="text-muted-foreground font-black uppercase tracking-widest text-sm hover:text-primary transition-colors"
                   >
-                    Back to Home
+                    {t('cart.back_home')}
                   </Link>
                 </div>
               </div>
@@ -300,9 +300,9 @@ export default function CartPage() {
             {/* Trust Badges */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12 px-6">
               {[
-                { icon: Leaf, title: "100% Organic", desc: "No pesticides ever" },
-                { icon: Truck, title: "Next Day Delivery", desc: "Always fresh to your door" },
-                { icon: ShieldCheck, title: "Direct from Farm", desc: "Supporting local families" }
+                { icon: Leaf, title: t('why.organic.title'), desc: t('cart.no_pesticides') },
+                { icon: Truck, title: t('cart.next_day'), desc: t('cart.always_fresh') },
+                { icon: ShieldCheck, title: t('cart.direct_farm'), desc: t('cart.support_families') }
               ].map((badge, i) => (
                 <div key={i} className="flex items-center gap-5">
                   <div className="w-14 h-14 bg-white rounded-2xl border border-border flex items-center justify-center text-primary shadow-sm">
@@ -327,6 +327,7 @@ export default function CartPage() {
 
 // Separate component for Recommendations
 function RecommendedProducts({ cartItems }: { cartItems: any[] }) {
+  const { t } = useTranslation();
   const [recommendations, setRecommendations] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
   const { addToCart } = useCart();
@@ -336,13 +337,14 @@ function RecommendedProducts({ cartItems }: { cartItems: any[] }) {
       try {
         const cartProductIds = cartItems.map(item => item.product_id);
         
-        const { data, error } = await supabase
-          .from('products')
-          .select('*')
-          .not('id', 'in', `(${cartProductIds.join(',')})`)
-          .limit(4);
+        let query = supabase.from('products').select('*');
+        if (cartProductIds.length > 0) {
+          query = query.not('id', 'in', `(${cartProductIds.join(',')})`);
+        }
+        
+        const { data, error } = await query.limit(4);
 
-        if (error) {
+        if (error || !data || data.length === 0) {
           // Fallback: just fetch any products if not filter fails (e.g. empty cart)
           const { data: fallbackData } = await supabase
             .from('products')
@@ -367,11 +369,11 @@ function RecommendedProducts({ cartItems }: { cartItems: any[] }) {
     <div className="mt-32">
       <div className="flex items-center justify-between mb-12">
         <div>
-          <h3 className="text-3xl font-black text-foreground tracking-tight mb-2 uppercase italic">Freshly Harvested <span className="text-primary font-serif lowercase">for you</span></h3>
-          <p className="text-muted-foreground font-medium">Add these farm-fresh items to your basket</p>
+          <h3 className="text-3xl font-black text-foreground tracking-tight mb-2 uppercase italic">{t('cart.recommended')}</h3>
+          <p className="text-muted-foreground font-medium">{t('cart.recommended_desc')}</p>
         </div>
         <Link href="/products" className="px-6 py-3 rounded-xl border border-border font-black text-xs uppercase tracking-widest hover:bg-muted transition-all">
-          View All
+          {t('cart.view_all')}
         </Link>
       </div>
 

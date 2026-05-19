@@ -4,10 +4,13 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
-import { Package, Truck, CheckCircle2, Clock, MapPin, ChevronRight } from 'lucide-react';
+import { Package, Truck, CheckCircle2, Clock, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
+import { useTranslation } from '@/context/TranslationContext';
+import Link from 'next/link';
 
 export default function Orders() {
+  const { t } = useTranslation();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -60,8 +63,8 @@ export default function Orders() {
       <div className="container mx-auto px-4 pt-32">
         <div className="max-w-4xl mx-auto">
           <div className="mb-10">
-            <h1 className="text-4xl font-bold mb-2">My Orders</h1>
-            <p className="text-muted-foreground">Track and manage your farm-fresh deliveries.</p>
+            <h1 className="text-4xl font-bold mb-2">{t('orders.title')}</h1>
+            <p className="text-muted-foreground">{t('orders.desc')}</p>
           </div>
 
           {loading ? (
@@ -75,11 +78,11 @@ export default function Orders() {
               <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
                 <Package size={32} className="text-muted-foreground" />
               </div>
-              <h3 className="text-xl font-bold mb-2">No orders yet</h3>
-              <p className="text-muted-foreground mb-8">Ready to taste the freshness? Start your first order today!</p>
-              <button className="bg-primary text-white px-8 py-3 rounded-full font-bold">
-                Start Shopping
-              </button>
+              <h3 className="text-xl font-bold mb-2">{t('orders.empty')}</h3>
+              <p className="text-muted-foreground mb-8">{t('orders.empty_desc')}</p>
+              <Link href="/products" className="inline-block bg-primary text-white px-8 py-3 rounded-full font-bold">
+                {t('orders.start_shopping')}
+              </Link>
             </div>
           ) : (
             <div className="space-y-6">
@@ -96,14 +99,14 @@ export default function Orders() {
                         <Package size={24} />
                       </div>
                       <div>
-                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Order ID</p>
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{t('orders.id')}</p>
                         <p className="font-bold">#{order.order_number || String(order.id).slice(0, 8)}</p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-8">
                       <div>
-                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest text-right">Date</p>
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest text-right">{t('orders.date')}</p>
                         <p className="font-bold">{format(new Date(order.created_at), 'MMM dd, yyyy')}</p>
                       </div>
                       <div className="bg-muted/50 px-4 py-2 rounded-xl flex items-center gap-2">
@@ -138,12 +141,12 @@ export default function Orders() {
                       <div className="flex items-start gap-2">
                         <MapPin size={16} className="text-muted-foreground mt-1" />
                         <div>
-                          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Delivery To</p>
+                          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{t('orders.delivery_to')}</p>
                           <p className="text-sm line-clamp-2">{order.delivery_address}</p>
                         </div>
                       </div>
                       <div className="pt-4 border-t border-border">
-                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Total Amount</p>
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{t('orders.total')}</p>
                         <p className="text-2xl font-black text-primary">₹{order.total_amount}</p>
                       </div>
                       <div className="relative group">
@@ -152,10 +155,10 @@ export default function Orders() {
                           className="w-full py-3 rounded-xl border border-muted text-muted-foreground font-bold text-sm cursor-not-allowed opacity-50 flex items-center justify-center gap-2"
                         >
                           <Truck size={16} />
-                          Track Delivery
+                          {t('orders.track_delivery')}
                         </button>
                         <span className="absolute -top-9 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                          Coming Soon
+                          {t('orders.coming_soon')}
                         </span>
                       </div>
                     </div>

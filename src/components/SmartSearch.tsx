@@ -8,8 +8,10 @@ import { supabase } from '@/lib/supabase';
 import ProductDetailModal from './ProductDetailModal';
 import { toast } from 'react-hot-toast';
 import { VERIFIED_INVENTORY } from '@/lib/constants';
+import { useTranslation } from '@/context/TranslationContext';
 
 export default function SmartSearch({ isSolid = false }: { isSolid?: boolean }) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [results, setResults] = useState<any[]>([]);
@@ -171,7 +173,7 @@ export default function SmartSearch({ isSolid = false }: { isSolid?: boolean }) 
           value={query} 
           onChange={(e) => setQuery(e.target.value)} 
           onFocus={() => query.length > 1 && setIsOpen(true)} 
-          placeholder='Search for fresh harvest... try "Potato"' 
+          placeholder={t('search.placeholder')} 
           className={`w-full backdrop-blur-3xl border rounded-full py-2.5 pl-12 pr-20 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary/40 focus:bg-white transition-all shadow-lg text-sm font-bold ${
             isSolid 
               ? 'bg-slate-50 border-slate-200 placeholder:text-slate-400 text-slate-800' 
@@ -201,7 +203,7 @@ export default function SmartSearch({ isSolid = false }: { isSolid?: boolean }) 
                 <p className="text-xs font-black text-primary">₹{product.price}</p>
               </button>
             ))}
-            <button onClick={() => { router.push(`/products?search=${query}`); setIsOpen(false); }} className="w-full p-3 text-center text-[10px] font-black uppercase text-muted-foreground border-t border-border mt-2 hover:text-primary transition-colors">View All Results</button>
+            <button onClick={() => { router.push(`/products?search=${query}`); setIsOpen(false); }} className="w-full p-3 text-center text-[10px] font-black uppercase text-muted-foreground border-t border-border mt-2 hover:text-primary transition-colors">{t('search.view_all')}</button>
           </motion.div>
         )}
       </AnimatePresence>

@@ -7,10 +7,12 @@ import { motion } from 'framer-motion';
 import { Mail, Phone, MapPin, Send, MessageCircle, Sparkles } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { supabase } from '@/lib/supabase';
+import { useTranslation } from '@/context/TranslationContext';
 
 const ADMIN_EMAIL = 'info.thefarmersfactory@gmail.com';
 
 export default function ContactPage() {
+  const { t, language } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     name: '',
@@ -96,10 +98,16 @@ export default function ContactPage() {
               >
                 <div className="flex items-center gap-3 text-primary font-black text-xs uppercase tracking-[0.4em] mb-6">
                   <MessageCircle size={16} />
-                  <span>Connect with the farm</span>
+                  <span>{t('contact.badge')}</span>
                 </div>
                 <h1 className="text-6xl md:text-[8rem] font-black tracking-tighter uppercase leading-[0.85] mb-12">
-                  Get in <br /> <span className="text-primary italic font-serif lowercase">Touch</span>
+                  {language === 'en' ? (
+                    <>Get in <br /> <span className="text-primary italic font-serif lowercase">Touch</span></>
+                  ) : language === 'ta' ? (
+                    <>தொடர்பு <br /> <span className="text-primary italic font-serif lowercase">கொள்ளவும்</span></>
+                  ) : (
+                    <>संपर्क <br /> <span className="text-primary italic font-serif lowercase">करें</span></>
+                  )}
                 </h1>
                 
                 <div className="space-y-10">
@@ -108,7 +116,7 @@ export default function ContactPage() {
                       <Phone size={24} />
                     </div>
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Direct Line</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">{t('contact.direct_line')}</p>
                       <p className="text-xl font-black text-foreground">+91 89258 78327</p>
                     </div>
                   </div>
@@ -118,7 +126,7 @@ export default function ContactPage() {
                       <Mail size={24} />
                     </div>
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Email Support</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">{t('contact.email_support')}</p>
                       <a href="mailto:info.thefarmersfactory@gmail.com" className="text-xl font-black text-foreground hover:text-primary transition-colors">
                         info.thefarmersfactory@gmail.com
                       </a>
@@ -130,7 +138,7 @@ export default function ContactPage() {
                       <MapPin size={24} />
                     </div>
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Main Hub</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">{t('contact.main_hub')}</p>
                       <p className="text-xl font-black text-foreground">No 17 , Kovalan street, 2nd main road,<br />Uthandi kanathur, Chennai 600119</p>
                     </div>
                   </div>
@@ -147,13 +155,13 @@ export default function ContactPage() {
                 <Sparkles size={120} className="text-primary" />
               </div>
               
-              <h3 className="text-2xl font-black uppercase mb-2">Send a Message</h3>
-              <p className="text-sm text-muted-foreground font-medium mb-8">We reply within 2 hours on working days.</p>
+              <h3 className="text-2xl font-black uppercase mb-2">{t('contact.send_msg')}</h3>
+              <p className="text-sm text-muted-foreground font-medium mb-8">{t('contact.reply_time')}</p>
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Full Name *</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">{t('contact.fullname')}</label>
                     <input
                       type="text"
                       name="name"
@@ -165,7 +173,7 @@ export default function ContactPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Email Address *</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">{t('contact.email')}</label>
                     <input
                       type="email"
                       name="email"
@@ -179,22 +187,22 @@ export default function ContactPage() {
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Subject</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">{t('contact.subject')}</label>
                   <select
                     name="subject"
                     value={form.subject}
                     onChange={handleChange}
                     className="w-full bg-muted/20 border border-border rounded-2xl px-6 py-4 font-bold focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all appearance-none outline-none"
                   >
-                    <option>General Inquiry</option>
-                    <option>Order Support</option>
-                    <option>Farmer Partnership</option>
-                    <option>Bulk/Business Orders</option>
+                    <option value="General Inquiry">{t('contact.subject.general')}</option>
+                    <option value="Order Support">{t('contact.subject.order')}</option>
+                    <option value="Farmer Partnership">{t('contact.subject.farmer')}</option>
+                    <option value="Bulk/Business Orders">{t('contact.subject.bulk')}</option>
                   </select>
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Message *</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">{t('contact.message')}</label>
                   <textarea
                     name="message"
                     value={form.message}
@@ -211,7 +219,7 @@ export default function ContactPage() {
                   disabled={loading}
                   className="w-full py-5 bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-sm hover:shadow-2xl hover:shadow-primary/30 transition-all flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {loading ? 'Sending...' : 'Send Message'}
+                  {loading ? t('contact.sending') : t('contact.send_btn')}
                   <Send size={18} />
                 </button>
               </form>

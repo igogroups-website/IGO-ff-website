@@ -12,15 +12,16 @@ import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import ProductCard from '@/components/ProductCard';
-import QuickAddCarousel from '@/components/QuickAddCarousel';
 import SmartMealBundling from '@/components/SmartMealBundling';
 import ProductGallery from '@/components/ProductGallery';
+import { useTranslation } from '@/context/TranslationContext';
 
 export default function ProductPage() {
   const { id } = useParams();
   const router = useRouter();
   const { user, openAuthModal } = useAuth();
   const { addToCart } = useCart();
+  const { t } = useTranslation();
   
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -135,9 +136,9 @@ export default function ProductPage() {
       <main className="container mx-auto px-6 pt-32 pb-20">
         {/* Breadcrumbs */}
         <nav className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground mb-12">
-          <Link href="/" className="hover:text-primary transition-colors">Home</Link>
+          <Link href="/" className="hover:text-primary transition-colors">{t('product.details.home')}</Link>
           <ChevronRight size={14} />
-          <Link href="/products" className="hover:text-primary transition-colors">Shop</Link>
+          <Link href="/products" className="hover:text-primary transition-colors">{t('product.details.shop')}</Link>
           <ChevronRight size={14} />
           <span className="text-foreground">{product.name}</span>
         </nav>
@@ -170,15 +171,15 @@ export default function ProductPage() {
             <div className="flex flex-wrap items-center gap-4 mb-8">
               <div className="flex items-center gap-1 bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-100">
                 <Star size={14} className="fill-amber-500 text-amber-500" />
-                <span>4.9 • 1,200+ Reviews</span>
+                <span>4.9 • 1,200+ {t('product.details.reviews')}</span>
               </div>
               <div className="flex items-center gap-1 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-100">
                 <Timer size={14} />
-                <span>Ready in 24h</span>
+                <span>{t('product.details.ready_in_24h')}</span>
               </div>
               {product.is_seasonal && (
                 <div className="flex items-center gap-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-primary/20">
-                  <span>Seasonal Favorite</span>
+                  <span>{t('product.details.seasonal_fav')}</span>
                 </div>
               )}
             </div>
@@ -190,34 +191,34 @@ export default function ProductPage() {
                   <span className="text-2xl font-bold text-slate-300 line-through">₹{product.mrp * parseFloat(selectedWeight)}</span>
                 )}
                 <span className="bg-red-500 text-white px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-red-500/20">
-                  SAVE {Math.round(((product.mrp - product.price) / product.mrp) * 100)}%
+                  {t('product.details.save')} {Math.round(((product.mrp - product.price) / product.mrp) * 100)}%
                 </span>
               </div>
               <span className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">
-                Incl. of all taxes • M.R.P. includes all charges
+                {t('product.details.taxes_mrp')}
               </span>
             </div>
 
             <p className="text-slate-500 text-lg mb-10 font-medium leading-relaxed max-w-xl">
-              {product.description || "Freshly harvested, organic produce delivered straight to your home. No chemicals, no ripening agents, just pure nature."}
+              {product.description || t('product.details.default_desc')}
             </p>
 
             {/* Offers & Savings Section */}
             <div className="mb-12">
               <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-6 flex items-center gap-2">
                 <Plus size={14} className="text-primary" />
-                Available Offers
+                {t('product.details.available_offers')}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-gradient-to-br from-slate-50 to-white p-6 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden group">
                   <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full -mr-10 -mt-10 transition-transform group-hover:scale-150" />
-                  <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-2">Combo Savings</p>
-                  <p className="text-sm font-bold text-slate-700 leading-snug">Save 10% when you buy 2+ items from the same farm.</p>
+                  <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-2">{t('product.details.combo_savings')}</p>
+                  <p className="text-sm font-bold text-slate-700 leading-snug">{t('product.details.combo_desc')}</p>
                 </div>
                 <div className="bg-gradient-to-br from-slate-50 to-white p-6 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden group">
                   <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/5 rounded-full -mr-10 -mt-10 transition-transform group-hover:scale-150" />
-                  <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-2">First Order</p>
-                  <p className="text-sm font-bold text-slate-700 leading-snug">Get Free Delivery on your first harvest order over ₹499.</p>
+                  <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-2">{t('product.details.first_order')}</p>
+                  <p className="text-sm font-bold text-slate-700 leading-snug">{t('product.details.first_order_desc')}</p>
                 </div>
               </div>
             </div>
@@ -230,7 +231,7 @@ export default function ProductPage() {
             {/* Weight Selection (if applicable) */}
             {product.unit === 'kg' && (
               <div className="mb-10">
-                <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-4">Select Weight</p>
+                <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-4">{t('product.details.select_weight')}</p>
                 <div className="flex flex-wrap gap-4">
                   {weightOptions.map((opt) => (
                     <button
@@ -266,7 +267,7 @@ export default function ProductPage() {
                     className="flex-1 h-[72px] rounded-[1.5rem] font-black text-sm lg:text-base bg-white border-2 border-primary text-primary hover:bg-primary/5 transition-all shadow-xl shadow-primary/5 flex items-center justify-center gap-3 px-6"
                   >
                     <ShoppingBag size={20} />
-                    ADD TO BASKET
+                    {t('product.details.add_to_basket')}
                   </button>
                   <button className="w-[72px] h-[72px] rounded-[1.5rem] bg-white border-2 border-slate-100 flex items-center justify-center hover:bg-red-50 hover:border-red-100 hover:text-red-500 transition-all text-slate-300 shadow-sm flex-shrink-0">
                     <Heart size={28} />
@@ -279,7 +280,7 @@ export default function ProductPage() {
                 onClick={() => handleAddToCart(true)}
                 className="w-full py-6 rounded-[2rem] font-black text-xl lg:text-2xl bg-primary text-white hover:bg-primary/90 transition-all shadow-2xl shadow-primary/20 flex items-center justify-center gap-3 active:scale-[0.98]"
               >
-                BUY IT NOW
+                {t('product.details.buy_now')}
               </button>
             </div>
 
@@ -288,22 +289,22 @@ export default function ProductPage() {
               <div className="flex flex-col items-center gap-3 text-center bg-slate-50 p-6 rounded-3xl border border-slate-100">
                 <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary"><Truck size={24} /></div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest mb-1">Next Slot</p>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Tomorrow 6 AM - 9 AM</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest mb-1">{t('product.details.next_slot')}</p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">{t('product.details.next_slot_time')}</p>
                 </div>
               </div>
               <div className="flex flex-col items-center gap-3 text-center bg-slate-50 p-6 rounded-3xl border border-slate-100">
                 <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary"><ShieldCheck size={24} /></div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest mb-1">Quality</p>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Grade A Certified</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest mb-1">{t('product.details.quality')}</p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">{t('product.details.grade_a')}</p>
                 </div>
               </div>
               <div className="flex flex-col items-center gap-3 text-center bg-slate-50 p-6 rounded-3xl border border-slate-100">
                 <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary"><Timer size={24} /></div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest mb-1">Fast Support</p>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Live Chat 24/7</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest mb-1">{t('product.details.fast_support')}</p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">{t('product.details.live_chat_247')}</p>
                 </div>
               </div>
             </div>
@@ -314,8 +315,8 @@ export default function ProductPage() {
         {relatedProducts.length > 0 && (
           <div className="mt-40">
             <div className="flex items-center justify-between mb-16">
-              <h2 className="text-4xl font-black uppercase tracking-tight">You Might Also Like</h2>
-              <Link href="/products" className="text-primary font-black uppercase tracking-widest text-xs hover:underline">View All</Link>
+              <h2 className="text-4xl font-black uppercase tracking-tight">{t('product.details.you_might_like')}</h2>
+              <Link href="/products" className="text-primary font-black uppercase tracking-widest text-xs hover:underline">{t('products.show_all')}</Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
               {relatedProducts.slice(0, 4).map(p => (
@@ -340,11 +341,11 @@ export default function ProductPage() {
               <div className="w-32 h-32 bg-white text-primary rounded-full flex items-center justify-center mb-8 shadow-2xl">
                 <Check size={64} strokeWidth={4} />
               </div>
-              <h2 className="text-5xl font-black mb-4">SUCCESS!</h2>
-              <p className="text-xl font-bold opacity-80 mb-12">Your harvest has been added to the basket</p>
+              <h2 className="text-5xl font-black mb-4">{t('product.details.success')}</h2>
+              <p className="text-xl font-bold opacity-80 mb-12">{t('product.details.added_desc')}</p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <button onClick={() => router.push('/cart')} className="bg-white text-primary px-10 py-5 rounded-[1.5rem] font-black text-lg uppercase tracking-widest hover:scale-105 transition-transform shadow-xl">VIEW BASKET</button>
-                <button onClick={() => setShowAddedOverlay(false)} className="bg-transparent border-2 border-white/50 text-white px-10 py-5 rounded-[1.5rem] font-black text-lg uppercase tracking-widest hover:bg-white/10 transition-all">CONTINUE SHOPPING</button>
+                <button onClick={() => router.push('/cart')} className="bg-white text-primary px-10 py-5 rounded-[1.5rem] font-black text-lg uppercase tracking-widest hover:scale-105 transition-transform shadow-xl">{t('product.details.view_basket')}</button>
+                <button onClick={() => setShowAddedOverlay(false)} className="bg-transparent border-2 border-white/50 text-white px-10 py-5 rounded-[1.5rem] font-black text-lg uppercase tracking-widest hover:bg-white/10 transition-all">{t('product.details.continue_shopping')}</button>
               </div>
             </motion.div>
           </motion.div>
@@ -354,4 +355,3 @@ export default function ProductPage() {
     </div>
   );
 }
-

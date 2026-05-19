@@ -153,7 +153,7 @@ export default function AIRecipeAssistant() {
         <div className="relative">
           <Sparkles className="text-primary animate-pulse" size={24} />
         </div>
-        <span className="font-black text-xs uppercase tracking-[0.2em] relative">AI Guru v5.0</span>
+        <span className="font-black text-xs uppercase tracking-[0.2em] relative">{t('ai.version')}</span>
       </motion.button>
 
       <AnimatePresence>
@@ -167,16 +167,16 @@ export default function AIRecipeAssistant() {
                   <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center text-white"><Brain size={24} /></div>
                   <div>
                     <h3 className="text-xl font-black tracking-tight leading-none uppercase">Farm AI</h3>
-                    <span className="text-[10px] font-black text-primary uppercase tracking-widest">Predictive Guru v5.0</span>
+                    <span className="text-[10px] font-black text-primary uppercase tracking-widest">{t('ai.version')}</span>
                   </div>
                 </div>
 
                 <div className="space-y-3 flex-1">
                   {[
-                    { id: 'recipes', icon: Utensils, label: 'Smart Recipes' },
-                    { id: 'planner', icon: Calendar, label: 'Nutrition Planner' },
-                    { id: 'health', icon: Activity, label: 'Health Guru' },
-                    { id: 'chat', icon: MessageSquare, label: 'Voice AI' }
+                    { id: 'recipes', icon: Utensils, label: t('ai.smart_recipes') },
+                    { id: 'planner', icon: Calendar, label: t('ai.nutrition_planner') },
+                    { id: 'health', icon: Activity, label: t('ai.health_guru') },
+                    { id: 'chat', icon: MessageSquare, label: t('ai.voice_ai') }
                   ].map((tab) => (
                     <button
                       key={tab.id}
@@ -199,20 +199,22 @@ export default function AIRecipeAssistant() {
                   {activeTab === 'planner' && (
                     <div className="space-y-10">
                        <div>
-                          <div className="flex items-center gap-3 text-primary font-black text-xs uppercase tracking-[0.3em] mb-4"><Calendar size={16} /><span>Elite Weekly Planner</span></div>
-                          <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-2 leading-none">Organic <span className="text-primary italic font-serif lowercase">Fuel</span></h2>
+                          <div className="flex items-center gap-3 text-primary font-black text-xs uppercase tracking-[0.3em] mb-4"><Calendar size={16} /><span>{t('ai.weekly_planner')}</span></div>
+                          <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-2 leading-none">
+                            {t('ai.organic_fuel').split(' ')[0]} <span className="text-primary italic font-serif lowercase">{t('ai.organic_fuel').split(' ')[1] || ''}</span>
+                          </h2>
                        </div>
                        <div className="grid grid-cols-1 gap-4">
                           {mealPlan.map((m, i) => (
                              <div key={i} className="flex items-center justify-between p-6 bg-muted/20 rounded-2xl border border-border group hover:border-primary/50 transition-all">
-                                <div className="flex items-center gap-6">
-                                   <div className="w-12 text-xs font-black uppercase text-muted-foreground">{m.day.slice(0,3)}</div>
-                                   <div className="flex flex-col">
-                                      <span className="font-black text-sm uppercase tracking-tight">{m.meal}</span>
-                                      <span className="text-[10px] font-bold text-muted-foreground uppercase">{m.kcal} kcal</span>
-                                   </div>
-                                </div>
-                                <button onClick={() => toast.success("Plan updated!")} className="p-3 bg-white hover:bg-primary hover:text-white rounded-xl border border-border transition-all opacity-0 group-hover:opacity-100"><Plus size={16} /></button>
+                                 <div className="flex items-center gap-6">
+                                    <div className="w-12 text-xs font-black uppercase text-muted-foreground">{m.day.slice(0,3)}</div>
+                                    <div className="flex flex-col">
+                                       <span className="font-black text-sm uppercase tracking-tight">{m.meal}</span>
+                                       <span className="text-[10px] font-bold text-muted-foreground uppercase">{m.kcal} kcal</span>
+                                    </div>
+                                 </div>
+                                 <button onClick={() => toast.success("Plan updated!")} className="p-3 bg-white hover:bg-primary hover:text-white rounded-xl border border-border transition-all opacity-0 group-hover:opacity-100"><Plus size={16} /></button>
                              </div>
                           ))}
                        </div>
@@ -222,22 +224,22 @@ export default function AIRecipeAssistant() {
                   {activeTab === 'health' && (
                     <div className="space-y-10">
                        <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-2 leading-none">
-                          Predictive <span className="text-primary italic font-serif lowercase">Health</span>
+                          {t('ai.predictive_health').split(' ')[0]} <span className="text-primary italic font-serif lowercase">{t('ai.predictive_health').split(' ')[1] || ''}</span>
                        </h2>
                        <div className="bg-primary/5 p-10 rounded-[2.5rem] border border-primary/10 text-center">
                           <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl">
                              <Activity size={32} className="text-primary" />
                           </div>
-                          <h4 className="text-2xl font-black mb-4">Sync Your Body Data</h4>
+                          <h4 className="text-2xl font-black mb-4">{t('ai.sync_title')}</h4>
                           <p className="text-muted-foreground font-medium mb-10 max-w-sm mx-auto italic">
-                             Guru can analyze your sleep, activity, and vitals to suggest the perfect organic fuel for your week.
+                             {t('ai.sync_desc')}
                           </p>
                           <button 
                             onClick={handleHealthSync}
                             disabled={loading || isHealthSynced}
                             className={`px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-sm transition-all shadow-xl ${isHealthSynced ? 'bg-emerald-500 text-white' : 'bg-black text-white hover:bg-primary'}`}
                           >
-                             {loading ? <Loader2 className="animate-spin mx-auto" /> : isHealthSynced ? 'Body Data Synced' : 'Sync Health Apps'}
+                             {loading ? <Loader2 className="animate-spin mx-auto" /> : isHealthSynced ? t('ai.synced_btn') : t('ai.sync_btn')}
                           </button>
                        </div>
                     </div>
@@ -247,8 +249,10 @@ export default function AIRecipeAssistant() {
                     <div className="flex flex-col h-full max-h-[60vh]">
                       <div className="mb-8 flex items-center justify-between">
                         <div>
-                          <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-2 leading-none">Voice <span className="text-primary italic font-serif lowercase">Orders</span></h2>
-                          <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-widest mt-2"><Languages size={14} className="text-primary" />Vernacular AI Enabled</div>
+                          <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-2 leading-none">
+                            {t('ai.voice_orders').split(' ')[0]} <span className="text-primary italic font-serif lowercase">{t('ai.voice_orders').split(' ')[1] || ''}</span>
+                          </h2>
+                          <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-widest mt-2"><Languages size={14} className="text-primary" />{t('ai.vernacular_enabled')}</div>
                         </div>
                         <button onClick={handleVoiceCommand} disabled={isListening} className={`p-6 rounded-full transition-all ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-primary/10 text-primary hover:bg-primary/20'}`}>
                           {isListening ? <Loader2 size={24} className="animate-spin" /> : <Mic size={24} />}
@@ -265,7 +269,7 @@ export default function AIRecipeAssistant() {
                       </div>
 
                       <div className="relative">
-                        <input type="text" value={inputValue} onChange={(e) => setInputValue(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()} placeholder="Order favorites by voice..." className="w-full bg-white border border-border rounded-[1.5rem] py-5 pl-8 pr-20 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all font-medium shadow-sm" />
+                        <input type="text" value={inputValue} onChange={(e) => setInputValue(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()} placeholder={t('ai.order_favorites')} className="w-full bg-white border border-border rounded-[1.5rem] py-5 pl-8 pr-20 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all font-medium shadow-sm" />
                         <button onClick={() => handleSendMessage()} className="absolute right-4 top-1/2 -translate-y-1/2 bg-black text-white p-3 rounded-xl hover:bg-primary transition-all shadow-lg"><Send size={18} /></button>
                       </div>
                     </div>
