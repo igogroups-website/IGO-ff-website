@@ -9,6 +9,8 @@ import { toast } from 'react-hot-toast';
  * Calls the internal /api/send-email route which uses nodemailer SMTP.
  */
 
+import { supabase } from './supabase';
+
 export interface EmailData {
   to: string;
   subject: string;
@@ -28,6 +30,20 @@ export interface EmailData {
 
 export const sendLiveEmail = async ({ to, subject, template, data }: EmailData) => {
   try {
+    // Skip sending email if customer disabled email notifications (except for login OTP)
+    if (template !== 'security_code') {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('email_notifications_enabled')
+        .eq('email', to)
+        .single();
+
+      if (profile && profile.email_notifications_enabled === false) {
+        console.log(`[Email] Skipping ${template} email to ${to} per customer preference.`);
+        return { success: true, skipped: true };
+      }
+    }
+
     const response = await fetch('/api/send-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

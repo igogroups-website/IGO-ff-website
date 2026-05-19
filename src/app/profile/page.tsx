@@ -85,6 +85,17 @@ export default function ProfilePage() {
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   
+  // Settings States
+  const [fullNameState, setFullNameState] = useState('');
+  const [phoneState, setPhoneState] = useState('');
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  // Password Reset States
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [updatingPassword, setUpdatingPassword] = useState(false);
+
   // Handle tab switching via URL query params
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -162,7 +173,15 @@ export default function ProfilePage() {
           ...order,
           status: order.status?.toLowerCase() === 'placed' ? 'pending' : (order.status?.toLowerCase() || 'pending')
         }));
-        setProfile(profileRes.data || null);
+        
+        const profileData = profileRes.data || null;
+        setProfile(profileData);
+        if (profileData) {
+          setFullNameState(profileData.full_name || '');
+          setPhoneState(profileData.phone || '');
+          setEmailNotifications(profileData.email_notifications_enabled !== false);
+        }
+        
         setOrders(normalizedOrders);
         setNotifications(notifRes.data || []);
       } catch (err) {
@@ -174,6 +193,69 @@ export default function ProfilePage() {
     }
     fetchData();
   }, [user, authLoading]);
+
+  const handleSaveChanges = async () => {
+    if (!fullNameState.trim()) {
+      toast.error('Please enter your full name');
+      return;
+    }
+    setSavingSettings(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: fullNameState.trim(),
+          phone: phoneState.trim(),
+          email_notifications_enabled: emailNotifications,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user?.id);
+
+      if (error) throw error;
+      
+      setProfile((prev: any) => ({
+        ...prev,
+        full_name: fullNameState.trim(),
+        phone: phoneState.trim(),
+        email_notifications_enabled: emailNotifications
+      }));
+      
+      toast.success('Settings updated successfully!');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save changes');
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPassword) {
+      toast.error('Please enter a new password');
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    setUpdatingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      toast.success('Password updated successfully!');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update password');
+    } finally {
+      setUpdatingPassword(false);
+    }
+  };
 
   if (authLoading || loading) return <div className="min-h-screen flex items-center justify-center bg-white"><div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" /></div>;
 
@@ -445,18 +527,107 @@ export default function ProfilePage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div className="space-y-2">
                         <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">{t('profile.fullname')}</label>
-                        <input type="text" defaultValue={profile?.full_name} className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-6 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none" />
+                        <input 
+                          type="text" 
+                          value={fullNameState} 
+                          onChange={(e) => setFullNameState(e.target.value)} 
+                          className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-6 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none" 
+                        />
                       </div>
                       <div className="space-y-2">
                         <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">{t('profile.phone')}</label>
-                        <input type="tel" defaultValue={profile?.phone} className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-6 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none" />
+                        <input 
+                          type="tel" 
+                          value={phoneState} 
+                          onChange={(e) => setPhoneState(e.target.value)} 
+                          className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-6 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none" 
+                        />
                       </div>
                       <div className="space-y-2 md:col-span-2">
                         <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">{t('profile.email')}</label>
-                        <input type="email" value={user?.email} disabled className="w-full bg-slate-100 border border-slate-100 rounded-xl py-3 px-6 text-sm font-bold text-slate-400 cursor-not-allowed" />
+                        <input 
+                          type="email" 
+                          value={user?.email || ''} 
+                          disabled 
+                          className="w-full bg-slate-100 border border-slate-100 rounded-xl py-3 px-6 text-sm font-bold text-slate-400 cursor-not-allowed" 
+                        />
                       </div>
                     </div>
-                    <button className="bg-primary text-white px-10 py-3.5 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 transition-all active:scale-95">{t('profile.save_changes')}</button>
+
+                    {/* Email Preference Toggle */}
+                    <div className="pt-6 border-t border-slate-100 space-y-4">
+                      <h3 className="font-bold text-slate-900 text-lg">Communication Preferences</h3>
+                      <div className="flex items-start justify-between bg-slate-50/50 p-6 rounded-2xl border border-slate-100 gap-4">
+                        <div className="space-y-1">
+                          <p className="font-bold text-slate-800 text-sm">Email Notifications</p>
+                          <p className="text-xs text-slate-500 leading-relaxed max-w-lg">
+                            Receive order updates, receipt copies, and updates via email. If disabled, you will still receive updates in your website <strong>Inbox</strong> tab. (Security OTP codes will always be sent).
+                          </p>
+                        </div>
+                        <button 
+                          type="button"
+                          onClick={() => setEmailNotifications(!emailNotifications)}
+                          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                            emailNotifications ? 'bg-primary' : 'bg-slate-200'
+                          }`}
+                        >
+                          <span
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                              emailNotifications ? 'translate-x-5' : 'translate-x-0'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-start">
+                      <button 
+                        onClick={handleSaveChanges} 
+                        disabled={savingSettings}
+                        className="bg-primary text-white px-10 py-3.5 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 transition-all active:scale-95 disabled:opacity-50"
+                      >
+                        {savingSettings ? 'Saving...' : t('profile.save_changes')}
+                      </button>
+                    </div>
+
+                    {/* Security section (Password Change) */}
+                    <div className="pt-6 border-t border-slate-100 space-y-6">
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-lg">Change Password</h3>
+                        <p className="text-xs text-slate-500">Update your security credentials</p>
+                      </div>
+                      <form onSubmit={handleUpdatePassword} className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                          <div className="space-y-2">
+                            <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">New Password</label>
+                            <input 
+                              type="password" 
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              placeholder="At least 6 characters"
+                              className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-6 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none" 
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Confirm New Password</label>
+                            <input 
+                              type="password" 
+                              value={confirmPassword}
+                              onChange={(e) => setConfirmPassword(e.target.value)}
+                              placeholder="Repeat password"
+                              className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-6 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none" 
+                            />
+                          </div>
+                        </div>
+                        <button 
+                          type="submit"
+                          disabled={updatingPassword}
+                          className="bg-slate-900 text-white px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-800 disabled:opacity-50 transition-colors"
+                        >
+                          {updatingPassword ? 'Updating...' : 'Update Password'}
+                        </button>
+                      </form>
+                    </div>
                   </div>
                 </motion.div>
               )}
