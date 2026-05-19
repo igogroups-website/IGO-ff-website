@@ -43,6 +43,12 @@ const FALLBACK_STREAMS = [
   }
 ];
 
+const isVideoUrl = (url: string) => {
+  if (!url) return false;
+  const lowercase = url.toLowerCase();
+  return lowercase.includes('.mp4') || lowercase.includes('.webm') || lowercase.includes('video');
+};
+
 export default function LiveFarmStream() {
   const [streams, setStreams] = useState<any[]>([]);
   const [activeStream, setActiveStream] = useState<any>(null);
@@ -121,7 +127,7 @@ export default function LiveFarmStream() {
           {/* Stream Player */}
           <div className="lg:col-span-3">
             <div className="relative aspect-video rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl group bg-black">
-              {activeStream.video_url?.endsWith('.mp4') ? (
+              {isVideoUrl(activeStream.video_url) ? (
                 <video 
                   key={activeStream.id}
                   src={activeStream.video_url} 
@@ -192,11 +198,20 @@ export default function LiveFarmStream() {
                   activeStream.id === stream.id ? 'border-primary ring-2 ring-primary/20' : 'border-white/10 opacity-60 hover:opacity-100'
                 }`}
               >
-                <img 
-                  src={stream.thumbnail_url || stream.video_url} 
-                  alt={stream.name} 
-                  className="absolute inset-0 w-full h-full object-cover" 
-                />
+                {isVideoUrl(stream.thumbnail_url || stream.video_url) ? (
+                  <video 
+                    src={stream.thumbnail_url || stream.video_url} 
+                    muted 
+                    playsInline 
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                ) : (
+                  <img 
+                    src={stream.thumbnail_url || stream.video_url} 
+                    alt={stream.name} 
+                    className="absolute inset-0 w-full h-full object-cover" 
+                  />
+                )}
                 <div className="absolute inset-0 bg-black/60 group-hover:bg-black/40 transition-colors" />
                 <div className="relative p-6 flex flex-col justify-end h-full">
                   <h4 className="text-lg font-black uppercase tracking-tight text-left">{stream.name}</h4>

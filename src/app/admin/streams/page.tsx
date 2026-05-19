@@ -131,16 +131,10 @@ export default function AdminStreams() {
       };
 
       if (isEditing === 'new') {
-        // The user only wants ONE active video at a time. Delete all previous streams to replace them.
-        if (streams.length > 0) {
-          const ids = streams.map(s => s.id);
-          await supabase.from('farm_streams').delete().in('id', ids);
-        }
-        
         const { data, error } = await supabase.from('farm_streams').insert([streamData]).select();
         if (error) throw error;
-        setStreams([data[0]]);
-        toast.success('Live stream replaced successfully');
+        setStreams([...streams, data[0]]);
+        toast.success('Live stream added successfully');
       } else {
         const { error } = await supabase.from('farm_streams').update(streamData).eq('id', isEditing);
         if (error) throw error;
@@ -195,7 +189,7 @@ export default function AdminStreams() {
               className="bg-white rounded-[2.5rem] border border-border overflow-hidden shadow-sm hover:shadow-xl transition-all group"
             >
               <div className="relative aspect-video bg-black flex items-center justify-center overflow-hidden">
-                {stream.video_url.endsWith('.mp4') ? (
+                {stream.video_url.toLowerCase().includes('.mp4') || stream.video_url.toLowerCase().includes('.webm') ? (
                   <video src={stream.video_url} muted loop className="w-full h-full object-cover opacity-60" />
                 ) : (
                   <img src={stream.video_url} alt="" className="w-full h-full object-cover opacity-60" />
@@ -287,8 +281,8 @@ export default function AdminStreams() {
                       <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept="video/mp4" />
                     </div>
                     <div className="flex gap-2 mt-2">
-                       <button onClick={() => setEditForm({ ...editForm, video_url: '/harvest/harvesting_videos.mp4' })} className="text-[10px] font-black uppercase bg-primary/10 text-primary px-3 py-1.5 rounded-full hover:bg-primary/20 transition-all">Use Local Video 1</button>
-                       <button onClick={() => setEditForm({ ...editForm, video_url: '/harvest/harvesting_videos_2.mp4' })} className="text-[10px] font-black uppercase bg-primary/10 text-primary px-3 py-1.5 rounded-full hover:bg-primary/20 transition-all">Use Local Video 2</button>
+                       <button onClick={() => setEditForm({ ...editForm, video_url: '/harvest/harvesting_videos.mp4', thumbnail_url: '/harvest/harvesting_videos.mp4' })} className="text-[10px] font-black uppercase bg-primary/10 text-primary px-3 py-1.5 rounded-full hover:bg-primary/20 transition-all">Use Local Video 1</button>
+                       <button onClick={() => setEditForm({ ...editForm, video_url: '/harvest/harvesting_videos_2.mp4', thumbnail_url: '/harvest/harvesting_videos_2.mp4' })} className="text-[10px] font-black uppercase bg-primary/10 text-primary px-3 py-1.5 rounded-full hover:bg-primary/20 transition-all">Use Local Video 2</button>
                     </div>
                   </div>
 
