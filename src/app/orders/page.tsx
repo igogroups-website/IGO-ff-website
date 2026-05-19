@@ -28,7 +28,13 @@ export default function Orders() {
           status: order.status?.toLowerCase() === 'placed' ? 'pending' : (order.status?.toLowerCase() || 'pending'),
           order_items: (order.order_items || []).map((item: any) => ({
             ...item,
-            price_at_purchase: item.price_at_purchase ?? item.unit_price ?? 0
+            price_at_purchase: item.price_at_purchase ?? item.unit_price ?? 0,
+            products: item.products ? {
+              ...item.products,
+              image_url: item.products.image_url ||
+                (Array.isArray(item.products.image_urls) ? item.products.image_urls[0] : null) ||
+                '/placeholder_product.png'
+            } : { name: 'Fresh Farm Produce', image_url: '/placeholder_product.png' }
           }))
         }));
         setOrders(normalized);
@@ -112,7 +118,12 @@ export default function Orders() {
                       {order.order_items.map((item: any) => (
                         <div key={item.id} className="flex items-center gap-4">
                           <div className="w-16 h-16 bg-muted rounded-xl overflow-hidden flex-shrink-0">
-                            <img src={item.products.image_url} alt={item.products.name} className="w-full h-full object-cover" />
+                            <img
+                              src={item.products?.image_url || '/placeholder_product.png'}
+                              alt={item.products?.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder_product.png'; }}
+                            />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-bold">{item.products.name}</p>
@@ -135,9 +146,18 @@ export default function Orders() {
                         <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Total Amount</p>
                         <p className="text-2xl font-black text-primary">₹{order.total_amount}</p>
                       </div>
-                      <button className="w-full py-3 rounded-xl border border-primary text-primary font-bold text-sm hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-2">
-                        Track Delivery <ChevronRight size={16} />
-                      </button>
+                      <div className="relative group">
+                        <button
+                          disabled
+                          className="w-full py-3 rounded-xl border border-muted text-muted-foreground font-bold text-sm cursor-not-allowed opacity-50 flex items-center justify-center gap-2"
+                        >
+                          <Truck size={16} />
+                          Track Delivery
+                        </button>
+                        <span className="absolute -top-9 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                          Coming Soon
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </motion.div>

@@ -486,21 +486,17 @@ export default function Checkout() {
                   </div>
                 </div>
                 
-                <div 
-                  onClick={() => setPaymentMethod('CARD')}
-                  className={`p-6 border-2 rounded-2xl flex items-center justify-between cursor-pointer transition-all ${
-                    paymentMethod === 'CARD' 
-                      ? 'border-primary bg-primary/5 shadow-lg shadow-primary/5' 
-                      : 'border-border hover:border-primary/30'
-                  }`}
+                <div
+                  className="p-6 border-2 rounded-2xl flex items-center justify-between opacity-50 cursor-not-allowed border-border bg-muted/20 relative overflow-hidden"
                 >
                   <div className="flex items-center gap-4">
-                    <div className={`w-6 h-6 border-4 rounded-full bg-white transition-all ${
-                      paymentMethod === 'CARD' ? 'border-primary' : 'border-muted'
-                    }`} />
+                    <div className="w-6 h-6 border-4 rounded-full bg-white border-muted" />
                     <div>
-                      <p className="font-bold">Credit / Debit Card</p>
-                      <p className="text-sm text-muted-foreground">Secure payment via encrypted gateway</p>
+                      <p className="font-bold text-muted-foreground flex items-center gap-2">
+                        Credit / Debit Card
+                        <span className="text-[10px] font-black uppercase tracking-widest bg-slate-200 text-slate-500 px-2 py-0.5 rounded-full">Coming Soon</span>
+                      </p>
+                      <p className="text-sm text-muted-foreground">Card payments will be available soon</p>
                     </div>
                   </div>
                 </div>
