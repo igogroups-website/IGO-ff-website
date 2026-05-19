@@ -45,19 +45,55 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
       try {
         console.log('[Wishlist] Fetching for user:', user.id);
         
-        const { data, error, status } = await supabase
+        const { data: wishlistData, error: wishlistError } = await supabase
           .from('wishlist')
-          .select('id, product_id, products(*)')
+          .select('id, product_id')
           .eq('user_id', user.id);
         
-        if (error) {
-          console.warn('[Wishlist] Fetch error:', error.message || 'No message');
+        if (wishlistError) {
+          console.warn('[Wishlist] Fetch error:', wishlistError.message);
           setWishlistItems([]);
-        } else {
-          setWishlistItems((data as any[]) || []);
+          return;
         }
+
+        if (!wishlistData || wishlistData.length === 0) {
+          setWishlistItems([]);
+          return;
+        }
+
+        const productIds = wishlistData.map(item => item.product_id);
+        const { data: productsData, error: productsError } = await supabase
+          .from('products')
+          .select('*')
+          .in('id', productIds);
+
+        if (productsError) {
+          console.warn('[Wishlist] Products fetch error:', productsError.message);
+          setWishlistItems([]);
+          return;
+        }
+
+        const mappedItems: WishlistItem[] = wishlistData
+          .map(item => {
+            const product = productsData?.find(p => p.id === item.product_id);
+            if (!product) return null;
+            return {
+              id: item.id,
+              product_id: item.product_id,
+              products: {
+                id: product.id,
+                name: product.name,
+                price: Number(product.price),
+                image_url: product.image_url,
+                unit: product.unit || '1 kg',
+                category: product.category || 'General'
+              }
+            };
+          })
+          .filter((item): item is WishlistItem => item !== null);
+
+        setWishlistItems(mappedItems);
       } catch (err: any) {
-        // Log the error explicitly to avoid {} showing up
         const errorDetail = err instanceof Error ? err.message : JSON.stringify(err);
         console.error('[Wishlist] Critical error:', errorDetail);
         setWishlistItems([]);
