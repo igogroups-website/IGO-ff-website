@@ -2,14 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, Package, MapPin, CreditCard, Clock, CheckCircle2,
   Truck, ShoppingBag, Star, Copy, Check,
   Banknote, Smartphone, AlertCircle, Loader2, Leaf,
-  RotateCcw, PhoneCall, MessageSquare, ExternalLink
+  RotateCcw, PhoneCall, MessageSquare, ExternalLink, XCircle
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useCart } from '@/context/CartContext';
 import { toast } from 'react-hot-toast';
 
 interface OrderItem {
@@ -102,10 +104,19 @@ function generateOrderNumber(id: string) {
   return 'FF-' + id.slice(0, 8).toUpperCase();
 }
 
+const SUPPORT_PHONE = '+918925878327';
+const WHATSAPP_NUMBER = '918925878327'; // without +
+
+// Statuses before shipping — customer CAN cancel
+const CANCELLABLE_STATUSES = ['pending', 'placed', 'confirmed', 'processing', 'packed'];
+
 export default function OrderDetailModal({ order, isOpen, onClose }: OrderDetailModalProps) {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const { addToCart } = useCart();
+  const router = useRouter();
 
   useEffect(() => {
     if (isOpen && order) {
@@ -129,23 +140,84 @@ export default function OrderDetailModal({ order, isOpen, onClose }: OrderDetail
         const normalized = data.map((item: any) => ({
           ...item,
           price_at_purchase: item.price_at_purchase ?? item.unit_price ?? 0,
-          // CRITICAL FIX: Normalize and handle fallback for missing/un-synced products or image URLs
           products: item.products ? {
             ...item.products,
-            image_url: item.products.image_url || (Array.isArray(item.products.image_urls) ? item.products.image_urls[0] : null) || fallbackImage
-          } : {
-            name: 'Fresh Farm Produce',
-            image_url: fallbackImage,
-            category: 'Organic Farm'
-          }
+            image_url: item.products.image_url ||
+              (Array.isArray(item.products.image_urls) ? item.products.image_urls[0] : null) ||
+              fallbackImage
+          } : { name: 'Fresh Produce', image_url: fallbackImage }
         }));
-        setOrderItems(normalized as OrderItem[]);
+        setOrderItems(normalized);
       }
-    } catch (err: any) {
-      console.error('[OrderDetailModal] Fetch Error:', err.message);
-      toast.error('Failed to load items for this order');
+    } catch (err) {
+      console.error('Error fetching order items:', err);
     } finally {
       setLoading(false);
+    }
+  }
+
+  // ── Reorder: add all items back to cart ──────────────────────────────────
+  async function handleReorder() {
+    if (!orderItems.length) {
+      toast.error('No items found in this order');
+      return;
+    }
+    const loadingToast = toast.loading('Adding items to cart...');
+    try {
+      for (const item of orderItems) {
+        if (item.product_id) {
+          await addToCart(item.product_id, item.quantity);
+        }
+      }
+      toast.dismiss(loadingToast);
+      toast.success(`${orderItems.length} item(s) added to cart! 🛒`);
+      onClose();
+      router.push('/cart');
+    } catch (err) {
+      toast.dismiss(loadingToast);
+      toast.error('Failed to add items to cart');
+    }
+  }
+
+  // ── Call Support ─────────────────────────────────────────────────────────
+  function handleCallSupport() {
+    window.location.href = `tel:${SUPPORT_PHONE}`;
+  }
+
+  // ── WhatsApp Chat ────────────────────────────────────────────────────────
+  function handleWhatsApp() {
+    const orderNum = order ? (order as any).order_number || order.id.slice(0, 8) : '';
+    const msg = encodeURIComponent(`Hi Farmers Factory! I need help with my order #${orderNum}`);
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, '_blank');
+  }
+
+  // ── Cancel Order ─────────────────────────────────────────────────────────
+  async function handleCancelOrder() {
+    if (!order) return;
+    const confirmed = window.confirm(
+      'Are you sure you want to cancel this order? This action cannot be undone.'
+    );
+    if (!confirmed) return;
+
+    setCancelling(true);
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: 'CANCELLED' })
+        .eq('id', order.id);
+
+      if (error) {
+        toast.error('Failed to cancel order. Please contact support.');
+        return;
+      }
+
+      toast.success('Order cancelled successfully.');
+      onClose();
+      window.location.reload();
+    } catch (err) {
+      toast.error('Unexpected error. Please try again.');
+    } finally {
+      setCancelling(false);
     }
   }
 
@@ -410,21 +482,49 @@ export default function OrderDetailModal({ order, isOpen, onClose }: OrderDetail
 
               {/* CRM Interactive Quick Actions */}
               <div className="grid grid-cols-3 gap-4">
-                {[
-                  { icon: RotateCcw, label: 'Reorder Produce', color: 'text-primary bg-primary/5 hover:bg-primary/10 border-primary/10' },
-                  { icon: PhoneCall, label: 'Call Support', color: 'text-blue-500 bg-blue-50 hover:bg-blue-100 border-blue-100' },
-                  { icon: MessageSquare, label: 'Realtime Chat', color: 'text-purple-500 bg-purple-50 hover:bg-purple-100 border-purple-100' },
-                ].map((action) => (
-                  <button
-                    key={action.label}
-                    onClick={() => toast.success(`${action.label} is active for your account!`)}
-                    className={`${action.color} border rounded-2xl p-4 flex flex-col items-center gap-2 transition-all active:scale-95 text-center`}
-                  >
-                    <action.icon size={18} />
-                    <span className="text-[9px] font-black uppercase tracking-wider">{action.label}</span>
-                  </button>
-                ))}
+                <button
+                  onClick={handleReorder}
+                  className="text-primary bg-primary/5 hover:bg-primary/10 border border-primary/10 rounded-2xl p-4 flex flex-col items-center gap-2 transition-all active:scale-95 text-center"
+                >
+                  <RotateCcw size={18} />
+                  <span className="text-[9px] font-black uppercase tracking-wider">Reorder Produce</span>
+                </button>
+
+                <button
+                  onClick={handleCallSupport}
+                  className="text-blue-500 bg-blue-50 hover:bg-blue-100 border border-blue-100 rounded-2xl p-4 flex flex-col items-center gap-2 transition-all active:scale-95 text-center"
+                >
+                  <PhoneCall size={18} />
+                  <span className="text-[9px] font-black uppercase tracking-wider">Call Support</span>
+                </button>
+
+                <button
+                  onClick={handleWhatsApp}
+                  className="text-purple-500 bg-purple-50 hover:bg-purple-100 border border-purple-100 rounded-2xl p-4 flex flex-col items-center gap-2 transition-all active:scale-95 text-center"
+                >
+                  <MessageSquare size={18} />
+                  <span className="text-[9px] font-black uppercase tracking-wider">Realtime Chat</span>
+                </button>
               </div>
+
+              {/* Cancel Order — only before shipping */}
+              {order && CANCELLABLE_STATUSES.includes(order.status.toLowerCase()) && (
+                <button
+                  onClick={handleCancelOrder}
+                  disabled={cancelling}
+                  className="w-full py-3 rounded-2xl border-2 border-red-200 text-red-500 font-black text-xs uppercase tracking-widest hover:bg-red-50 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <XCircle size={16} />
+                  {cancelling ? 'Cancelling...' : 'Cancel This Order'}
+                </button>
+              )}
+
+              {/* Shipped/Delivered — cannot cancel */}
+              {order && ['shipped', 'delivered'].includes(order.status.toLowerCase()) && (
+                <div className="w-full py-3 rounded-2xl border border-slate-200 bg-slate-50 text-slate-400 font-bold text-xs text-center">
+                  Order cannot be cancelled after shipping
+                </div>
+              )}
 
               {/* Organic Savings Incentive */}
               <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4 flex items-center gap-3">
