@@ -564,9 +564,9 @@ function ProductsContent() {
       )}
 
       {/* Header Actions */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-        <div className="flex flex-col md:flex-row gap-4 flex-1">
-          <div className="relative flex-1 max-w-md">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 flex-wrap">
+        <div className="flex flex-col md:flex-row gap-4 flex-1 flex-wrap">
+          <div className="relative flex-1 min-w-[240px] max-w-md">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
             <input 
               type="text" 
@@ -577,7 +577,7 @@ function ProductsContent() {
             />
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="relative">
               <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
               <select 
@@ -607,7 +607,7 @@ function ProductsContent() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center bg-white border border-border rounded-2xl p-1 mr-2">
             <button 
               onClick={() => setViewMode('grid')}
