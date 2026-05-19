@@ -79,7 +79,7 @@ export default function WishlistDrawer() {
                   >
                     <div className="flex gap-4">
                       <div className="w-20 h-20 rounded-2xl overflow-hidden bg-muted flex-shrink-0 border border-border/50">
-                        <img src={item.products.image_url} alt={item.products.name} className="w-full h-full object-cover" />
+                        <img src={item.products.image_url || (item.products as any).image_urls?.[0] || '/placeholder_product.png'} alt={item.products.name} className="w-full h-full object-cover" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start mb-1">

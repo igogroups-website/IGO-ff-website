@@ -84,7 +84,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
                 id: product.id,
                 name: product.name,
                 price: Number(product.price),
-                image_url: product.image_url,
+                image_url: product.image_url || product.image_urls?.[0] || '/placeholder_product.png',
                 unit: product.unit || '1 kg',
                 category: product.category || 'General'
               }
@@ -165,7 +165,14 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
         newWishlist.push({
           id: Math.random().toString(36).substring(7),
           product_id: productId,
-          products: product
+          products: {
+            id: product.id,
+            name: product.name,
+            price: Number(product.price),
+            image_url: product.image_url || product.image_urls?.[0] || '/placeholder_product.png',
+            unit: product.unit || '1 kg',
+            category: product.category || 'General'
+          }
         });
         toast.success('Added to wishlist');
       }

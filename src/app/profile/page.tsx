@@ -373,7 +373,7 @@ export default function ProfilePage() {
                             {/* Product Image */}
                             <div className="relative aspect-square overflow-hidden bg-slate-50 border-b border-slate-100 flex-shrink-0">
                               <img
-                                src={prod.image_url || fallbackUrl}
+                                src={prod.image_url || (prod as any).image_urls?.[0] || fallbackUrl}
                                 alt={prod.name}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                 onError={(e) => { (e.target as HTMLImageElement).src = fallbackUrl; }}
