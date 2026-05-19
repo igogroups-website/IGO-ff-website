@@ -325,7 +325,7 @@ export default function ProfilePage() {
                     <p className="text-slate-500 text-sm font-medium">Your rewards and loyalty earnings</p>
                   </div>
                   <div className="bg-white rounded-3xl p-2 border border-slate-100 shadow-sm">
-                    <LoyaltyWallet coins={profile?.points || 0} referralCode={profile?.referral_code || 'FF-123'} memberStatus="Gold Member" />
+                    <LoyaltyWallet coins={profile?.points || 0} referralCode={profile?.referral_code || 'FF-123'} memberStatus="Gold" />
                   </div>
                 </motion.div>
               )}

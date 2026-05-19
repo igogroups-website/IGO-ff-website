@@ -166,7 +166,7 @@ export default function AdminInventory() {
   };
 
   const filteredProducts = products.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = (p.name || '').toLowerCase().includes(search.toLowerCase());
     if (filter === 'instock') return matchesSearch && p.stock > 0;
     if (filter === 'outofstock') return matchesSearch && p.stock === 0;
     if (filter === 'lowstock') return matchesSearch && p.stock < 20;

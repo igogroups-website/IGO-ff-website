@@ -98,7 +98,7 @@ export default function DeliveryPage() {
                  </div>
                  <div className="p-8 bg-muted/20 rounded-[2rem] border border-border">
                     <h5 className="text-lg font-black uppercase mb-2">Do you deliver on Sundays?</h5>
-                    <p className="text-muted-foreground font-medium">Yes! Our farm doesn't stop, and neither do we. Sunday deliveries are active for all major regions.</p>
+                    <p className="text-muted-foreground font-medium">No, we do not deliver on Sundays. Our farmers, cows, and logistics teams rest on Sundays. All orders placed on Saturdays or Sundays are harvested fresh first thing Monday morning and delivered directly to your doorstep within 24 hours of harvest.</p>
                  </div>
                  <div className="p-8 bg-muted/20 rounded-[2rem] border border-border">
                     <h5 className="text-lg font-black uppercase mb-2">How can I track my order?</h5>

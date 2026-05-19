@@ -524,8 +524,8 @@ function ProductsContent() {
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = 
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.category.toLowerCase().includes(searchTerm.toLowerCase());
+      (product.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (product.category || '').toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter;
     

@@ -135,10 +135,10 @@ function OrdersContent() {
 
   const filteredOrders = orders.filter(order => {
     const matchesSearch = 
-      order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.delivery_address.toLowerCase().includes(searchTerm.toLowerCase());
+      (order.id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (order.customer?.full_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (order.customer?.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (order.delivery_address || '').toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
     

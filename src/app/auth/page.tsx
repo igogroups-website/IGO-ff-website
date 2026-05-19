@@ -190,6 +190,7 @@ function AuthContent() {
       });
 
       setTimeout(() => {
+        toast.dismiss();
         router.push(redirectPath);
         router.refresh();
       }, 1500);
@@ -216,6 +217,7 @@ function AuthContent() {
 
       toast.success('Welcome back! Redirecting...');
       setTimeout(() => {
+        toast.dismiss();
         router.push(redirectPath);
         router.refresh();
       }, 1000);

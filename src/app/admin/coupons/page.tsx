@@ -79,7 +79,7 @@ export default function AdminCoupons() {
     }
   };
 
-  const filteredCoupons = coupons.filter(c => c.code.toLowerCase().includes(search.toLowerCase()));
+  const filteredCoupons = coupons.filter(c => (c.code || '').toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="space-y-12 pb-20">

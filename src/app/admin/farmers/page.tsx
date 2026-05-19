@@ -74,7 +74,7 @@ export default function AdminFarmers() {
     }
   };
 
-  const filteredFarmers = farmers.filter(f => f.name.toLowerCase().includes(search.toLowerCase()));
+  const filteredFarmers = farmers.filter(f => (f.name || '').toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="space-y-12 pb-20">

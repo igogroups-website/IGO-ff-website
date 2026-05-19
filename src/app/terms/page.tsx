@@ -31,8 +31,8 @@ export default function TermsOfService() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-black text-foreground uppercase tracking-tight mb-4">5. Delivery Policy</h2>
-            <p>We aim to deliver all organic products within 24 hours of harvest. However, delivery times are estimates and may vary based on location and weather conditions.</p>
+            <h2 className="text-2xl font-black text-foreground uppercase tracking-tight mb-4">5. Delivery Policy & Sunday Rest</h2>
+            <p>We aim to deliver all organic products within 24 hours of harvest. Please note that we do not harvest or deliver on Sundays. Orders placed on Saturdays and Sundays will be harvested fresh and dispatched on Monday morning for delivery within 24 hours of harvest.</p>
           </section>
         </div>
       </div>
