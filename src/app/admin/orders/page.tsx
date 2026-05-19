@@ -246,15 +246,24 @@ function OrdersContent() {
   };
 
   const exportToExcel = () => {
-    const data = filteredOrders.map(o => ({
-      ID: o.order_number || String(o.id).slice(0, 8),
-      Customer: o.customer?.full_name || 'Guest',
-      Email: o.customer?.email || 'N/A',
-      Amount: o.total_amount,
-      Status: o.status,
-      Date: new Date(o.created_at).toLocaleDateString(),
-      Address: o.delivery_address
-    }));
+    const data = filteredOrders.map(o => {
+      const addressLines = o.delivery_address?.split('\n') || [];
+      const hasNewlines = addressLines.length > 1;
+      const phone = hasNewlines ? addressLines[1] : (o.customer?.phone || 'N/A');
+      const email = o.customer?.email || 'N/A';
+      const cleanAddress = hasNewlines ? addressLines.slice(2).join(', ') : o.delivery_address;
+
+      return {
+        ID: o.order_number || String(o.id).slice(0, 8),
+        Customer: o.customer?.full_name || 'Guest',
+        Email: email,
+        Mobile: phone,
+        Amount: o.total_amount,
+        Status: o.status,
+        Date: new Date(o.created_at).toLocaleDateString(),
+        Address: cleanAddress
+      };
+    });
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Orders");

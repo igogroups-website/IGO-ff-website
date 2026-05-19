@@ -102,7 +102,7 @@ export async function getAllOrders() {
     // Fetch profiles and users concurrently for these orders
     const userIds = [...new Set(orders.map(o => o.user_id))];
     const [profilesRes, usersRes] = await Promise.all([
-      supabase.from('profiles').select('id, full_name, avatar_url, email').in('id', userIds),
+      supabase.from('profiles').select('id, full_name, avatar_url, email, phone').in('id', userIds),
       supabase.from('users').select('id, name, email').in('id', userIds)
     ]);
 
@@ -118,7 +118,8 @@ export async function getAllOrders() {
         customer: {
           full_name: prof?.full_name || usr?.name || 'Customer (' + (prof?.email || usr?.email || 'Unknown') + ')',
           avatar_url: prof?.avatar_url || '',
-          email: prof?.email || usr?.email || ''
+          email: prof?.email || usr?.email || '',
+          phone: prof?.phone || ''
         }
       };
     });

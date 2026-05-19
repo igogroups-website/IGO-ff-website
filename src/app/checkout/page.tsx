@@ -211,7 +211,7 @@ export default function Checkout() {
           subtotal: subtotal,
           total: total,
           total_amount: total,
-          delivery_address: `${address.name}, ${address.street}, ${address.city} - ${address.zip}`,
+          delivery_address: `${address.name}\n${address.phone}\n${address.street}, ${address.city} - ${address.zip}`,
           payment_method: paymentMethod,
           status: 'PLACED'
         })

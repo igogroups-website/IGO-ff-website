@@ -373,7 +373,7 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
                   </div>
                   <div className="bg-white/5 p-6 rounded-2xl border border-white/5 group-hover:border-primary/20 transition-all">
                     <p className="text-lg font-black mb-2">{t('order_details.home_primary')}</p>
-                    <p className="text-sm font-medium text-white/60 leading-relaxed italic">{order.delivery_address}</p>
+                    <p className="text-sm font-medium text-white/60 leading-relaxed italic whitespace-pre-line">{order.delivery_address}</p>
                   </div>
                 </section>
 

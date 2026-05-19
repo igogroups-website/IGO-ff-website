@@ -142,7 +142,11 @@ export default function Orders() {
                         <MapPin size={16} className="text-muted-foreground mt-1" />
                         <div>
                           <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{t('orders.delivery_to')}</p>
-                          <p className="text-sm line-clamp-2">{order.delivery_address}</p>
+                          <p className="text-sm line-clamp-2">
+                            {order.delivery_address?.includes('\n')
+                              ? order.delivery_address.split('\n').slice(2).join(', ')
+                              : order.delivery_address}
+                          </p>
                         </div>
                       </div>
                       <div className="pt-4 border-t border-border">
