@@ -4,8 +4,10 @@ import { VERIFIED_INVENTORY } from '@/lib/constants';
 import { supabase } from '@/lib/supabase';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslation } from '@/context/TranslationContext';
 
 export default function FeaturedProducts() {
+  const { t } = useTranslation();
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -80,7 +82,7 @@ export default function FeaturedProducts() {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
         <Loader2 className="w-10 h-10 text-primary animate-spin" />
-        <p className="text-muted-foreground font-bold italic">Gathering today's harvest...</p>
+        <p className="text-muted-foreground font-bold italic">{t('products.loading')}</p>
       </div>
     );
   }
@@ -89,10 +91,10 @@ export default function FeaturedProducts() {
     <section>
       <div className="flex flex-col md:flex-row items-end justify-between mb-16 gap-8">
         <div>
-          <span className="text-primary font-black uppercase tracking-[0.3em] text-[10px] mb-4 block">Today's Selection</span>
+          <span className="text-primary font-black uppercase tracking-[0.3em] text-[10px] mb-4 block">{t('products.today_selection')}</span>
           <h2 className="text-5xl md:text-6xl font-black text-foreground uppercase tracking-tighter leading-[0.9]">
-            Freshly <br />
-            <span className="text-primary">Harvested</span>
+            {t('products.freshly_harvested').split(' ').slice(0, 1).join(' ')} <br />
+            <span className="text-primary">{t('products.freshly_harvested').split(' ').slice(1).join(' ')}</span>
           </h2>
         </div>
         
@@ -100,7 +102,7 @@ export default function FeaturedProducts() {
           href="/products" 
           className="group flex items-center gap-3 bg-white border-2 border-border/50 px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:border-primary hover:text-primary transition-all shadow-sm"
         >
-          View Full Catalog
+          {t('products.view_catalog')}
           <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
         </Link>
       </div>

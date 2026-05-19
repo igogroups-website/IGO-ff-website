@@ -2,41 +2,44 @@
 
 import React from 'react';
 import CategoryCard from './CategoryCard';
-
-const CATEGORIES = [
-  {
-    name: 'Vegetables',
-    image: '/category_vegetables.png',
-    count: '20+ Varieties',
-    color: 'bg-green-50'
-  },
-  {
-    name: 'Fruits',
-    image: '/category_fruits.png',
-    count: '15+ Varieties',
-    color: 'bg-orange-50'
-  },
-  {
-    name: 'Valluvam Products',
-    image: '/category_valluvam.png',
-    count: '10+ Essentials',
-    color: 'bg-yellow-50'
-  }
-];
+import { useTranslation } from '@/context/TranslationContext';
 
 export default function FeaturedCategories() {
+  const { t } = useTranslation();
+
+  const CATEGORIES = [
+    {
+      name: t('products.vegetables'),
+      image: '/category_vegetables.png',
+      count: t('categories.veg_count'),
+      color: 'bg-green-50'
+    },
+    {
+      name: t('products.fruits'),
+      image: '/category_fruits.png',
+      count: t('categories.fruit_count'),
+      color: 'bg-orange-50'
+    },
+    {
+      name: t('products.categories.valluvam'),
+      image: '/category_valluvam.png',
+      count: t('categories.val_count'),
+      color: 'bg-yellow-50'
+    }
+  ];
+
   return (
     <section>
       <div className="flex flex-col md:flex-row items-end justify-between mb-12 gap-6">
         <div className="max-w-2xl">
-          <span className="text-primary font-black uppercase tracking-[0.3em] text-[10px] mb-4 block">Curated Collections</span>
+          <span className="text-primary font-black uppercase tracking-[0.3em] text-[10px] mb-4 block">{t('categories.curated')}</span>
           <h2 className="text-5xl md:text-6xl font-black text-foreground uppercase tracking-tighter leading-[0.9]">
-            The Best of <br />
-            <span className="text-primary">Nature's Harvest</span>
+            {t('categories.best_of').split(' ').slice(0, 3).join(' ')} <br />
+            <span className="text-primary">{t('categories.best_of').split(' ').slice(3).join(' ')}</span>
           </h2>
         </div>
         <p className="text-muted-foreground font-medium max-w-sm text-sm leading-relaxed">
-          Sustainably grown, hand-picked, and delivered with love from our farms to your doorstep within 24 hours.
+          {t('categories.desc')}
         </p>
       </div>
 

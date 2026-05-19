@@ -3,40 +3,43 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Leaf, Truck, ShieldCheck, Heart } from 'lucide-react';
-
-const FEATURES = [
-  {
-    icon: <Leaf className="w-8 h-8" />,
-    title: "100% Organic",
-    description: "Grown using traditional Vedic methods without any synthetic pesticides or fertilizers."
-  },
-  {
-    icon: <Truck className="w-8 h-8" />,
-    title: "24h Farm-to-Home",
-    description: "Harvested at dawn and delivered to your kitchen by dusk for maximum nutrient retention."
-  },
-  {
-    icon: <ShieldCheck className="w-8 h-8" />,
-    title: "Traceable Origin",
-    description: "Scan any product to see exactly which farm it came from and when it was harvested."
-  },
-  {
-    icon: <Heart className="w-8 h-8" />,
-    title: "Farmer First",
-    description: "Direct-to-consumer model ensuring fair pricing for our farmers and better value for you."
-  }
-];
+import { useTranslation } from '@/context/TranslationContext';
 
 export default function WhyChooseUs() {
+  const { t } = useTranslation();
+
+  const FEATURES = [
+    {
+      icon: <Leaf className="w-8 h-8" />,
+      title: t('why.organic.title'),
+      description: t('why.organic.desc')
+    },
+    {
+      icon: <Truck className="w-8 h-8" />,
+      title: t('why.delivery.title'),
+      description: t('why.delivery.desc')
+    },
+    {
+      icon: <ShieldCheck className="w-8 h-8" />,
+      title: t('why.trace.title'),
+      description: t('why.trace.desc')
+    },
+    {
+      icon: <Heart className="w-8 h-8" />,
+      title: t('why.farmer.title'),
+      description: t('why.farmer.desc')
+    }
+  ];
+
   return (
     <section>
       <div className="text-center max-w-3xl mx-auto mb-20">
-        <span className="text-primary font-black uppercase tracking-[0.3em] text-[10px] mb-4 block">The Farmers Factory Difference</span>
+        <span className="text-primary font-black uppercase tracking-[0.3em] text-[10px] mb-4 block">{t('why.badge')}</span>
         <h2 className="text-5xl md:text-6xl font-black text-foreground uppercase tracking-tighter leading-[0.9] mb-8">
-          Why We Are <span className="text-primary">Better</span>
+          {t('why.title').split(' ').slice(0, 3).join(' ')} <span className="text-primary">{t('why.title').split(' ').slice(3).join(' ')}</span>
         </h2>
         <p className="text-muted-foreground font-medium text-lg">
-          We are not just a marketplace; we are a direct bridge between the soil and your soul.
+          {t('why.desc')}
         </p>
       </div>
 

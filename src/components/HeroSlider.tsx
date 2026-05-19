@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ChevronLeft, ChevronRight, Play, Pause, Volume2, VolumeX, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { useTranslation } from '@/context/TranslationContext';
 
 interface Slide {
   id: string;
@@ -52,6 +53,7 @@ const DEFAULT_SLIDES: Slide[] = [
 ];
 
 export default function HeroSlider() {
+  const { t } = useTranslation();
   const [slides, setSlides] = useState<Slide[]>([PERMANENT_SLIDE]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
@@ -163,6 +165,35 @@ export default function HeroSlider() {
 
   const currentSlide = slides[currentIndex];
 
+  const getTranslatedSlide = (slide: Slide) => {
+    if (!slide) return { title: '', subtitle: '', cta: '' };
+    let titleKey = '';
+    let subtitleKey = '';
+    let ctaKey = '';
+
+    if (slide.id === 'permanent-hero-video') {
+      titleKey = 'hero.permanent.title';
+      subtitleKey = 'hero.permanent.subtitle';
+      ctaKey = 'hero.permanent.cta';
+    } else if (slide.id === 'default-2') {
+      titleKey = 'hero.fruits.title';
+      subtitleKey = 'hero.fruits.subtitle';
+      ctaKey = 'hero.fruits.cta';
+    } else if (slide.id === 'default-3') {
+      titleKey = 'hero.valluvam.title';
+      subtitleKey = 'hero.valluvam.subtitle';
+      ctaKey = 'hero.valluvam.cta';
+    }
+
+    return {
+      title: titleKey ? t(titleKey) : t(slide.title),
+      subtitle: subtitleKey ? t(subtitleKey) : t(slide.subtitle),
+      cta: ctaKey ? t(ctaKey) : t(slide.cta)
+    };
+  };
+
+  const translated = getTranslatedSlide(currentSlide);
+
   if (!currentSlide) return null;
 
   return (
@@ -229,11 +260,11 @@ export default function HeroSlider() {
               transition={{ delay: 0.4 }}
               className="inline-block px-6 py-2 bg-primary/10 backdrop-blur-xl rounded-full text-[10px] font-black text-primary uppercase tracking-[0.5em] mb-12 border border-primary/20 w-fit shadow-2xl"
             >
-              Premium Quality Guaranteed
+              {t('hero.guaranteed')}
             </motion.span>
             
             <h1 className="text-4xl md:text-7xl font-black text-white mb-8 leading-[1.1] tracking-tighter uppercase drop-shadow-2xl">
-              {currentSlide.title.split(' ').map((word, i) => (
+              {translated.title.split(' ').map((word, i) => (
                 <span key={i} className={i % 2 === 1 ? 'text-primary' : ''}>
                   {word}{' '}
                 </span>
@@ -241,7 +272,7 @@ export default function HeroSlider() {
             </h1>
             
             <p className="text-lg md:text-xl text-white/90 mb-14 max-w-xl font-medium leading-relaxed drop-shadow-lg">
-              {currentSlide.subtitle}
+              {translated.subtitle}
             </p>
             
             <div className="flex flex-wrap gap-6">
@@ -250,7 +281,7 @@ export default function HeroSlider() {
                 className="group relative bg-primary text-white px-12 py-6 rounded-full font-black flex items-center gap-4 hover:bg-white hover:text-primary transition-all transform hover:scale-105 shadow-2xl shadow-primary/40 overflow-hidden"
               >
                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                <span className="uppercase tracking-widest text-sm relative z-10">{currentSlide.cta}</span>
+                <span className="uppercase tracking-widest text-sm relative z-10">{translated.cta}</span>
                 <ArrowRight size={24} className="group-hover:translate-x-2 transition-transform relative z-10" />
               </Link>
             </div>

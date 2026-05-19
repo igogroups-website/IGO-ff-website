@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Play, Eye, Users, MapPin, Wind, Thermometer, Droplets, Clock, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useTranslation } from '@/context/TranslationContext';
 
 const FALLBACK_STREAMS = [
   {
@@ -50,6 +51,7 @@ const isVideoUrl = (url: string) => {
 };
 
 export default function LiveFarmStream() {
+  const { t } = useTranslation();
   const [streams, setStreams] = useState<any[]>([]);
   const [activeStream, setActiveStream] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -112,14 +114,14 @@ export default function LiveFarmStream() {
           <div>
             <div className="flex items-center gap-3 text-primary font-black text-xs uppercase tracking-[0.4em] mb-4">
               <div className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-              <span>24/7 Live Transparency</span>
+              <span>{t('streams.badge')}</span>
             </div>
             <h2 className="text-5xl md:text-8xl font-black tracking-tighter uppercase leading-none">
-              WATCH YOUR <br /> <span className="text-primary italic font-serif lowercase">harvest</span> GROW
+              {t('streams.title').split(' ').slice(0, 2).join(' ')} <br /> <span className="text-primary italic font-serif lowercase">{t('streams.title').split(' ').slice(2).join(' ')}</span>
             </h2>
           </div>
           <p className="text-white/40 font-medium max-w-sm md:text-right text-lg">
-            Real-time high-definition streams from our organic plots. Total transparency from soil to basket.
+            {t('streams.desc')}
           </p>
         </div>
 
@@ -156,7 +158,7 @@ export default function LiveFarmStream() {
                 </div>
                 <div className="flex items-center gap-3 bg-black/60 backdrop-blur-xl px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10">
                    <Users size={14} className="text-primary" />
-                   {activeStream.viewers || 124} WATCHING
+                   {activeStream.viewers || 124} {t('streams.watching')}
                 </div>
               </div>
 
@@ -168,21 +170,21 @@ export default function LiveFarmStream() {
               <div className="absolute bottom-10 left-10 right-10 flex flex-wrap items-end justify-between gap-6">
                  <div className="flex items-center gap-12">
                     <div className="flex flex-col">
-                       <div className="flex items-center gap-2 text-white/40 uppercase text-[9px] font-black tracking-widest mb-1"><Thermometer size={14} /> TEMP</div>
+                       <div className="flex items-center gap-2 text-white/40 uppercase text-[9px] font-black tracking-widest mb-1"><Thermometer size={14} /> {t('streams.temp')}</div>
                        <span className="text-2xl font-black">{activeStream.temp || '28°C'}</span>
                     </div>
                     <div className="flex flex-col">
-                       <div className="flex items-center gap-2 text-white/40 uppercase text-[9px] font-black tracking-widest mb-1"><Droplets size={14} /> HUMIDITY</div>
+                       <div className="flex items-center gap-2 text-white/40 uppercase text-[9px] font-black tracking-widest mb-1"><Droplets size={14} /> {t('streams.humidity')}</div>
                        <span className="text-2xl font-black">{activeStream.humidity || '65%'}</span>
                     </div>
                     <div className="flex flex-col">
-                       <div className="flex items-center gap-2 text-white/40 uppercase text-[9px] font-black tracking-widest mb-1"><Wind size={14} /> WIND</div>
+                       <div className="flex items-center gap-2 text-white/40 uppercase text-[9px] font-black tracking-widest mb-1"><Wind size={14} /> {t('streams.wind')}</div>
                        <span className="text-2xl font-black">{activeStream.wind || '12 km/h'}</span>
                     </div>
                  </div>
                  <div className="flex items-center gap-2 text-primary font-black uppercase text-[10px] tracking-widest mb-1">
                     <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                    AUTO-IRRIGATION: ACTIVE
+                    {t('streams.irrigation')}
                  </div>
               </div>
             </div>

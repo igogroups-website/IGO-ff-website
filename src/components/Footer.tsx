@@ -5,8 +5,10 @@ import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { ShoppingBag, ArrowRight } from 'lucide-react';
 import { usePathname } from 'next/navigation';
+import { useTranslation } from '@/context/TranslationContext';
 
 export default function Footer() {
+  const { t } = useTranslation();
   const { cartCount, cartTotal } = useCart();
   const pathname = usePathname();
 
@@ -22,16 +24,21 @@ export default function Footer() {
               <div className="text-left">
                 <div className="flex items-center gap-2 text-primary font-black text-sm mb-2 uppercase tracking-widest">
                   <ShoppingBag size={18} />
-                  <span>Items in your basket</span>
+                  <span>{t('footer.items_in_basket')}</span>
                 </div>
-                <h3 className="text-3xl font-black text-foreground">You have {cartCount} {cartCount === 1 ? 'item' : 'items'} ready for harvest</h3>
-                <p className="text-muted-foreground font-medium mt-1 text-lg">Total Basket Value: <span className="text-primary font-black">₹{cartTotal}</span></p>
+                <h3 className="text-3xl font-black text-foreground">
+                  {cartCount === 1 
+                    ? t('footer.basket_title_single') 
+                    : t('footer.basket_title_plural').replace('{count}', String(cartCount))
+                  }
+                </h3>
+                <p className="text-muted-foreground font-medium mt-1 text-lg">{t('footer.basket_value')} <span className="text-primary font-black">₹{cartTotal}</span></p>
               </div>
               <Link 
                 href="/cart"
                 className="w-full md:w-auto px-10 py-5 bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:shadow-2xl hover:shadow-primary/30 transition-all flex items-center justify-center gap-3 transform hover:scale-105"
               >
-                Buy Now / Checkout
+                {t('footer.checkout')}
                 <ArrowRight size={20} />
               </Link>
             </div>
@@ -46,23 +53,23 @@ export default function Footer() {
         </div>
         
         <p className="text-muted-foreground mb-8 max-w-md mx-auto font-medium">
-          Bringing the goodness of nature directly to your doorstep. Organic, fresh, and sustainable harvest for your family.
+          {t('footer.desc')}
         </p>
 
         <div className="flex flex-wrap justify-center gap-x-12 gap-y-4 text-sm font-bold text-muted-foreground uppercase tracking-widest">
-          <Link href="/products" className="text-muted-foreground hover:text-primary transition-colors text-xs font-bold uppercase tracking-widest">Shop All</Link>
-          <Link href="/cart" className="text-muted-foreground hover:text-primary transition-colors text-xs font-bold uppercase tracking-widest">View Basket</Link>
-          <Link href="/streams" className="text-muted-foreground hover:text-primary transition-colors text-xs font-bold uppercase tracking-widest">Live Farm Streams</Link>
-          <Link href="/products?category=Vegetables" className="text-muted-foreground hover:text-primary transition-colors text-xs font-bold uppercase tracking-widest">Fresh Vegetables</Link>
-          <Link href="/delivery" className="hover:text-primary transition-colors">Delivery Info</Link>
-          <Link href="/contact" className="hover:text-primary transition-colors">Contact Us</Link>
+          <Link href="/products" className="text-muted-foreground hover:text-primary transition-colors text-xs font-bold uppercase tracking-widest">{t('nav.products')}</Link>
+          <Link href="/cart" className="text-muted-foreground hover:text-primary transition-colors text-xs font-bold uppercase tracking-widest">{t('footer.items_in_basket')}</Link>
+          <Link href="/streams" className="text-muted-foreground hover:text-primary transition-colors text-xs font-bold uppercase tracking-widest">{t('streams.title')}</Link>
+          <Link href="/products?category=Vegetables" className="text-muted-foreground hover:text-primary transition-colors text-xs font-bold uppercase tracking-widest">{t('products.vegetables')}</Link>
+          <Link href="/delivery" className="hover:text-primary transition-colors">{t('nav.about')}</Link>
+          <Link href="/contact" className="hover:text-primary transition-colors">{t('nav.contact')}</Link>
           <Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link>
           <Link href="/terms" className="hover:text-primary transition-colors">Terms</Link>
         </div>
 
         <div className="mt-16 pt-8 border-t border-muted/30">
           <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.3em]">
-            © {new Date().getFullYear()} FARMERS FACTORY. Cultivating Health, Harvesting Happiness.
+            © {new Date().getFullYear()} FARMERS FACTORY. {t('footer.copyright')}
           </p>
         </div>
       </div>

@@ -4,6 +4,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Play, Heart, MessageCircle, Share2, Sparkles } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useTranslation } from '@/context/TranslationContext';
 
 const FALLBACK_STORIES = [
   { id: '1', farmer: 'Arjun', title: 'Morning Harvest', image_url: '/Vegetables/drumstick.jpg', video_url: null, is_live: true },
@@ -13,6 +14,7 @@ const FALLBACK_STORIES = [
 ];
 
 export default function FarmStories() {
+  const { t } = useTranslation();
   const [stories, setStories] = React.useState<any[]>([]);
   const [activeVideo, setActiveVideo] = React.useState<string | null>(null);
 
@@ -45,14 +47,14 @@ export default function FarmStories() {
           <div>
             <div className="flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-[0.3em] mb-3">
               <Sparkles size={16} />
-              <span>Live from the farm</span>
+              <span>{t('stories.badge')}</span>
             </div>
             <h2 className="text-4xl md:text-6xl font-black text-foreground tracking-tighter uppercase">
-              Farm <span className="text-primary italic font-serif lowercase">Stories</span>
+              {t('stories.title').split(' ').slice(0, 1).join(' ')} <span className="text-primary italic font-serif lowercase">{t('stories.title').split(' ').slice(1).join(' ')}</span>
             </h2>
           </div>
           <p className="text-muted-foreground font-medium max-w-xs md:text-right">
-            Watch authentic moments directly from our farmers' fields.
+            {t('stories.desc')}
           </p>
         </div>
 
