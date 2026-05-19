@@ -47,7 +47,7 @@ export default function ContactPage() {
                     </div>
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Direct Line</p>
-                      <p className="text-xl font-black text-foreground">+91 98765 43210</p>
+                      <p className="text-xl font-black text-foreground">+91 89258 78327</p>
                     </div>
                   </div>
                   
@@ -57,7 +57,7 @@ export default function ContactPage() {
                     </div>
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Email Support</p>
-                      <p className="text-xl font-black text-foreground">hello@farmersfactory.com</p>
+                      <p className="text-xl font-black text-foreground">info.thefarmersfactory@gmail.com</p>
                     </div>
                   </div>
                   
@@ -67,7 +67,7 @@ export default function ContactPage() {
                     </div>
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Main Hub</p>
-                      <p className="text-xl font-black text-foreground">Organic Block A, Green Valley,<br />Tamil Nadu, India</p>
+                      <p className="text-xl font-black text-foreground">No 17 , Kovalan street, 2nd main road,<br />Uthandi kanathur, Chennai 600119</p>
                     </div>
                   </div>
                 </div>

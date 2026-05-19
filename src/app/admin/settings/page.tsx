@@ -69,7 +69,7 @@ export default function AdminSettings() {
               <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Support Email</label>
               <input 
                 type="email" 
-                defaultValue="support@farmersfactory.com"
+                defaultValue="info.thefarmersfactory@gmail.com"
                 className="w-full px-5 py-4 rounded-2xl border border-border focus:ring-2 focus:ring-primary/20 outline-none font-bold"
               />
             </div>
@@ -79,7 +79,7 @@ export default function AdminSettings() {
             <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Store Address</label>
             <textarea 
               rows={3}
-              defaultValue="No. 123, Organic Street, Valluvam City, Tamil Nadu, India"
+              defaultValue="No 17 , Kovalan street, 2nd main road, Uthandi kanathur, Chennai 600119"
               className="w-full px-5 py-4 rounded-2xl border border-border focus:ring-2 focus:ring-primary/20 outline-none font-bold resize-none"
             />
           </div>
