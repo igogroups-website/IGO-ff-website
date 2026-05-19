@@ -7,11 +7,9 @@
 -- STEP 1: Make sure the admin profile exists with role = 'admin'
 -- This is the root cause — the is_admin() function was checking
 -- profiles.role but it was never set to 'admin' for the admin user.
-INSERT INTO public.profiles (id, email, full_name, role)
+INSERT INTO public.profiles (id, role)
 SELECT 
   au.id,
-  au.email,
-  'Admin User',
   'admin'
 FROM auth.users au
 WHERE au.email = 'admin@farmersfactory.com'
