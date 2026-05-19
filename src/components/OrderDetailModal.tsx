@@ -166,7 +166,7 @@ export default function OrderDetailModal({ order, isOpen, onClose }: OrderDetail
     try {
       for (const item of orderItems) {
         if (item.product_id) {
-          await addToCart(item.product_id, item.quantity);
+          await addToCart(item.product_id, item.quantity, item.products);
         }
       }
       toast.dismiss(loadingToast);
