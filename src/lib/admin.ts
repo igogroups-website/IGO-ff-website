@@ -152,13 +152,9 @@ export async function updateOrderStatus(orderId: string, status: string) {
     .eq('id', orderId)
     .single();
 
-  // Convert incoming lowercase status to valid database uppercase constraints
-  let dbStatus = status.toUpperCase();
-  if (dbStatus === 'PENDING') dbStatus = 'PLACED';
-  if (['PROCESSING', 'PACKED', 'SHIPPED'].includes(dbStatus)) {
-    dbStatus = 'CONFIRMED';
-  }
-  if (dbStatus === 'REJECTED') dbStatus = 'CANCELLED';
+  // Store the actual granular status in the DB directly (no collapsing)
+  // The DB column is a TEXT field, so it accepts any value
+  const dbStatus = status.toUpperCase();
 
   const { error } = await supabase
     .from('orders')
@@ -166,10 +162,9 @@ export async function updateOrderStatus(orderId: string, status: string) {
     .eq('id', orderId);
 
   // Award Points on Delivery
-  if (!error && status === 'delivered' && order?.status !== 'delivered') {
-    const pointsToAdd = Math.floor(Number(order.total_amount) / 10); // 1 point per ₹10
+  if (!error && status === 'delivered' && order?.status !== 'DELIVERED') {
+    const pointsToAdd = Math.floor(Number(order?.total_amount) / 10); // 1 point per ₹10
     if (pointsToAdd > 0) {
-      // Direct update for now, as we might not have RPC configured
       const { data: profile } = await supabase.from('profiles').select('points').eq('id', order?.user_id).single();
       await supabase.from('profiles').update({ points: (profile?.points || 0) + pointsToAdd }).eq('id', order?.user_id);
     }

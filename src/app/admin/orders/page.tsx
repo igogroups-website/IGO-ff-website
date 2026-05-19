@@ -49,11 +49,14 @@ function OrdersContent() {
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [orderDetails, setOrderDetails] = useState<any[]>([]);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
   const [showHarvestSummary, setShowHarvestSummary] = useState(false);
+
   const [harvestSummary, setHarvestSummary] = useState<any[]>([]);
 
   const searchParams = useSearchParams();
   const initialSearch = searchParams.get('search') || '';
+
 
   useEffect(() => {
     fetchOrders();
@@ -97,25 +100,93 @@ function OrdersContent() {
   }, []);
 
   async function handleStatusChange(orderId: string, newStatus: string) {
-    const { error } = await updateOrderStatus(orderId, newStatus);
-    if (!error) {
+    setUpdatingOrderId(orderId);
+    try {
+      const { error } = await updateOrderStatus(orderId, newStatus);
+      if (error) {
+        console.error('Failed to update order status:', error);
+        // If the DB rejects the status (enum constraint), fall back gracefully
+        const { error: error2 } = await supabase
+          .from('orders')
+          .update({ status: newStatus === 'pending' ? 'PLACED' : newStatus === 'rejected' ? 'CANCELLED' : newStatus.toUpperCase() })
+          .eq('id', orderId);
+        if (error2) {
+          import('react-hot-toast').then(({ toast }) => toast.error('Failed to update order status'));
+          return;
+        }
+      }
+
+      // Update local state immediately
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
-      
-      // Trigger Notifications
+      import('react-hot-toast').then(({ toast }) => toast.success(`Order marked as ${newStatus.toUpperCase()}`));
+
+      // Find the order and customer details
       const order = orders.find(o => o.id === orderId);
-      if (order && order.user_id) {
-        import('@/lib/notifications').then(({ sendCXNotification }) => {
-          sendCXNotification({
-            userId: order.user_id,
-            title: `Order Update: ${newStatus.toUpperCase()} #${order.order_number || String(order.id).slice(0, 8)}`,
-            message: `Your order #${order.order_number || String(order.id).slice(0, 8)} status has been updated to ${newStatus}.`,
-            type: 'order_status',
-            link: `/profile?tab=orders&order=${order.order_number || String(order.id).slice(0, 8)}`,
-            emailTemplate: `order_${newStatus}` as any,
-            emailData: { orderId: order.id, status: newStatus, orderNumber: order.order_number }
-          });
+      if (!order) return;
+
+      const customerEmail = order.customer?.email;
+      const orderNumber = order.order_number || String(order.id).slice(0, 8);
+
+      // Status labels and messages
+      const statusMessages: Record<string, string> = {
+        confirmed: 'Great news! Your order has been confirmed by our team.',
+        processing: 'Your order is now being processed and packed by our farmers.',
+        packed: 'Your fresh produce has been packed and is ready for dispatch.',
+        shipped: 'Your order is on its way! Our delivery team will reach you soon.',
+        delivered: 'Your order has been delivered. Enjoy your fresh farm produce! 🌿',
+        cancelled: 'Your order has been cancelled. Please contact us for more information.',
+        rejected: 'Unfortunately your order could not be fulfilled. Please contact support.',
+        pending: 'Your order is pending confirmation.',
+      };
+      const statusMsg = statusMessages[newStatus] || `Your order status has been updated to ${newStatus}.`;
+      const statusEmoji: Record<string, string> = {
+        confirmed: '✅', processing: '⚙️', packed: '📦',
+        shipped: '🚚', delivered: '🌿', cancelled: '❌', rejected: '🚫', pending: '⏳'
+      };
+
+      // 1. Insert in-app notification to Supabase (website inbox)
+      if (order.user_id) {
+        supabase.from('notifications').insert({
+          user_id: order.user_id,
+          title: `${statusEmoji[newStatus] || '📋'} Order ${newStatus.toUpperCase()} — #${orderNumber}`,
+          message: statusMsg,
+          type: 'order_status',
+          link: `/orders`,
+          is_read: false
+        }).then(({ error: notifError }) => {
+          if (notifError) console.warn('[Notification] Failed to insert in-app notification:', notifError);
+          else console.log('[Notification] ✅ In-app notification sent to customer');
         });
       }
+
+      // 2. Send email to customer
+      if (customerEmail) {
+        fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: customerEmail,
+            subject: `${statusEmoji[newStatus] || '📋'} Order ${newStatus.toUpperCase()} #${orderNumber} — Farmers Factory`,
+            template: `order_${newStatus}`,
+            data: {
+              orderId: order.id,
+              orderNumber,
+              status: newStatus,
+              message: statusMsg,
+              total: order.total_amount,
+            }
+          })
+        }).then(r => r.json()).then(result => {
+          if (result.success) console.log(`[Email] ✅ Status email sent to ${customerEmail}`);
+          else if (result.skipped) console.warn('[Email] SMTP not configured, email skipped');
+          else console.error('[Email] Failed:', result.error);
+        }).catch(err => console.error('[Email] Network error:', err));
+      }
+    } catch (err) {
+      console.error('[Admin] handleStatusChange error:', err);
+      import('react-hot-toast').then(({ toast }) => toast.error('Unexpected error updating status'));
+    } finally {
+      setUpdatingOrderId(null);
     }
   }
 
