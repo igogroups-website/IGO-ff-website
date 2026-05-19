@@ -81,11 +81,9 @@ export default function AdminLayout({
 
       // Silent Supabase Authentication Fallback (if they didn't go through login page)
       if (isAuth) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session || session.user.email !== 'admin@farmersfactory.com') {
-          if (session) {
-            await supabase.auth.signOut();
-          }
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError || !user || user.email !== 'admin@farmersfactory.com') {
+          await supabase.auth.signOut();
           const { error } = await supabase.auth.signInWithPassword({
             email: 'admin@farmersfactory.com',
             password: 'AdminPassword123!'

@@ -24,6 +24,9 @@ export default function AdminLogin() {
 
     const correctPassword = await getAdminPassword();
     if (password === correctPassword) {
+      // Clear any stale prior sessions to avoid conflict
+      await supabase.auth.signOut().catch(() => {});
+
       // 1. Authenticate with Supabase Auth for RLS policies!
       const { error: authError } = await supabase.auth.signInWithPassword({
         email: 'admin@farmersfactory.com',
