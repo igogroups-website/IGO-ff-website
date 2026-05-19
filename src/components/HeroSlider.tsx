@@ -75,10 +75,10 @@ export default function HeroSlider() {
             id: b.id,
             title: b.title || 'Organic Freshness',
             subtitle: b.subtitle || 'Fresh from our fields to your table.',
-            cta: 'Explore More',
-            href: b.link_url || '/products',
-            media_url: b.video_url || b.image_url,
-            type: b.video_url ? 'video' : 'image',
+            cta: b.cta_text || 'Explore More',
+            href: b.cta_link || '/products',
+            media_url: b.media_url,
+            type: b.media_type || 'image',
             theme: 'dark'
           }));
           setSlides([PERMANENT_SLIDE, ...dynamicSlides]);

@@ -24,9 +24,10 @@ interface Banner {
   id: string;
   title: string;
   subtitle: string;
-  image_url: string;
-  video_url: string;
-  link_url: string;
+  media_url: string;
+  media_type: 'image' | 'video';
+  cta_text: string;
+  cta_link: string;
   is_active: boolean;
   display_order: number;
 }
@@ -115,8 +116,8 @@ export default function AdminBanners() {
 
       setEditForm(prev => ({
         ...prev,
-        image_url: publicUrl,
-        video_url: file.type.startsWith('video/') ? publicUrl : ''
+        media_url: publicUrl,
+        media_type: file.type.startsWith('video/') ? 'video' : 'image'
       }));
       
       toast.success('File uploaded successfully');
@@ -138,12 +139,13 @@ export default function AdminBanners() {
       } else {
         const { error } = await supabase.from('banners').update(editForm).eq('id', isEditing);
         if (error) throw error;
-        setBanners(banners.map(b => b.id === isEditing ? { ...b, ...editForm } : b));
+        setBanners(banners.map(b => b.id === isEditing ? { ...b, ...editForm } as Banner : b));
         toast.success('Banner updated');
       }
       setIsEditing(null);
-    } catch (err) {
-      toast.error('Save failed');
+    } catch (err: any) {
+      console.error('Save error:', err);
+      toast.error(err?.message || 'Save failed');
     }
   };
 
@@ -155,7 +157,7 @@ export default function AdminBanners() {
           <p className="text-muted-foreground font-bold text-sm">Manage your homepage hero carousel and advertisements.</p>
         </div>
         <button 
-          onClick={() => { setIsEditing('new'); setEditForm({ is_active: true, display_order: banners.length }); }}
+          onClick={() => { setIsEditing('new'); setEditForm({ is_active: true, display_order: banners.length, cta_text: 'Shop Now', cta_link: '/products', media_type: 'image' }); }}
           className="bg-primary text-white px-8 py-4 rounded-2xl font-black flex items-center gap-3 hover:bg-primary/90 transition-all shadow-xl shadow-primary/20"
         >
           <Plus size={20} />
@@ -179,12 +181,12 @@ export default function AdminBanners() {
                 className={`bg-white rounded-3xl border ${banner.is_active ? 'border-border' : 'border-dashed border-muted/50 grayscale'} p-6 flex items-center gap-8 shadow-sm hover:shadow-xl transition-all group`}
               >
                 <div className="w-48 h-28 rounded-2xl bg-muted/20 overflow-hidden relative flex items-center justify-center border border-border/50">
-                  {banner.video_url ? (
+                  {banner.media_type === 'video' ? (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/10">
                       <Video className="text-muted-foreground" />
                     </div>
-                  ) : banner.image_url ? (
-                    <img src={banner.image_url} alt="" className="w-full h-full object-cover" />
+                  ) : banner.media_url ? (
+                    <img src={banner.media_url} alt="" className="w-full h-full object-cover" />
                   ) : (
                     <ImageIcon className="text-muted-foreground/30" size={32} />
                   )}
@@ -202,7 +204,7 @@ export default function AdminBanners() {
                     </span>
                     <span className="text-[10px] font-bold text-muted-foreground flex items-center gap-1">
                       <Sparkles size={10} className="text-primary" />
-                      {banner.video_url ? 'Video Background' : 'Static Image'}
+                      {banner.media_type === 'video' ? 'Video Background' : 'Static Image'}
                     </span>
                   </div>
                 </div>
@@ -287,8 +289,8 @@ export default function AdminBanners() {
                     <div className="relative group/input">
                       <input 
                         type="text" 
-                        value={editForm.image_url || ''} 
-                        onChange={e => setEditForm({ ...editForm, image_url: e.target.value, video_url: e.target.value.endsWith('.mp4') ? e.target.value : '' })}
+                        value={editForm.media_url || ''} 
+                        onChange={e => setEditForm({ ...editForm, media_url: e.target.value, media_type: e.target.value.endsWith('.mp4') ? 'video' : 'image' })}
                         className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 font-bold text-foreground focus:ring-4 focus:ring-primary/10 transition-all outline-none"
                         placeholder="Paste image or video link here..."
                       />
@@ -298,7 +300,7 @@ export default function AdminBanners() {
                       >
                         {uploading ? (
                           <Loader2 size={18} className="text-primary animate-spin" />
-                        ) : editForm.image_url?.endsWith('.mp4') || editForm.video_url ? (
+                        ) : editForm.media_type === 'video' || editForm.media_url?.endsWith('.mp4') ? (
                           <Video size={18} className="text-primary" />
                         ) : (
                           <ImageIcon size={18} className="text-primary" />
@@ -318,15 +320,27 @@ export default function AdminBanners() {
                     </p>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Call to Action Link</label>
-                    <input 
-                      type="text" 
-                      value={editForm.link_url || ''} 
-                      onChange={e => setEditForm({ ...editForm, link_url: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 font-bold text-foreground focus:ring-4 focus:ring-primary/10 transition-all outline-none"
-                      placeholder="e.g., /products?category=Dairy"
-                    />
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">CTA Button Text</label>
+                      <input 
+                        type="text" 
+                        value={editForm.cta_text || ''} 
+                        onChange={e => setEditForm({ ...editForm, cta_text: e.target.value })}
+                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 font-bold text-foreground focus:ring-4 focus:ring-primary/10 transition-all outline-none"
+                        placeholder="e.g., Shop Now"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Call to Action Link</label>
+                      <input 
+                        type="text" 
+                        value={editForm.cta_link || ''} 
+                        onChange={e => setEditForm({ ...editForm, cta_link: e.target.value })}
+                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 font-bold text-foreground focus:ring-4 focus:ring-primary/10 transition-all outline-none"
+                        placeholder="e.g., /products?category=Dairy"
+                      />
+                    </div>
                   </div>
                 </div>
 
