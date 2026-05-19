@@ -198,6 +198,18 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       });
       if (updateError) throw updateError;
 
+      // Save as lead for admin visibility
+      try {
+        await supabase.from('leads').insert({
+          name: fullName.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          source: 'User Signup'
+        });
+      } catch (e) {
+        console.error('Failed to save signup lead:', e);
+      }
+
       toast.success('Welcome to the Farm!');
       onClose();
     } catch (error: any) {

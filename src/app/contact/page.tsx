@@ -6,6 +6,7 @@ import Footer from '@/components/Footer';
 import { motion } from 'framer-motion';
 import { Mail, Phone, MapPin, Send, MessageCircle, Sparkles } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { supabase } from '@/lib/supabase';
 
 const ADMIN_EMAIL = 'info.thefarmersfactory@gmail.com';
 
@@ -48,6 +49,19 @@ export default function ContactPage() {
       });
 
       const result = await res.json();
+
+      // Save to Supabase Leads
+      try {
+        await supabase.from('leads').insert({
+          name: form.name,
+          email: form.email,
+          phone: '', // Contact form doesn't ask for phone right now, could be empty
+          source: 'Contact Form',
+          message: form.message
+        });
+      } catch (e) {
+        console.error('Failed to save lead:', e);
+      }
 
       if (result.skipped) {
         // SMTP not configured — still thank the user

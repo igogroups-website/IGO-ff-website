@@ -21,7 +21,8 @@ import {
   Ticket,
   User,
   Video,
-  Sparkles
+  Sparkles,
+  UserPlus
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'react-hot-toast';
@@ -51,6 +52,9 @@ export default function AdminLayout({
         .limit(10);
       
       if (!error && data) {
+        const lastCheckedStr = localStorage.getItem('ff_admin_notifs_checked_at');
+        const lastCheckedAt = lastCheckedStr ? new Date(lastCheckedStr).getTime() : 0;
+
         const formatted = data.map(o => ({
           id: o.id,
           title: `New Order Received`,
@@ -58,7 +62,8 @@ export default function AdminLayout({
           time: new Date(o.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
           type: 'order',
           href: '/admin/orders',
-          is_read: false
+          is_read: new Date(o.created_at).getTime() <= lastCheckedAt,
+          created_at: o.created_at
         }));
         setNotifications(formatted);
       }
@@ -173,6 +178,7 @@ export default function AdminLayout({
     { name: 'Orders', icon: <ShoppingBag size={20} />, href: '/admin/orders' },
     { name: 'Products', icon: <Package size={20} />, href: '/admin/products' },
     { name: 'Customers', icon: <Users size={20} />, href: '/admin/customers' },
+    { name: 'Leads', icon: <UserPlus size={20} />, href: '/admin/leads' },
     { name: 'Inventory', icon: <Zap size={20} />, href: '/admin/inventory' },
     { name: 'Banners', icon: <ImageIcon size={20} />, href: '/admin/banners' },
     { name: 'Live Streams', icon: <Video size={20} />, href: '/admin/streams' },
@@ -244,13 +250,17 @@ export default function AdminLayout({
 
               <div className="relative">
                 <button 
-                  onClick={() => setShowNotifications(!showNotifications)}
+                  onClick={() => {
+                    setShowNotifications(!showNotifications);
+                    localStorage.setItem('ff_admin_notifs_checked_at', new Date().toISOString());
+                    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+                  }}
                   className="p-3 bg-muted/50 text-muted-foreground hover:text-primary transition-all relative rounded-2xl"
                 >
                   <Bell size={20} />
-                  {notifications.length > 0 && (
+                  {notifications.filter(n => !n.is_read).length > 0 && (
                     <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white">
-                      {notifications.length}
+                      {notifications.filter(n => !n.is_read).length}
                     </span>
                   )}
                 </button>

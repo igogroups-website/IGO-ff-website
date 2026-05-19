@@ -2,14 +2,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Mail, Sparkles, ArrowRight, Leaf, CheckCircle2 } from 'lucide-react';
+import { X, Mail, Sparkles, ArrowRight, Leaf, CheckCircle2, User, Phone } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { supabase } from '@/lib/supabase';
 
 export default function MarketingPopup() {
   const [isOpen, setIsOpen] = useState(false);
   const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const [subscribed, setSubscribed] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -42,21 +46,35 @@ export default function MarketingPopup() {
     localStorage.setItem('ff_marketing_popup_seen', 'true');
   };
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) {
-      toast.error('Please enter your email');
+    if (!email || !name || !phone) {
+      toast.error('Please fill in all details');
       return;
     }
     
-    // Simulate API call
-    setSubscribed(true);
-    toast.success('Welcome to the family! Check your email for the code.');
-    
-    // Auto close after 2 seconds
-    setTimeout(() => {
-      handleClose();
-    }, 25000);
+    setLoading(true);
+    try {
+      // Save to leads table
+      await supabase.from('leads').insert({
+        name,
+        email,
+        phone,
+        source: 'Marketing Popup'
+      });
+
+      setSubscribed(true);
+      toast.success('Welcome to the family! Check your email for the code.');
+      
+      // Auto close after 5 seconds
+      setTimeout(() => {
+        handleClose();
+      }, 5000);
+    } catch (err) {
+      toast.error('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!mounted) return null;
@@ -128,21 +146,42 @@ export default function MarketingPopup() {
 
                   <form onSubmit={handleSubscribe} className="space-y-4">
                     <div className="relative group">
+                      <User className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground/40 group-focus-within:text-primary transition-colors" size={20} />
+                      <input 
+                        type="text" 
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Your full name"
+                        className="w-full bg-muted/50 border border-transparent rounded-2xl py-4 pl-14 pr-6 focus:outline-none focus:bg-white focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all text-sm font-bold"
+                      />
+                    </div>
+                    <div className="relative group">
                       <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground/40 group-focus-within:text-primary transition-colors" size={20} />
                       <input 
                         type="email" 
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Enter your email address"
-                        className="w-full bg-muted/50 border border-transparent rounded-2xl py-5 pl-14 pr-6 focus:outline-none focus:bg-white focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all text-sm font-bold"
+                        placeholder="Your email address"
+                        className="w-full bg-muted/50 border border-transparent rounded-2xl py-4 pl-14 pr-6 focus:outline-none focus:bg-white focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all text-sm font-bold"
+                      />
+                    </div>
+                    <div className="relative group">
+                      <Phone className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground/40 group-focus-within:text-primary transition-colors" size={20} />
+                      <input 
+                        type="tel" 
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="Mobile number"
+                        className="w-full bg-muted/50 border border-transparent rounded-2xl py-4 pl-14 pr-6 focus:outline-none focus:bg-white focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all text-sm font-bold"
                       />
                     </div>
                     
                     <button 
                       type="submit"
-                      className="w-full bg-primary text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-primary/90 transition-all transform active:scale-[0.98] shadow-xl shadow-primary/20"
+                      disabled={loading}
+                      className="w-full bg-primary text-white py-4 rounded-2xl font-black text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-primary/90 transition-all transform active:scale-[0.98] shadow-xl shadow-primary/20 disabled:opacity-50"
                     >
-                      CLAIM MY DISCOUNT
+                      {loading ? 'Processing...' : 'CLAIM MY DISCOUNT'}
                       <ArrowRight size={18} />
                     </button>
                   </form>
