@@ -102,6 +102,12 @@ export default function AdminStreams() {
 
   const handleSave = async () => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || session.user.email !== 'admin@farmersfactory.com') {
+        toast.error('Session conflict or expired. Please log out of customer accounts and log in again.');
+        return;
+      }
+
       const streamData = {
         ...editForm,
         viewers: editForm.viewers || Math.floor(Math.random() * 200) + 50,

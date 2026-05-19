@@ -90,6 +90,12 @@ export default function AdminStories() {
 
   const handleSave = async () => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || session.user.email !== 'admin@farmersfactory.com') {
+        toast.error('Session conflict or expired. Please log out of customer accounts and log in again.');
+        return;
+      }
+
       const storyData = {
         ...editForm,
         is_live: editForm.is_live ?? true,

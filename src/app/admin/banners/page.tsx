@@ -131,6 +131,12 @@ export default function AdminBanners() {
 
   const handleSave = async () => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || session.user.email !== 'admin@farmersfactory.com') {
+        toast.error('Session conflict or expired. Please log out of customer accounts and log in again.');
+        return;
+      }
+
       if (isEditing === 'new') {
         const { data, error } = await supabase.from('banners').insert([editForm]).select();
         if (error) throw error;
