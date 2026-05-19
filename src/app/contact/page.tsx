@@ -4,20 +4,68 @@ import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { motion } from 'framer-motion';
-import { Mail, Phone, MapPin, Send, MessageCircle, Clock, Sparkles } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, MessageCircle, Sparkles } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+
+const ADMIN_EMAIL = 'info.thefarmersfactory@gmail.com';
 
 export default function ContactPage() {
   const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    subject: 'General Inquiry',
+    message: '',
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.name || !form.email || !form.message) {
+      toast.error('Please fill in all required fields.');
+      return;
+    }
+
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const res = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: ADMIN_EMAIL,
+          subject: `[Contact Form] ${form.subject} — from ${form.name}`,
+          template: 'contact_inquiry',
+          data: {
+            name: form.name,
+            email: form.email,
+            subject: form.subject,
+            message: form.message,
+          },
+        }),
+      });
+
+      const result = await res.json();
+
+      if (result.skipped) {
+        // SMTP not configured — still thank the user
+        toast.success("Message received! We'll respond within 2 hours. 🌱", { duration: 5000 });
+        console.warn('[Contact] SMTP not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASS in Vercel env.');
+      } else if (result.success) {
+        toast.success('Message sent! Our team will respond within 2 hours. 🌱', { duration: 5000 });
+      } else {
+        throw new Error(result.error || 'Failed to send');
+      }
+
+      setForm({ name: '', email: '', subject: 'General Inquiry', message: '' });
+    } catch (err: any) {
+      console.error('[Contact] Send failed:', err);
+      toast.error('Failed to send message. Please email us directly at info.thefarmersfactory@gmail.com');
+    } finally {
       setLoading(false);
-      toast.success("Message sent! Our Farm Guru will respond within 2 hours.", { icon: '🌱' });
-      (e.target as HTMLFormElement).reset();
-    }, 1500);
+    }
   };
 
   return (
@@ -57,7 +105,9 @@ export default function ContactPage() {
                     </div>
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Email Support</p>
-                      <p className="text-xl font-black text-foreground">info.thefarmersfactory@gmail.com</p>
+                      <a href="mailto:info.thefarmersfactory@gmail.com" className="text-xl font-black text-foreground hover:text-primary transition-colors">
+                        info.thefarmersfactory@gmail.com
+                      </a>
                     </div>
                   </div>
                   
@@ -83,22 +133,45 @@ export default function ContactPage() {
                 <Sparkles size={120} className="text-primary" />
               </div>
               
-              <h3 className="text-2xl font-black uppercase mb-8">Send a Message</h3>
+              <h3 className="text-2xl font-black uppercase mb-2">Send a Message</h3>
+              <p className="text-sm text-muted-foreground font-medium mb-8">We reply within 2 hours on working days.</p>
+
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Full Name</label>
-                    <input type="text" required placeholder="John Doe" className="w-full bg-muted/20 border border-border rounded-2xl px-6 py-4 font-bold focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all" />
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Full Name *</label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={form.name}
+                      onChange={handleChange}
+                      required
+                      placeholder="John Doe"
+                      className="w-full bg-muted/20 border border-border rounded-2xl px-6 py-4 font-bold focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all outline-none"
+                    />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Email Address</label>
-                    <input type="email" required placeholder="john@example.com" className="w-full bg-muted/20 border border-border rounded-2xl px-6 py-4 font-bold focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all" />
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Email Address *</label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={form.email}
+                      onChange={handleChange}
+                      required
+                      placeholder="john@example.com"
+                      className="w-full bg-muted/20 border border-border rounded-2xl px-6 py-4 font-bold focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all outline-none"
+                    />
                   </div>
                 </div>
                 
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Subject</label>
-                  <select className="w-full bg-muted/20 border border-border rounded-2xl px-6 py-4 font-bold focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all appearance-none">
+                  <select
+                    name="subject"
+                    value={form.subject}
+                    onChange={handleChange}
+                    className="w-full bg-muted/20 border border-border rounded-2xl px-6 py-4 font-bold focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all appearance-none outline-none"
+                  >
                     <option>General Inquiry</option>
                     <option>Order Support</option>
                     <option>Farmer Partnership</option>
@@ -107,13 +180,22 @@ export default function ContactPage() {
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Message</label>
-                  <textarea required rows={4} placeholder="How can we help you?" className="w-full bg-muted/20 border border-border rounded-2xl px-6 py-4 font-bold focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all resize-none" />
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Message *</label>
+                  <textarea
+                    name="message"
+                    value={form.message}
+                    onChange={handleChange}
+                    required
+                    rows={4}
+                    placeholder="How can we help you?"
+                    className="w-full bg-muted/20 border border-border rounded-2xl px-6 py-4 font-bold focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all resize-none outline-none"
+                  />
                 </div>
                 
-                <button 
+                <button
+                  type="submit"
                   disabled={loading}
-                  className="w-full py-5 bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-sm hover:shadow-2xl hover:shadow-primary/30 transition-all flex items-center justify-center gap-3"
+                  className="w-full py-5 bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-sm hover:shadow-2xl hover:shadow-primary/30 transition-all flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Sending...' : 'Send Message'}
                   <Send size={18} />

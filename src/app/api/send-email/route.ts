@@ -89,6 +89,23 @@ function buildHtml(template: string, data: any): string {
       `;
       break;
 
+    case 'contact_inquiry':
+      body = `
+        <h2 style="color:#E75129;margin-top:0;">📬 New Contact Form Enquiry</h2>
+        <p style="color:#555;">Someone submitted the contact form on the Farmers Factory website. Details below:</p>
+        <div style="background:#f9f9f9;padding:20px;border-radius:8px;margin:20px 0;">
+          <p style="margin:8px 0;"><strong>Full Name:</strong> ${data.name}</p>
+          <p style="margin:8px 0;"><strong>Email:</strong> <a href="mailto:${data.email}" style="color:#E75129;">${data.email}</a></p>
+          <p style="margin:8px 0;"><strong>Subject:</strong> ${data.subject}</p>
+        </div>
+        <div style="background:#fff8f6;border-left:4px solid #E75129;padding:20px;border-radius:0 8px 8px 0;margin:20px 0;">
+          <p style="color:#333;font-weight:bold;margin:0 0 8px;">Message:</p>
+          <p style="color:#555;margin:0;line-height:1.7;white-space:pre-wrap;">${data.message}</p>
+        </div>
+        <p style="color:#999;font-size:13px;">Reply directly to <a href="mailto:${data.email}" style="color:#E75129;">${data.email}</a> to respond to this enquiry.</p>
+      `;
+      break;
+
     case 'welcome':
       body = `
         <h2 style="color:#E75129;margin-top:0;">Welcome to the Farm, ${data.name}! 🌿</h2>
