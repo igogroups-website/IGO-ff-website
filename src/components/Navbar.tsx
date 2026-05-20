@@ -172,7 +172,10 @@ export default function Navbar() {
 
             {user ? (
               <div className="relative group">
-                <button className={`flex items-center gap-2 p-1 pr-4 rounded-full border transition-all duration-300 ${isSolid ? 'bg-white border-slate-100 hover:shadow-md' : 'bg-white/10 border-white/20 text-white hover:bg-white/20'}`}>
+                <Link
+                  href="/profile"
+                  className={`flex items-center gap-2 p-1 pr-4 rounded-full border transition-all duration-300 ${isSolid ? 'bg-white border-slate-100 hover:shadow-md' : 'bg-white/10 border-white/20 text-white hover:bg-white/20'}`}
+                >
                   <div className="w-9 h-9 bg-primary/10 text-primary rounded-full flex items-center justify-center overflow-hidden border border-primary/20">
                     {user.email?.[0].toUpperCase() || 'U'}
                   </div>
@@ -181,7 +184,7 @@ export default function Navbar() {
                     <p className={`text-xs font-bold leading-none truncate max-w-[80px]`}>{user.email?.split('@')[0]}</p>
                   </div>
                   <ChevronDown size={12} className="opacity-40 group-hover:opacity-100 transition-opacity ml-1" />
-                </button>
+                </Link>
  
                 <div className="absolute right-0 mt-3 w-64 bg-white rounded-[2rem] shadow-2xl border border-border p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform origin-top-right scale-95 group-hover:scale-100 z-50">
                   <div className="flex flex-col gap-1">
